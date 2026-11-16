@@ -1,0 +1,111 @@
+{
+  "schema": "gus-3339-001",
+  "gus_version": "2.3.0",
+  "profile": "GUS-3339 (instante GUS <-> RFC 3339 UTC, perfil estricto Z)",
+  "source": "src/gerarion/profiles.py (implementación de referencia)",
+  "deterministic": true,
+  "constant": {
+    "name": "GUS_UNIX_OFFSET",
+    "value": 62318160000,
+    "definition": "instant GUS of 1970-01-01T00:00:00Z = (2440588 - 1719313) * 86400"
+  },
+  "gus3339": [
+    {
+      "op": "map",
+      "ins": 62318160000,
+      "rfc3339": "1970-01-01T00:00:00Z"
+    },
+    {
+      "op": "map",
+      "ins": 64091865600,
+      "rfc3339": "2026-03-17T00:00:00Z"
+    },
+    {
+      "op": "map",
+      "ins": 64097688600,
+      "rfc3339": "2026-05-23T09:30:00Z"
+    },
+    {
+      "op": "map",
+      "ins": 63801388799,
+      "rfc3339": "2016-12-31T23:59:59Z"
+    },
+    {
+      "op": "map",
+      "ins": 63269987696,
+      "rfc3339": "2000-02-29T12:34:56Z"
+    },
+    {
+      "op": "map",
+      "ins": 64091822400,
+      "rfc3339": "2026-03-16T12:00:00Z"
+    },
+    {
+      "op": "map",
+      "ins": 150940800,
+      "rfc3339": "0000-01-01T00:00:00Z"
+    },
+    {
+      "op": "map",
+      "ins": 315720460799,
+      "rfc3339": "9999-12-31T23:59:59Z"
+    },
+    {
+      "op": "from",
+      "rfc3339": "2026-03-17T00:00:60Z",
+      "error": "GERO_E3339"
+    },
+    {
+      "op": "from",
+      "rfc3339": "2026-03-17t00:00:00Z",
+      "error": "GERO_E3339"
+    },
+    {
+      "op": "from",
+      "rfc3339": "2026-03-17T00:00:00z",
+      "error": "GERO_E3339"
+    },
+    {
+      "op": "from",
+      "rfc3339": "2026-03-17T00:00:00+01:00",
+      "error": "GERO_E3339"
+    },
+    {
+      "op": "from",
+      "rfc3339": "2026-02-30T00:00:00Z",
+      "error": "GERO_E3339"
+    },
+    {
+      "op": "from",
+      "rfc3339": "2026-13-01T00:00:00Z",
+      "error": "GERO_E3339"
+    },
+    {
+      "op": "to",
+      "ins": 0,
+      "error": "GERO_E3339"
+    },
+    {
+      "op": "to",
+      "ins": -1,
+      "error": "GERO_E3339"
+    }
+  ],
+  "gus3339_canonical": [
+    {
+      "ins": 64097688600,
+      "rfc3339": "2026-05-23T09:30:00Z",
+      "gus_canonical": "2031DY-03-08-T-09:30:00-SC-TCJ+0"
+    },
+    {
+      "ins": 64091822400,
+      "rfc3339": "2026-03-16T12:00:00Z",
+      "gus_canonical": "2030DY-00-04-B-12:00:00-SC-TCJ+0"
+    },
+    {
+      "ins": 63269987696,
+      "rfc3339": "2000-02-29T12:34:56Z",
+      "gus_canonical": "2004DY-12-21-S-12:34:56-SC-TCJ+0"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+Gerarion Universal Standard (GUS)
+Copyright (c) 2026 verared contributors
+Original calendar, Nuvid language and research by Gerardo Loyola (github.com/geroiloyola)
+Licencia: MIT (ver LICENSE)
+
+----------------------------------------------------------------------
+Componentes de terceros
+----------------------------------------------------------------------
+
+slh-dsa (https://pypi.org/project/slh-dsa/)
+  Version: 0.2.5 (dependencia opcional; pip install 'gerarion[slh]')
+  Licencia: LGPL-3.0-or-later
+  Uso: adaptador SLH-DSA (FIPS 205) para sellos de produccion.
+  Nota: este componente NO esta incluido ni vendorizado en este
+  repositorio; se instala como paquete separado por el usuario. El
+  codigo fuente de este repositorio (MIT) no redistribuye ningun
+  fragmento del suyo (LGPL-3.0-or-later).
+
+Las demas dependencias de runtime del nucleo (Python, JS, C) son
+standard library o codigo propio del repo y no introducen componentes
+de terceros. Ver sbom.cdx.json para el inventario completo.

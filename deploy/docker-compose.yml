@@ -1,0 +1,50 @@
+# deploy — despliegue reproducible del notario GUS multi-réplica
+#
+# Tres réplicas independientes (alpha, beta, gamma), quórum k=2.
+# Uso:  docker compose up --build
+#       curl localhost:8081/health   # (8082, 8083 para las otras)
+
+services:
+  gus-notary-alpha:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment: &notary-env
+      GUS_NOTARY_NAME: alpha
+      GUS_NOTARY_STATE: /state/notary-alpha.json
+      GUS_NOTARY_PORT: "8080"
+    ports: ["8081:8080"]
+    volumes:
+      - alpha-state:/state
+    restart: unless-stopped
+
+  gus-notary-beta:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment:
+      <<: *notary-env
+      GUS_NOTARY_NAME: beta
+      GUS_NOTARY_STATE: /state/notary-beta.json
+    ports: ["8082:8080"]
+    volumes:
+      - beta-state:/state
+    restart: unless-stopped
+
+  gus-notary-gamma:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    environment:
+      <<: *notary-env
+      GUS_NOTARY_NAME: gamma
+      GUS_NOTARY_STATE: /state/notary-gamma.json
+    ports: ["8083:8080"]
+    volumes:
+      - gamma-state:/state
+    restart: unless-stopped
+
+volumes:
+  alpha-state:
+  beta-state:
+  gamma-state:

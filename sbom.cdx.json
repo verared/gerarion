@@ -1,0 +1,111 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "bom-ref": "pkg:generic/gerarion@2.3.4a1",
+      "type": "library",
+      "name": "gerarion",
+      "version": "2.3.4a1",
+      "description": "Gerarion Universal Standard (GUS): calendario regular y marca temporal verificable",
+      "licenses": [
+        {
+          "expression": "MIT"
+        },
+        {
+          "expression": "CC-BY-4.0"
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "gus:vector-set",
+        "value": "gus-normative-001 (vectors/, SHA-256 anclado en vectors/README)"
+      },
+      {
+        "name": "gus:conformance",
+        "value": "Python, JavaScript y C conforme al vector set 001"
+      }
+    ]
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:pypi/gerarion@2.3.4a1",
+      "type": "library",
+      "name": "gerarion",
+      "version": "2.3.4a1",
+      "purl": "pkg:pypi/gerarion@2.3.4a1",
+      "description": "Kernel Python: GTS, GST, notario diario Merkle, adaptadores criptograficos",
+      "licenses": [
+        {
+          "expression": "MIT"
+        },
+        {
+          "expression": "CC-BY-4.0"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/gerarion-kernel@2.3.4a1",
+      "type": "library",
+      "name": "gerarion-kernel",
+      "version": "2.3.4a1",
+      "purl": "pkg:npm/gerarion-kernel@2.3.4a1",
+      "description": "Kernel JavaScript ESM (web/gerarion.mjs): cero dependencias, mismo vector set",
+      "licenses": [
+        {
+          "expression": "MIT"
+        },
+        {
+          "expression": "CC-BY-4.0"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:generic/gerarion-c@2.3.4a1",
+      "type": "library",
+      "name": "gerarion-c",
+      "version": "2.3.4a1",
+      "description": "Segunda implementacion independiente en C (impl-c/): cero dependencias, cero red",
+      "licenses": [
+        {
+          "expression": "MIT"
+        },
+        {
+          "expression": "CC-BY-4.0"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:pypi/slh-dsa@0.2.5",
+      "type": "library",
+      "name": "slh-dsa",
+      "version": "0.2.5",
+      "purl": "pkg:pypi/slh-dsa@0.2.5",
+      "description": "Adaptador SLH-DSA (FIPS 205) para firmas GTS/GST y trust root - dependencia Python opcional",
+      "scope": "optional",
+      "licenses": [
+        {
+          "expression": "LGPL-3.0-or-later"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:pypi/gerarion@2.3.4a1",
+      "dependsOn": [
+        "pkg:pypi/slh-dsa@0.2.5"
+      ]
+    },
+    {
+      "ref": "pkg:npm/gerarion-kernel@2.3.4a1",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:generic/gerarion-c@2.3.4a1",
+      "dependsOn": []
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+[Unit]
+Description=Notario GUS (réplica %i) — log diario Merkle encadenado
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=notary
+Group=notary
+Environment=PYTHONPATH=/opt/gerarion/src
+Environment=GUS_NOTARY_NAME=%i
+Environment=GUS_NOTARY_STATE=/var/lib/gus-notary/%i/notary.json
+Environment=GUS_NOTARY_PORT=8080
+Environment=GUS_NOTARY_BIND=127.0.0.1
+ExecStart=/usr/bin/python3 -m gerarion.notary_service
+Restart=always
+RestartSec=5
+StateDirectory=gus-notary
+# Endurecimiento
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+ReadWritePaths=/var/lib/gus-notary
+
+[Install]
+WantedBy=multi-user.target

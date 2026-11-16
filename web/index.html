@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Calculador Gerarion — GUS 2.0</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Calculador Gerarion</h1>
+    <p class="tagline">Gerarion Universal Standard (GUS) v2.0 — tiempo regular, continuo y verificable</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Rel vivo</h2>
+      <div id="now-gero" class="big">—</div>
+      <div id="now-details" class="dim"></div>
+    </section>
+
+    <section class="card">
+      <h2>Gregoriano → Gerarion</h2>
+      <form id="form-greg">
+        <input type="date" id="greg-date" min="0001-01-01" required />
+        <button type="submit">Convertir</button>
+      </form>
+      <div id="output-greg" class="output"></div>
+    </section>
+
+    <section class="card">
+      <h2>Gerarion → Gregoriano</h2>
+      <form id="form-gero">
+        <input
+          type="text"
+          id="gero-ts"
+          placeholder="2031DY-03-08-T-09:30:00-SC-TCJ+0"
+          spellcheck="false"
+          class="mono"
+        />
+        <button type="submit">Convertir</button>
+      </form>
+      <div id="output-gero" class="output"></div>
+      <p class="dim hint">
+        Letras de día: S L M A T V B (Soludyia, Loondyia, Mardyia, Aisterdyia,
+        Trustdyia, Viendyia, Sabatyeh). Eras: DY / AY. Mes 00 = Tempalum.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Verificación propia del navegador</h2>
+      <p class="dim">
+        Esta página ejecuta los mismos vectores normativos que la suite
+        oficial (tests/test_calendar.py y web/tests.mjs). Si algo fallara,
+        la página misma te lo delata: la spec y el port no pueden divergir.
+      </p>
+      <pre id="selftest" class="mono selftest">ejecutando vectores…</pre>
+    </section>
+  </main>
+
+  <footer>
+    <p class="dim">
+      Matemática local, cero backend, cero cookies. La precisión del "rel vivo"
+      es la de tu reloj interno; el tiempo notariado (GST + notario) es otra
+      capa — ver <a href="https://github.com/verared/gerarion">el repositorio</a>.
+    </p>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

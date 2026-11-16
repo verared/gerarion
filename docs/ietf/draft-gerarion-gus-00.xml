@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?rfc strict="yes"?>
+<?rfc toc="yes"?>
+<?rfc symrefs="yes"?>
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude" version="3"
+     category="std" docName="draft-gerarion-gus-00" ipr="trust200902"
+     submissionType="independent">
+  <front>
+    <title abbrev="GUS 2.1">Gerarion Universal Standard (GUS) 2.1: Regular Calendar, Continuous Instant and Non-Forgeable Signed Time</title>
+
+    <author fullname="verared">
+      <organization>verared</organization>
+      <address><email>gus@example.invalid</email></address>
+    </author>
+
+    <date year="2026" month="November"/>
+    <area>Applications and Real-Time</area>
+    <workgroup>Independent Submission</workgroup>
+
+    <abstract>
+      <t>This document specifies the Gerarion Universal Standard (GUS)
+      version 2.1: a regular civil calendar (12 months of exactly 30 days plus
+      a Tempalum closing period of 4 or 11 days), an invariant week (every
+      year lasts exactly 52 or 53 weeks, so any given date always falls on the
+      same weekday), a continuous count of seconds (no leap seconds), a
+      canonical timestamp format, and a signed timestamp (GST) verifiable with
+      stateless hash-based (quantum-resistant) signatures and a chained
+      notary. The time value is designed so that forging a valid timestamp
+      costs more than any benefit it can produce.</t>
+    </abstract>
+
+    <note title="Requirements Language">
+      <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+      "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+      "OPTIONAL" in this document are to be interpreted as described in
+      BCP 14 <xref target="RFC2119"/> <xref target="RFC8174"/> when, and only
+      when, they appear in all capitals, as shown here.</t>
+    </note>
+  </front>
+
+  <middle>
+
+    <section title="Introduction">
+      <t>Time on most computers is expressed in calendars with irregular
+      months, mobile weekdays, leap seconds, and political rewinding. None of
+      those properties is arithmetic: they are conventions that can be altered
+      by decree, misconfigured hosts, or hostile reconfiguration. GUS 2.1
+      replaces the calendar substrate with an exact integer system and wraps
+      the resulting value in signatures and notarization, so that the time
+      itself becomes an auditable fact rather than a host configuration.</t>
+      <t>GUS 2.1 replaces the internal corpus GERO-1.2 (a historical draft
+      never registered in the IETF datatracker). All divergences from that
+      corpus are recorded in the errata document of the specification
+      repository.</t>
+    </section>
+
+    <section title="Calendar structure">
+      <t>The GUS calendar consists of a regular block of 12 months × 30
+      days (360 days), followed by a closing period named Tempalum (month
+      00) of 4 days in common years and 11 days in Great Tempalum (GT) years.
+      A common year is exactly 364 days (52 weeks); a GT year is exactly 371
+      days (53 weeks). Therefore a given GUS date falls on the same weekday
+      every year: implementations MUST NOT introduce any day whose index
+      breaks this invariant.</t>
+      <t>The sequence of GT years is defined by an exact integer recurrence
+      (the solar accumulator), with no floating point arithmetic:
+      year n is GT if and only if r(n) + 1242190 ≥ 7000000, where
+      r(0) = 0 and r(n) = r(n-1) + 1242190 - (7000000 if the previous step
+      saturated). Implementations MUST use integer arithmetic and MUST NOT
+      reproduce the GT sequence by any other approximation, including
+      floating point.</t>
+      <t>The origin is day index 0 = 1 Keuphero of year 0 DY = Julian Day
+      Number 1719313. That value is the only normative anchor of the system.
+      Any translation to a civil calendar (for example, the proleptic
+      Gregorian date of the origin) is a derived result of exact arithmetic
+      and MUST NOT be used as an input of the algorithm.</t>
+    </section>
+
+    <section title="Continuous instant">
+      <t>The GUS instant is a signed integer number of seconds since the
+      origin (day 0, 00:00:00). Days are always exactly 86400 seconds; GUS
+      time MUST NOT apply leap seconds (analogous to TAI). For any day index
+      d and time-of-day (h, m, s): instant = d × 86400 + h×3600 +
+      m×60 + s, with 0 ≤ h ≤ 23, 0 ≤ m ≤ 59, 0 ≤ s ≤ 59.
+      The luminous cycle label is semantic only: SC = 06:00-17:59 and
+      LC = 18:00-05:59; it MUST NOT alter arithmetic.</t>
+    </section>
+
+    <section title="Canonical timestamp format">
+      <t>The canonical timestamp format is:</t>
+      <sourcecode type="abnf"><![CDATA[
+gero-stamp   = gero-date [ gero-time ]
+gero-date    = 1*4DIGIT era "-" month "-" day "-" weekday
+era          = "DY" / "AY"
+month        = 2DIGIT                   ; 00 = Tempalum, 01..12 regular
+day          = 2DIGIT                   ; 1..30, or 1..4/1..11 in Tempalum
+weekday      = %x53 / %x4C / %x4D / %x41 / %x54 / %x56 / %x42
+gero-time    = "-" hms "-" cycle gero-offset
+hms          = 2DIGIT ":" 2DIGIT ":" 2DIGIT   ; 00..23 : 00..59 : 00..59
+cycle        = "SC" / "LC"
+gero-offset  = "TCJ" ("+" / "-") 1*2DIGIT
+]]></sourcecode>
+      <t>Parsers SHOULD accept, and emitters MUST NOT emit, the following
+      relaxations: '.' in place of '-' as separators, single spaces in place
+      of separators, case-insensitive era and weekday letters, era omitted
+      (defaults to DY), and up to 4 digits in the year. Parsers MUST reject
+      hour values above 23 and minute/second values above 59; the optional
+      time block is atomic: parsers MUST NOT accept a partial time block (for
+      example, hours without the TCJ offset).</t>
+      <t>The declared weekday letter and the declared cycle are advisory: the
+      computed weekday and cycle always prevail. A conforming parser either
+      silently corrects them and raises a "weekday_corrected" /
+      "cycle_corrected" flag, or (strict mode) rejects with GERO_EWEEK if the
+      weekday letter is inconsistent. The day-letter conflicts of calendars
+      with mobile weeks do not exist in GUS: the weekday is
+      day_index mod 7 by definition.</t>
+      <t>Error codes: GERO_EINVAL (malformed syntax or field out of range),
+      GERO_ETEMPALUM (Tempalum day that does not exist in that year type),
+      GERO_EWEEK (strict-weekday mismatch).
+      A Tempalum day above 4 in a common year or above 11 in a GT year MUST
+      raise GERO_ETEMPALUM.</t>
+    </section>
+
+    <section title="Signed timestamp (GST)">
+      <t>A GST (Gerarion Signed Timestamp) is a JSON document with fields
+      v (format version, currently 2), ctx (domain-separation constant,
+      "GUS2-TS"), alg (signature algorithm name), ts (canonical stamp), ins
+      (continuous instant), day (day index), pub (public key as hex), sig
+      (signature) and optional anchor (notary inclusion proof).</t>
+      <t>The bytes to sign MUST be exactly:
+      ctx || "\n" || ts || "\n" || ins || "\n" in UTF-8.</t>
+      <t>Production deployments SHOULD use stateless hash-based signatures
+      standardized in FIPS 205 (SLH-DSA-SHA2-128f or SLH-DSA-SHA2-128s, pure
+      mode, with the ctx domain "GUS2-TS"). The one-time nature of the
+      underlying leaves MUST be enforced: a leaf that has signed once MUST
+      never sign again; key trees SHOULD be rotated before exhaustion and the
+      outgoing key SHOULD be archived for verification only, with the rotation
+      anchored in the notary log. The reference implementation may use a
+      WOTS16-Merkle-SHA256 educational scheme for vectors; it MUST NOT be used
+      in production.</t>
+    </section>
+
+    <section title="Daily notary">
+      <t>The notary chains the days:
+      day_root(n) = SHA-256(L("GUS2-DAY") || u64be(n) || tree_root(n) ||
+      day_root(n-1)), where L applies a 4-byte big-endian length prefix to
+      each part. Leaves are SHA-256(0x00 || payload) and internal nodes are
+      SHA-256(0x01 || left || right); an odd trailing leaf is duplicated, and
+      an empty day hashes to SHA-256("GUS2-EMPTY"). Days MUST be sealed in
+      strict order (0, 1, 2, ...) and empty days MUST also be sealed, so no
+      gap can be silently inflated. Each replica publishes its day roots
+      independently; a consumer accepts a day when at least k of n replicas
+      agree and each accepted root derives correctly. History editing is only
+      invisible if the attacker rewrites every independent replica without any
+      external observer noticing the divergence.</t>
+    </section>
+
+    <section title="Conformance">
+      <t>The normative test vectors of GUS 2.1 are published as a
+      machine-readable file (gus-normative-001.json) in the specification
+      repository. An implementation is conforming if and only if it passes
+      100% of the categories of that file that it claims to support; the
+      calendar, format and instant categories are mandatory for every
+      implementation, and the signature/notary categories are mandatory for
+      implementations that emit or verify GST. Implementations MUST consume
+      the published vector file directly rather than copying vectors by hand.</t>
+      <t>At the time of writing, three independent implementations pass the
+      core categories with zero divergence under differential fuzzing: the
+      Python reference, the JavaScript (web) kernel, and an independent C
+      implementation.</t>
+    </section>
+
+    <section title="IANA Considerations">
+      <t>This document, if accepted, requests the following registrations.</t>
+
+      <section title="Media type registration">
+        <t>Type name: application. Subtype name: gus-gst+json. Encoding:
+        UTF-8 JSON. Security considerations: Section of this document.
+        Interoperability: see the conformance clause. Applications that use
+        this media type: signed timestamping of documents, API responses,
+        logs. Publications: this specification. Person: verared.
+        Intended usage: COMMON.</t>
+      </section>
+
+      <section title="GUS Error Codes registry">
+        <t>A new registry "Gerarion Universal Standard Error Codes" with
+        policy "Specification Required". The initial registry contains:
+        GERO_EINVAL (malformed syntax or field out of range),
+        GERO_ETEMPALUM (Tempalum day nonexistent for the year type),
+        GERO_EWEEK (declared weekday letter inconsistent with the computed
+        one, strict mode). New codes MUST be registered here and MUST NOT be
+        assigned by implementers unilaterally.</t>
+      </section>
+
+      <section title="GUS TCJ Offsets registry">
+        <t>The TCJ offset is an integer number of hours in the range -23..+23.
+        A new registry "Gerarion Universal Standard TCJ Offsets" assigns
+        semantic names to offsets. Initial entries: TCJ+0 (GUS reference
+        offset, default), TCJ-7 (Example Zone). Offsets outside -23..+23
+        MUST be rejected with GERO_EINVAL. The registry is semantic, not
+        computational: arithmetic never consumes the offset.</t>
+      </section>
+
+      <section title="GUS Certification-Fork Epochs registry">
+        <t>A fork of GUS differs only in epoch constants (origin JDN and
+        week offset); the algorithm is identical. A new registry
+        "Gerarion Universal Standard Certification-Fork Epochs" with policy
+        "Specification Required" records for each fork: mnemonic (short
+        identifier, never a calendar-era claim), origin JDN, weekday offset,
+        specification version, and status. The initial entry is "GUS"
+        (origin JDN 1719313, weekday offset 0, this document). Certified
+        forks MUST be verified against their own vector files derived by the
+        same exact arithmetic.</t>
+      </section>
+    </section>
+
+    <section title="Security Considerations">
+      <t>The threat model of GUS classifies attackers from individual hosts
+      to coordinated notary capture; the full model, including the cost
+      analysis (forgery of a current GST requires inverting the preimage
+      resistance of SHA-256, on the order of 2^256 classical operations and
+      at most a Grover speedup, or simultaneously rewriting every independent
+      notary replica without external detection), is maintained in the
+      specification repository (docs/spec/threat-model.md) and MUST be
+      consulted for any deployment decision.</t>
+      <t>Implementations MUST NOT roll their own signature schemes for
+      production: the reference hash-only scheme exists to generate and
+      verify normative vectors, and production MUST use audited libraries of
+      standardized schemes (FIPS 205 SLH-DSA, FIPS 204 ML-DSA, RFC 8554 LMS,
+      RFC 8391 XMSS). One-time leaf discipline is mandatory and its violation
+      is a catastrophic key disclosure. Verifiers MUST treat malformed input
+      (including hostile JSON, absurd field lengths, and non-canonical
+      whitespace) as invalid, never as a parser crash: the conformance and
+      fuzzing suites include hostile-input vectors for exactly this reason.</t>
+    </section>
+
+    <section title="Errata process">
+      <t>Corrections to this document follow the repository errata process:
+      each errata entry carries an identifier (E-NN), the affected version,
+      the erroneous text, the corrected fact or behavior, and the vector or
+      test that demonstrates the correction. An errata that changes normative
+      behavior requires a new vector set and a comment period before the next
+      specification version. The corpus v1.2 errata (E-01 through E-07) are
+      recorded in the specification repository.</t>
+    </section>
+
+    <section title="IANA considerations for existing registrations">
+      <t>None. This document does not modify any existing IANA registry and
+      does not require any immediate action; the registrations in the IANA
+      Considerations section are requested for the standardization track.</t>
+    </section>
+  </middle>
+
+  <back>
+    <references title="Normative References">
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
+    </references>
+    <references title="Informative References">
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.5234.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8391.xml"/>
+      <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8554.xml"/>
+      <reference anchor="FIPS205" target="https://csrc.nist.gov/pubs/fips/205/final">
+        <front><title>Stateless Hash-Based Digital Signature Standard</title>
+        <author><organization>NIST</organization></author>
+        <date year="2024"/></front>
+      </reference>
+      <reference anchor="GUS-VEC" target="https://github.com/verared/gerarion/blob/main/vectors/gus-normative-001.json">
+        <front><title>GUS Normative Test Vectors (gus-normative-001)</title>
+        <author><organization>verared</organization></author></front>
+      </reference>
+    </references>
+    <section title="Fundamental constants">
+      <artwork><![CDATA[
+ORIGIN_JDN          = 1719313           (day index 0)
+SOLAR_DELTA_UD      = 1242190           (microdays per common year excess)
+SOLAR_THRESHOLD_UD  = 7000000           (Great Tempalum threshold, microdays)
+YEAR_COMMON_DAYS    = 364               (52 weeks)
+YEAR_GRAN_DAYS      = 371               (53 weeks)
+SECS_PER_DAY        = 86400             (no leap seconds)
+GT year sequence    = 5, 11, 16, 22, 28, 33, 39, 45, ...
+canonical context   = "GUS2-TS"         (GST domain separation)]]></artwork>
+    </section>
+    <section title="Acknowledgements">
+      <t>GUS was created by Gerardo Loyola (github.com/geroiloyola) and is
+      maintained by the verared project (future foundation) (github.com/verared). The
+      historical and cultural background of the calendar is documented, as
+      non-normative complementary material, in the papers of the
+      specification repository (docs/papers/).</t>
+    </section>
+  </back>
+</rfc>

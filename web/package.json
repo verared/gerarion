@@ -1,0 +1,37 @@
+{
+  "name": "gerarion-kernel",
+  "version": "2.3.4-alpha.1",
+  "description": "Gerarion Universal Standard (GUS) kernel: calendario regular, instantes y formato canonico GTS — implementacion de referencia en JavaScript (ESM, cero dependencias)",
+  "type": "module",
+  "main": "gerarion.mjs",
+  "exports": {
+    ".": "./gerarion.mjs"
+  },
+  "files": [
+    "gerarion.mjs",
+    "conformance.mjs",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node tests.mjs",
+    "conformance": "node conformance.mjs",
+    "conformance:cli": "node conformance.mjs --cli"
+  },
+  "keywords": [
+    "calendar",
+    "timestamp",
+    "post-quantum",
+    "cryptography",
+    "merkle",
+    "time",
+    "gus"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/verared/gerarion.git"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

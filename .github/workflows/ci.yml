@@ -1,0 +1,31 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install pytest
+      - run: python -m pip install -e .[slh]
+      - run: python -m pytest tests/ -q
+      - name: Conformance JS (normative vectors)
+        run: |
+          node web/tests.mjs
+          node web/conformance.mjs
+          node web/profiles-conformance.mjs
+      - name: Conformance C (independent implementation)
+        run: make -C impl-c conformance
+      - name: Differential fuzzing Python-JS-C
+        run: python tools/fuzz_diff.py --n 500
+        # Manual runs use --n 1500 (CI keeps 500 for a ~15 min job budget);
+        # the CI run is statistical coverage, the vector set is the hard proof.
