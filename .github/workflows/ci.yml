@@ -28,6 +28,8 @@ jobs:
       - name: Conformance C (independent implementation)
         run: make -C impl-c conformance
       - name: Differential fuzzing Python-JS-C
-        run: python tools/fuzz_diff.py --n 500
+        run: |
+          make -C impl-c gus-cli
+          python tools/fuzz_diff.py --n 500
         # Manual runs use --n 1500 (CI keeps 500 for a ~15 min job budget);
         # the CI run is statistical coverage, the vector set is the hard proof.
