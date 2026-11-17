@@ -3,34 +3,87 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Calculador Gerarion — GUS 2.0</title>
+<title>Gerarion · Portal y Traductor Cronológico Universal — GUS 2.1.0</title>
+<meta name="description" content="Traductor cronológico universal: Gerarion (GUS v2.1.0), gregoriano, juliano, egipcio, etíope, bahá'í, maya, hebreo, islámico y chino. 100% local, cero dependencias." />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Calculador Gerarion</h1>
-    <p class="tagline">Gerarion Universal Standard (GUS) v2.0 — tiempo regular, continuo y verificable</p>
+  <header class="site-header">
+    <div class="brand">
+      <h1>Gerarion</h1>
+      <p class="tagline">Portal &amp; Traductor Cronológico Universal — <span class="mono">GUS v2.1.0</span></p>
+    </div>
+    <div class="header-actions">
+      <a class="chip link-chip" href="https://verared.github.io/gerarion/" title="Demo interactiva en vivo">docs</a>
+      <a class="chip link-chip" href="https://github.com/verared/gerarion" title="Repositorio normativo y Releases">repo</a>
+      <button id="theme-toggle" class="chip" type="button" title="Cambiar tema claro/oscuro">tema</button>
+    </div>
   </header>
 
   <main>
-    <section class="card">
-      <h2>Rel vivo</h2>
-      <div id="now-gero" class="big">—</div>
+    <!-- Reloj en vivo -->
+    <section class="card clock-card" aria-labelledby="clock-title">
+      <div class="card-head">
+        <h2 id="clock-title">Reloj en vivo</h2>
+        <div class="clock-controls">
+          <select id="clock-tz" class="chip" title="Zona de referencia">
+            <option value="utc">TCJ+0 (UTC)</option>
+            <option value="local">TCJ local</option>
+          </select>
+          <button id="now-copy" class="chip" type="button" title="Copiar la marca completa">copiar</button>
+        </div>
+      </div>
+      <div id="now-gero" class="big mono">—</div>
       <div id="now-details" class="dim"></div>
+      <div class="cycle-box">
+        <span id="now-cycle" class="cycle">—</span>
+        <span class="cycle-legend">SC 06:00–17:59 · LC 18:00–05:59</span>
+      </div>
+      <div class="metrics">
+        <span class="metric"><label>day_index</label><b id="now-dayindex" class="mono">—</b></span>
+        <span class="metric"><label>JDN</label><b id="now-jdn" class="mono">—</b></span>
+        <span class="metric"><label>instant</label><b id="now-instant" class="mono">—</b></span>
+      </div>
     </section>
 
-    <section class="card">
-      <h2>Gregoriano → Gerarion</h2>
-      <form id="form-greg">
+    <!-- Piedra Rosetta -->
+    <section class="card" aria-labelledby="rosetta-title">
+      <div class="card-head">
+        <h2 id="rosetta-title">Piedra Rosetta · traductor universal</h2>
+      </div>
+      <p class="dim">
+        Dimensiona cualquier fecha —incluida la era <b>AY</b> con años de 5–6
+        dígitos (<tt>12000AY-01-01-S</tt>)— en un solo calendario y se traduce
+        a los <b>10 sistemas</b> a la vez: el <em>day_index</em> GUS y su JDN
+        son el pivote matemático.
+      </p>
+      <form id="form-uni" class="uni-form">
+        <div class="mode-row" id="uni-modes" role="radiogroup"></div>
+        <div class="uni-input">
+          <label class="dim" for="uni-in" id="uni-label"></label>
+          <input type="text" id="uni-in" spellcheck="false" autocomplete="off" class="mono" />
+          <button type="submit">Traducir</button>
+        </div>
+      </form>
+      <div id="rosetta-status" class="output dim"></div>
+      <div id="rosetta-grid" class="cal-grid"></div>
+      <div class="presets-row dim" id="presets"></div>
+    </section>
+
+    <!-- Quick: gregoriano -> gerarion -->
+    <section class="card" aria-labelledby="greg-title">
+      <h2 id="greg-title">Gregoriano → Gerarion</h2>
+      <form id="form-greg" class="inline-form">
         <input type="date" id="greg-date" min="0001-01-01" required />
         <button type="submit">Convertir</button>
       </form>
       <div id="output-greg" class="output"></div>
     </section>
 
-    <section class="card">
-      <h2>Gerarion → Gregoriano</h2>
-      <form id="form-gero">
+    <!-- Quick: gerarion -> gregoriano (regla 7 completa, flags, errores) -->
+    <section class="card" aria-labelledby="gero-title">
+      <h2 id="gero-title">Gerarion → todo</h2>
+      <form id="form-gero" class="inline-form">
         <input
           type="text"
           id="gero-ts"
@@ -43,26 +96,47 @@
       <div id="output-gero" class="output"></div>
       <p class="dim hint">
         Letras de día: S L M A T V B (Soludyia, Loondyia, Mardyia, Aisterdyia,
-        Trustdyia, Viendyia, Sabatyeh). Eras: DY / AY. Mes 00 = Tempalum.
+        Trustdyia, Viendyia, Sabatyeh). Eras DY/AY · mes 00 = Tempalum.
       </p>
     </section>
 
-    <section class="card">
-      <h2>Verificación propia del navegador</h2>
+    <!-- Intervalos -->
+    <section class="card" aria-labelledby="int-title">
+      <h2 id="int-title">Distancia entre fechas</h2>
       <p class="dim">
-        Esta página ejecuta los mismos vectores normativos que la suite
-        oficial (tests/test_calendar.py y web/tests.mjs). Si algo fallara,
-        la página misma te lo delata: la spec y el port no pueden divergir.
+        Dos fechas en cualquier formato soportado (marca GUS o
+        <tt>AAAA-MM-DD</tt>); calcula la distancia exacta cruzando
+        libremente entre era <b>AY</b> y era <b>DY</b>.
       </p>
-      <pre id="selftest" class="mono selftest">ejecutando vectores…</pre>
+      <form id="form-int" class="inline-form">
+        <input type="text" id="int-a" class="mono" placeholder="0001AY-00-11-B" spellcheck="false" />
+        <span class="arrow">→</span>
+        <input type="text" id="int-b" class="mono" placeholder="2031DY-01-01-S" spellcheck="false" />
+        <button type="submit">Calcular</button>
+      </form>
+      <div id="output-int" class="output"></div>
+    </section>
+
+    <!-- Autoverificación normativa -->
+    <section class="card" aria-labelledby="selftest-title">
+      <h2 id="selftest-title">Autoverificación normativa en vivo</h2>
+      <p class="dim">
+        Tu navegador ejecuta el mismo vector normativo que la suite oficial
+        (<tt>gus-normative-002</tt>). Si el portal y la spec alguna vez
+        divergieran, la página misma lo delata.
+      </p>
+      <pre id="selftest" class="mono selftest" tabindex="0">ejecutando vectores…</pre>
     </section>
   </main>
 
   <footer>
     <p class="dim">
-      Matemática local, cero backend, cero cookies. La precisión del "rel vivo"
-      es la de tu reloj interno; el tiempo notariado (GST + notario) es otra
-      capa — ver <a href="https://github.com/verared/gerarion">el repositorio</a>.
+      Matemática 100% local: cero backend, cero cookies, cero telemetría, cero
+      dependencias. La exactitud histórica sigue la convención declarada de
+      cada calendario (nota en su tarjeta). Las marcas temporalmente
+      verificables (GST + notario Merkle) viven en el repo:
+      <a href="https://github.com/verared/gerarion">github.com/verared/gerarion</a> —
+      spec <a href="https://github.com/verared/gerarion/blob/main/docs/spec/gus-2.1.0.md">gus-2.1.0.md</a>.
     </p>
   </footer>
 

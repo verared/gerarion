@@ -25,6 +25,7 @@ jobs:
           node web/tests.mjs
           node web/conformance.mjs
           node web/profiles-conformance.mjs
+          node web/calendars.test.mjs
       - name: Conformance C (independent implementation)
         run: make -C impl-c conformance
       - name: Differential fuzzing Python-JS-C

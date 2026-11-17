@@ -85,6 +85,61 @@ with sync_playwright() as p:
     check("gero->greg: Tempalum día 7 en año no-GT => GERO_ETEMPALUM",
           "GERO_ETEMPALUM" in out6, out6)
 
+    # 6. Piedra Rosetta: preset Younger Dryas (12000AY) -> cuadrícula de 10
+    page.fill("#gero-ts", "12000AY-01-01-S")
+    page.click("#form-gero button[type=submit]")
+    tiles = page.locator("#rosetta-grid .cal-tile").count()
+    check("rosetta: cuadrícula de 10 calendarios", tiles == 10, f"tiles={tiles}")
+    grid_text = page.text_content("#rosetta-grid") or ""
+    check("rosetta: 12000AY-01-01-S en la tarjeta GUS", "12000AY-01-01-S" in grid_text, grid_text[:200])
+    check("rosetta: gregoriano de 12000AY-01-01 = -12005-03-21", "-12005-03-21" in grid_text, grid_text[:300])
+    check("rosetta: maya presente (cuenta larga)", ".0." in grid_text, grid_text[:200])
+
+    # 7. Presets de 1 clic: Nuvivid VII 0001AY-00-11-B (día -1)
+    page.click("#presets button:has-text('Nuvivid VII')")
+    page.wait_for_timeout(150)
+    grid_text = page.text_content("#rosetta-grid") or ""
+    check("preset Nuvivid VII: tarjeta GUS = 0001AY-00-11-B", "0001AY-00-11-B" in grid_text, grid_text[:200])
+
+    # 8. Preset Cruxyphi (2031DY-01-12-T; día sagrado del mes Keuphero)
+    page.click("#presets button:has-text('Cruxyphi')")
+    page.wait_for_timeout(150)
+    grid_text = page.text_content("#rosetta-grid") or ""
+    check("preset Cruxyphi: tarjeta GUS = 2031DY-01-12-T", "2031DY-01-12-T" in grid_text, grid_text[:200])
+
+    # 9. Calculadora de intervalos cruzando eras AY -> DY
+    page.fill("#int-a", "0001AY-00-11-B")
+    page.fill("#int-b", "2031DY-01-01-S")
+    page.click("#form-int button[type=submit]")
+    out7 = page.text_content("#output-int") or ""
+    # day -1 -> 741804: distancia 741805
+    check("intervalos AY->DY: 741.805 días", "741.805" in out7.replace("\u202f", ".") or "741805" in out7, out7)
+    check("intervalos AY->DY: semanas exactas (741805/7)", "105.97" in out7 or "10597" in out7.replace(".", ""), out7)
+    check("intervalos AY->DY: segundos SI", "64.091.952.000" in out7 or "64091952000" in out7, out7)
+
+    # 10. Traductor universal: alternativa maya directa
+    page.click("#uni-modes button:has-text('Maya')")
+    page.fill("#uni-in", "13.0.14.1.19")
+    page.click("#form-uni button[type=submit]")
+    grid_text = page.text_content("#rosetta-grid") or ""
+    check("traductor maya: 13.0.14.1.19 -> GUS baktun en cuadrícula", "2031DY-09-06-S" in grid_text or "day_index 742049" in page.text_content("#rosetta-status") or "", grid_text[:300])
+
+    # 11. Tema claro/oscuro: el toggle alterna data-theme
+    page.click("#theme-toggle")
+    theme = page.get_attribute("html", "data-theme") or ""
+    check("tema: toggle alterna a claro", theme == "light", repr(theme))
+    page.click("#theme-toggle")
+    theme = page.get_attribute("html", "data-theme") or ""
+    check("tema: toggle vuelve a oscuro", theme == "", repr(theme))
+
+    # 12. Copy del reloj: aparece el toast de confirmación
+    page.click("#now-copy")
+    page.wait_for_timeout(250)
+    toast_visible = page.locator(".toast.show").count() > 0
+    toast_text = (page.text_content(".toast") or "") if toast_visible else ""
+    check("copiar reloj en vivo: toast de confirmación", toast_visible and "Copiado" in toast_text,
+          f"toast_visible={toast_visible}, texto={toast_text!r}")
+
     browser.close()
 
 fails = [r for r in results if not r[1]]

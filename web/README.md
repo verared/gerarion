@@ -1,4 +1,16 @@
-# Calculador web — GUS 2.0
+# Portal y Traductor Cronológico Universal — GUS 2.1.0
+
+Portal web del estándar Gerarion: reloj en vivo (marca canónica completa con
+ciclo luminoso y `day_index`/JDN/instant), traductor cronológico universal
+(Piedra Rosetta de 10 calendarios: Gerarion, gregoriano proléptico, juliano,
+egipcio, etíope, bahá'í, maya/hebreo/islámico/chino vía `Intl`), presets
+históricos, calculadora de distancias entre fechas y autoverificación de los
+vectores normativos ejecutada en el propio navegador.
+
+Módulos: `gerarion.mjs` (kernel), `calendars.mjs` (puentes multi-calendario
+con `day_index`/JDN como pivote), `tests.mjs`, `conformance.mjs`,
+`profiles-conformance.mjs`, `calendars.test.mjs` (pruebas unitarias de los
+puentes).
 
 Convertidor bidireccional gerarion ↔ gregoriano con reloj vivo y
 verificación de vectores en el propio navegador. 100% estático: HTML + CSS +
