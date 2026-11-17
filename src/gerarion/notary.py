@@ -92,6 +92,11 @@ class DayNotary:
     def previous_root(self) -> Optional[bytes]:
         return self._prev_root
 
+    @property
+    def current_day(self) -> int:
+        """El día que está recibiendo marcas ahora (aún sin sellar)."""
+        return self._day
+
     def append(self, payload: bytes) -> int:
         """Añade una marca (bytes canónicos) al día en curso; devuelve su índice de hoja."""
         index = len(self._pending)
@@ -172,7 +177,16 @@ class DayNotary:
         return True
 
     def export(self) -> str:
-        return json.dumps({"days": list(self._days.values())}, indent=2)
+        """Exporta el log completo INCLUYENDO las entradas pendientes sin
+        sellar (S6): una réplica reiniciada desde este export no pierde
+        marcas ni reutiliza índices de hoja."""
+        return json.dumps(
+            {
+                "days": list(self._days.values()),
+                "pending": [leaf.hex() for leaf in self._pending],
+            },
+            indent=2,
+        )
 
     @classmethod
     def import_json(cls, raw: str) -> "DayNotary":
@@ -183,4 +197,8 @@ class DayNotary:
             notary._days[day] = dict(rec)
             notary._chain[day] = bytes.fromhex(rec["day_root"])
             notary._prev_root = bytes.fromhex(rec["day_root"])
+        # restaura las pendientes y el cursor de día (los índices de hoja de
+        # las pendientes siguen siendo válidos tras el reinicio)
+        notary._pending = [bytes.fromhex(x) for x in data.get("pending", [])]
+        notary._day = (max(notary._days) + 1) if notary._days else 0
         return notary

@@ -8,6 +8,25 @@
 Live demo: **<https://verared.github.io/gerarion/>** — EN spec below;
 🇪🇸 Español: [README.es.md](README.es.md).
 
+> ⚠ **STATUS: EARLY BETA — NOT FOR PRODUCTION SECURITY.**
+> The reference hash-only signature scheme, the trust root and the notary
+> are **reference implementations for evaluation only**: they are NOT
+> suitable for production security decisions and are not cryptographically
+> audited. See [SECURITY.md](SECURITY.md) and [docs/threat-model.md](docs/threat-model.md).
+> Recommended production path: an audited SLH-DSA (FIPS 205) library
+> and/or an external RFC 3161 TSA.
+
+## Try online (no install, no account)
+
+The **date translator** runs entirely in your browser at
+<https://verared.github.io/gerarion/>: type a date in any of ten calendars
+(Gerarion GUS 2.1.0 incl. deep `AY` years, proleptic Gregorian/Julian,
+Egyptian, Ethiopic, Bahá'í, Maya Long Count, Hebrew, Islamic, Chinese) and
+get every equivalent at once — shareable per-date links (`#cal=…&d=…`),
+live GUS clock, month calendar and interval calculator. No network calls,
+no cookies, no accounts; it keeps working offline once loaded.
+For CUDA-free install options see [Distribution](#distribution) below.
+
 > **STATUS: BETA (alpha-final).** Spec **GUS v2.1.0**: the Gran Tempalum
 > rule is symmetric and infinite in both eras (DY/AY), and the UTC/TAI
 > boundary is normative (`docs/TODO-pendientes.md` TODO-001 closed; only

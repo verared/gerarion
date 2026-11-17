@@ -56,7 +56,6 @@ def _load_key(path: str) -> hashots.WotsMerkleSigner:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     return hashots.WotsMerkleSigner(seed=bytes.fromhex(data["seed"]), height=data["height"])
 
-
 def cmd_keygen(args) -> int:
     seed = secrets.token_bytes(32)
     signer = hashots.WotsMerkleSigner(seed=seed, height=args.height)

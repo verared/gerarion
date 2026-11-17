@@ -52,6 +52,55 @@ function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
+// ---------------------------------------------------------------------------
+// Enlace compartible: #cal=<modo>&d=<texto> (solo hash; ASCII en el modo;
+// el texto va URL-encodeado; sin datos personales, es la consulta tuya)
+// ---------------------------------------------------------------------------
+
+let lastHashWritten = null;
+
+function writeHash(modeId, text) {
+  lastHashWritten = `#cal=${modeId}&d=${encodeURIComponent(text)}`;
+  if (lastHashWritten !== location.hash) {
+    history.replaceState(null, '', lastHashWritten);
+  }
+}
+
+function applyHash() {
+  const m = /^#cal=([a-zA-Z0-9]+)&d=(.+)$/.exec(location.hash);
+  if (!m) return false;
+  const mode = MODES.find((mm) => mm.id === m[1]);
+  if (!mode) return false;
+  let res;
+  try {
+    res = mode.toJdn(decodeURIComponent(m[2]));
+  } catch {
+    return false;
+  }
+  lastHashWritten = location.hash;
+  setMode(mode, decodeURIComponent(m[2]));
+  applyPivot(res, `enlace compartido: ${res.label}`, null);
+  return true;
+}
+
+window.addEventListener('hashchange', () => {
+  if (location.hash === lastHashWritten) return;
+  applyHash();
+});
+
+function bindShare() {
+  const btn = $('share-link');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (lastRes) writeHash(lastRes.modeId, lastRes.text);
+    const url = `${location.origin}${location.pathname}${location.hash}`;
+    navigator.clipboard.writeText(url).then(
+      () => toast('Enlace copiado al portapapeles'),
+      () => toast('No se pudo copiar el enlace'),
+    );
+  });
+}
+
 function todayJdnUtc() {
   const now = new Date();
   return ORIGIN_JDN + dayIndexFromGregorian(
@@ -191,6 +240,7 @@ function bindClock() {
 // ---------------------------------------------------------------------------
 
 let currentJdn = todayJdnUtc();
+let lastRes = null; // última traducción: { modeId, text, jdn } → alimenta el enlace compartible
 
 // ---------------------------------------------------------------------------
 // Cuadrícula de calendarios (Piedra Rosetta): 10 tarjetas desde un JDN
@@ -455,9 +505,9 @@ function setOrigin(modeId, text) {
   setMode(mode, text);
   try {
     const res = mode.toJdn(text);
-    applyPivot(res, `recibido desde tarjeta ${mode.label.toLowerCase()}`);
+    applyPivot(res, `recibido desde tarjeta ${mode.label.toLowerCase()}`, { id: mode.id, text });
   } catch {
-    // si el texto no re-parses (p. ej. fuera de rango Intl), deja la entrada lista
+    // si el texto no re-parsea (p. ej. fuera de rango Intl), deja la entrada lista
     $('uni-in').focus();
   }
 }
@@ -488,16 +538,22 @@ function bindTranslator() {
     try {
       res = currentMode.toJdn(input.value);
     } catch (err) {
-      status.textContent = `Entrada inválida: ${err.message}`;
+      status.textContent = `Formato esperado (${currentMode.hint}) — ej.: ${currentMode.placeholder}` +
+        (err && err.message ? `. Detalle: ${err.message}` : '') +
+        '. Revisa el calendario de origen seleccionado arriba.';
       status.classList.add('error');
       return;
     }
-    applyPivot(res, `traducido desde ${currentMode.label.toLowerCase()}`);
+    applyPivot(res, `traducido desde ${currentMode.label.toLowerCase()}`, { id: currentMode.id, text: input.value });
   });
 }
 
-function applyPivot(res, pivotLabel) {
+function applyPivot(res, pivotLabel, hashInfo) {
   currentJdn = res.jdn;
+  if (hashInfo) {
+    lastRes = { modeId: hashInfo.id, text: hashInfo.text, jdn: res.jdn };
+    writeHash(hashInfo.id, hashInfo.text);
+  }
   const status = $('rosetta-status');
   const di = res.jdn - ORIGIN_JDN;
   status.textContent = `Pivote: ${res.label} → day_index ${di} → JDN ${res.jdn}`;
@@ -826,10 +882,13 @@ function main() {
   bindIntervals();
   bindMonthNav();
   bindHoyUtc();
+  bindShare();
   runSelfTest();
-  setMode(MODES[0]);
-  renderGrid($('rosetta-grid'), currentJdn, 'hoy UTC (estado inicial)');
-  renderMonth();
+  if (!applyHash()) {
+    setMode(MODES[0]);
+    renderGrid($('rosetta-grid'), currentJdn, 'hoy UTC (estado inicial)');
+    renderMonth();
+  }
 }
 
 main();

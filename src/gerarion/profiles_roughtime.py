@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import hmac
 import json
 from typing import Iterable, Optional
 
@@ -210,11 +211,17 @@ def make_receipt(nonce: bytes, midpoint_rfc3339: str, radius_s: int,
     }
 
 
-def verify_receipt(receipt: dict, trusted_pubkeys_b64: Iterable[str] = ()) -> dict:
+def verify_receipt(receipt: dict, trusted_pubkeys_b64: Iterable[str] = (),
+                   expected_nonce: Optional[bytes] = None) -> dict:
     """Verifica el receipt y devuelve la ventana [min, max] en instante GUS.
 
     Devuelve {"ok": bool, "errors": [...], "window": (lo, hi) | None}.
     La ventana es la aserción del testigo, no la verdad del instante.
+
+    `expected_nonce` (S7): cuando el verificador conoce el nonce de SU
+    consulta (el hash del bundle/artefacto que envió), debe pasarlo aquí:
+    el receipt solo prueba existencia si responde a ESE nonce; uno que
+    responda a otro nonce no dice nada sobre la marca verificada.
     """
     errors = []
     if receipt.get("type") != RECEIPT_TYPE:
@@ -233,7 +240,13 @@ def verify_receipt(receipt: dict, trusted_pubkeys_b64: Iterable[str] = ()) -> di
     radius = int(receipt["radius_s"])
     if radius < 0:
         errors.append("radius negativo: aserción de ventana inválida, receipt no usable")
-    nonce = signed.split(b"\n")[1]
+    parts_signed = signed.split(b"\n")
+    if len(parts_signed) < 3:
+        return {"ok": False, "errors": ["bytes firmados malformados"], "window": None}
+    nonce = parts_signed[1]
+    if expected_nonce is not None and not hmac.compare_digest(nonce, expected_nonce):
+        errors.append("el nonce del receipt no coincide con el nonce de la consulta: "
+                      "el receipt no prueba la existencia de LA marca verificada")
     recomputed = signed_bytes(nonce, receipt["midpoint_rfc3339"], radius)
     if recomputed != signed:
         errors.append("los bytes firmados no corresponden a los campos del receipt")

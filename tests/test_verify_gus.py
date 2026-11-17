@@ -51,7 +51,7 @@ def _run(doc_json: str):
 def test_good_gst_verifies(good_doc):
     proc = _run(good_doc.to_json())
     assert proc.returncode == 0, proc.stderr
-    assert proc.stdout.startswith("OK " + good_doc.ts)
+    assert proc.stdout.startswith("FIRMA_VALIDA " + good_doc.ts)
 
 
 def test_tampered_time_rejected(good_doc):

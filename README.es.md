@@ -5,13 +5,32 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 
 [![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
 
-> **ESTADO: BETA (alpha-final).** Spec **GUS v2.1.0**: el Gran Tempalum
-> es simétrico e infinito en ambas eras (DY/AY) y la frontera UTC/TAI es
-> normativa (`docs/TODO-pendientes.md` TODO-001 cerrado; queda abierto
-> D-001, medianoche TAI, como propuesta 2.x). Antes de la v1.0 quedan
-> los adaptadores criptográficos opcionales.
+> ⚠ **ESTADO: BETA TEMPRANA — NO APTO PARA SEGURIDAD DE PRODUCCIÓN.**
+> El esquema hash-only de referencia, la raíz de confianza y el notario
+> son **implementaciones de referencia solo para evaluación**: no sirven
+> para decisiones de seguridad reales y no tienen auditoría criptográfica.
+> Vía recomendada para producción: biblioteca SLH-DSA (FIPS 205) auditada
+> y/o TSA externa (RFC 3161). Ver [SECURITY.md](SECURITY.md) y
+> [docs/threat-model.md](docs/threat-model.md).
+
+> **Spec GUS v2.1.0:** el Gran Tempalum es simétrico e infinito en ambas
+> eras (DY/AY) (`docs/TODO-pendientes.md` TODO-001 cerrado; queda abierto
+> D-001, medianoche UTC vs TAI, como DECISIÓN DEL AUTOR para 2.x).
 
 **Tiempo regular, universal y verificable.**
+
+## Probar en línea (sin instalar nada, sin cuentas)
+
+El **traductor de fechas** corre íntegramente en el navegador en
+<https://verared.github.io/gerarion/>: introduce una fecha en cualquiera de
+los diez calendarios soportados (Gerarion GUS 2.1.0 —incluidos años AY de
+5–6 dígitos—, gregoriano/juliano prolépticos, egipcio, etíope, bahá'í,
+cuenta larga maya, hebreo, islámico y chino) y obtén todas las equivalencias
+de golpe, con enlaces compartibles por fecha (`#cal=…&d=…`), reloj GUS en
+vivo, calendario del mes y calculadora de distancias. Sin peticiones de red,
+sin cookies, sin cuentas; funciona sin conexión una vez cargada.
+Para opciones de instalación (Python, JS, C11) por GitHub Releases, mira la
+sección de distribución del README en inglés `README.md`.
 
 Un estándar de tiempo que integra tres capas bajo una misma especificación
 máquina-verificable:
