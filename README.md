@@ -394,6 +394,19 @@ not by patch:
 
 Declared with the same force as the guarantees:
 
+## What is ready and what is not (BETA)
+
+| Layer | Status | One honest sentence |
+|---|---|---|
+| Calendar kernel (12×30+Tempalum, symmetric GT) | **stable** | Deterministic integer arithmetic, verified by 22 normative vectors × 3 implementations + 1500-case fuzz differential. |
+| Multi-calendar web conversion | **stable** | Pure client-side, 0 network requests, dense 1900–2100 round-trips for Hebrew/Chinese with 0 failures (UTC fixed; historical convention limits documented per card). |
+| GUS-3339 (RFC 3339 subset) | **stable (narrow)** | Strict parser with a shared negative vector set; it is not a general RFC 3339 parser by design. |
+| GUS-3161 (TSA) | **beta** | Reference adapter tested locally with synthetic TSA; depends on the operator's TSA trust. |
+| GUS-Roughtime | **beta** | Receipt verification with nonce binding; Ed25519 is classical (not post-quantum); not the complete Roughtime wire protocol. |
+| Reference hash-only signature (WOTS16-MERKLE-REF) | **do not use in production** | Historical reuse issues found and fixed by disabling by default (`GUS_ALLOW_INSECURE_REF`); educational use only. |
+| SLH-DSA adapter (FIPS 205, optional dep) | **beta** | Works with slh-dsa 0.2.5; the library itself is neither audited nor FIPS-validated here. |
+| Notary (daily Merkle + quorum + trust root) | **no use in production** | Beta hardening done (S2–S6); an external cryptographic review is still required before any production use. |
+
 1. **It does not guarantee that the signed time is *true*.** A GST proves a
    mark existed and was committed **no later than** the notarial anchor it
    references (upper bound). Whoever holds the key can sign any time; the

@@ -1,7 +1,7 @@
 {
   "name": "gerarion-kernel",
-  "version": "2.4.0",
-  "description": "Gerarion Universal Standard (GUS 2.1.0) kernel: calendario regular, instantes y formato canónico GUS — implementación de referencia en JavaScript (ESM, cero dependencias)",
+  "version": "2.5.0-beta.1",
+  "description": "Gerarion Universal Standard (GUS 2.1.0) kernel: calendario computacional con años de 364/371 días, instantes y formato canónico — implementación de referencia en JavaScript (ESM, cero dependencias)",
   "type": "module",
   "main": "gerarion.mjs",
   "exports": {

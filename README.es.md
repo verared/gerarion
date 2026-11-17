@@ -304,6 +304,19 @@ diseño, no como parche:
 
 Declarado con la misma fuerza que las garantías:
 
+## Qué está listo y qué no (BETA)
+
+| Capa | Estado | Una frase honesta |
+|---|---|---|
+| Kernel calendárico (12×30+Tempalum, GT simétrico) | **estable** | Aritmética entera determinista, verificada por 22 vectores normativos × 3 implementaciones + fuzz diferencial de 1500 casos. |
+| Conversión multicalendario web | **estable** | 100 % cliente, 0 peticiones de red, ida y vuelta densa 1900–2100 hebreo/chino con 0 fallos (UTC fijado; límites históricos documentados por tarjeta). |
+| GUS-3339 (subconjunto RFC 3339) | **estable (estrecho)** | Parser estricto con vector negativo compartido; no es un parser RFC 3339 general, a propósito. |
+| GUS-3161 (TSA) | **beta** | Adaptador de referencia probado en local con TSA sintética; depende de la confianza del operador en su TSA. |
+| GUS-Roughtime | **beta** | Verificación de recibos con nonce ligado; Ed25519 es clásico (no poscuántico); no es el protocolo de red Roughtime completo. |
+| Firma hash-only de referencia (WOTS16-MERKLE-REF) | **no usar en producción** | Problemas de reuso histórico corregidos deshabilitándola por defecto (`GUS_ALLOW_INSECURE_REF`); solo uso educativo. |
+| Adaptador SLH-DSA (FIPS 205, dependencia opcional) | **beta** | Funciona con slh-dsa 0.2.5; la biblioteca no está auditada ni validada FIPS aquí. |
+| Notario (Merkle diario + quórum + raíz de confianza) | **no usar en producción** | Endurecimiento beta hecho (S2–S6); falta revisión criptográfica externa antes de cualquier uso en producción. |
+
 1. **No garantiza que la hora firmada sea *verdadera*.** Una GST prueba
    que una marca existía y se comprometió **no más tarde** del ancla
    notarial que la referencia (cota superior). Quien posee la clave puede

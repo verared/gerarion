@@ -29,4 +29,4 @@ Nada. La distribución recomendada es por GitHub Releases con
 `SHA256SUMS.txt` para integridad de descarga; la existencia de la firma
 hash-only y del notario es de REFERENCIA EDUCATIVA (semántica de la spec).
 Producción requiere SLH-DSA (FIPS 205) con biblioteca auditada y un
-despliegue de notario diseñado para ello (nevera el threat-model).
+despliegue de notario diseñado para ello (ver el threat-model).

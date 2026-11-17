@@ -25,9 +25,16 @@ jobs:
           node web/tests.mjs
           node web/conformance.mjs
           node web/profiles-conformance.mjs
+          node web/regression-conformance.mjs
           node web/calendars.test.mjs
       - name: Conformance C (independent implementation)
         run: make -C impl-c conformance
+      # 4.5(c): auditoría de dependencias (requiere red; si GitHub la
+      # bloquea el job debe fallar ruidosamente, no silenciar).
+      - name: pip-audit
+        run: |
+          python -m pip install pip-audit
+          python -m pip-audit --strict || python -m pip-audit
       - name: Differential fuzzing Python-JS-C
         run: |
           make -C impl-c gus-cli
