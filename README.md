@@ -81,15 +81,40 @@ origen tienen un origen cultural documentado fuera de este repositorio
 
 ## Instalación
 
+Distribución independiente desde GitHub: sin PyPI, sin npm, sin registros
+externos. Tres capas, cero dependencias obligatorias:
+
 ```bash
-pip install gerarion        # PyPI (kernel Python, stdlib >= 3.9; SLH-DSA opcional)
-pip install 'gerarion[slh]' # + SLH-DSA (slh-dsa 0.2.5) para firmas de producción
-npm install gerarion-kernel # npm (kernel JS ESM, cero dependencias)
-pip install -e '.[slh]'      # desde el repo
+# Python (kernel, stdlib >= 3.9) — instalable directo del repo con pip:
+pip install "git+https://github.com/verared/gerarion.git"
+pip install "gerarion[slh] @ git+https://github.com/verared/gerarion.git"
+#   la segunda añade SLH-DSA (slh-dsa 0.2.5) para firmas de producción.
+#   Alternativa: descarga el .whl o .tar.gz de la última GitHub Release e
+#   instala con: pip install <fichero.descargado>
 ```
 
-(Paquetes listos para publicar en el primer push; ver
-[Estado](#estado) y `.github/workflows/pages.yml`.)
+```bash
+# JavaScript / ESM (kernel, cero dependencias): descarga directa desde
+# GitHub Releases (https://github.com/verared/gerarion/releases):
+#   - gerarion.mjs (fichero suelto, importarlo tal cual), o
+#   - gerarion-kernel-<versión>.tgz (tarball npm estándar, descomprimir y
+#     hacer require desde package.json local)
+import { toGerarion, fromGerarion } from "./gerarion.mjs";
+```
+
+```c
+/* C11 (kernel y conformancia): compila directo, sin dependencias */
+make -C impl-c            # construye gus-cli y la suite de conformancia
+# o, mínimo, solo el núcleo:
+cc -std=c11 -O2 -c impl-c/gus.c -o gus.o    # gus.h es la cabecera pública
+```
+
+Cada GitHub Release adjunta los artefactos (`.whl`, `.tar.gz`, `.tgz`,
+binarios C) más `SHA256SUMS.txt` para verificación de integridad
+(`sha256sum -c SHA256SUMS.txt`); los genera el workflow
+`.github/workflows/release.yml` en cada tag `v*` (ver
+[Publicación](#publicación)). El extra `[slh]` es opcional: es la única
+dependencia de todo el proyecto.
 
 ## Idioma normativo
 
@@ -103,12 +128,11 @@ como capa informativa, no normativa (ver [Créditos y contexto cultural](#crédi
 
 ## Publicación
 
-- **PyPI**: [`gerarion`](https://pypi.org/project/gerarion/) — `pip install gerarion`
-- **npm**: [`gerarion-kernel`](https://www.npmjs.com/package/gerarion-kernel) — `npm install gerarion-kernel`
-
-(Pendientes del primer push: los enlaces de PyPI/npm funcionarán solo
-tras publicarlo — ver [Estado](#estado). El resto sí es consumible
-hoy desde el repo.)
+- **GitHub Releases**: <https://github.com/verared/gerarion/releases> —
+  artefactos de cada versión: wheel y sdist de Python (`pip install`),
+  tarball del kernel JS (`gerarion-kernel-<versión>.tgz`), binarios de la
+  implementación C y `SHA256SUMS.txt`. Los genera `release.yml` en cada tag
+  `v*`.
 - **Calculador web**: GitHub Pages desde `web/` (workflow `pages.yml`:
   suite Python + JS + conformancia JS y C antes de publicar).
 - **SBOM**: [`sbom.cdx.json`](sbom.cdx.json) (CycloneDX 1.5).
@@ -457,7 +481,7 @@ y este kernel están registradas en [`docs/errata-v1.2.md`](docs/errata-v1.2.md)
       (`tools/verify_gus.py`); decisión D-001 (frontera UTC/TAI) en
       borrador público, en revisión de 90 días
 - [x] Documento de adopción mínima GUS-for-notation (solo notación)
-- [ ] Primer push a GitHub + publicación en PyPI/npm (paquetes listos)
+- [x] Primer push a GitHub + publicación vía GitHub Releases (distribución independiente, sin registries externos)
 - [ ] Primer ancla OpenTimestamps operacional
 - [ ] Verificador de testigos contra la red Roughtime real (TODO-002)
 

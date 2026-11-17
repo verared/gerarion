@@ -28,6 +28,12 @@ python3 -m playwright install chromium
 
 ## Archivos
 
+Distribución: sin npm ni registries externos. `gerarion.mjs` (fichero
+suelto) y el tarball `gerarion-kernel-<versión>.tgz` se descargan
+directamente de [GitHub Releases](https://github.com/verared/gerarion/releases),
+con `SHA256SUMS.txt` para verificar integridad. `npm pack` genera el
+tarball (lo automatiza el workflow `release.yml` en cada tag `v*`).
+
 - `gerarion.mjs` — port exacto de `src/gerarion/calendar.py` +
   `format.py`. Aritmética entera; BigInt solo en instantes. Exporta
   `toGerarion`, `fromGerarion`, `parse`, `canonicalOf`, `cycleOf`,
