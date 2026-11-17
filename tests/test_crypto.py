@@ -151,9 +151,11 @@ def test_anchor_lifecycle():
     gts.notarize(doc, notary)
     # aún sin sellar: no verificable como anclada
     assert not gts.verify_anchor(doc, notary)["ok"]
-    notary.seal_day(0)
-    proof = notary.inclusion_proof(0, doc.anchor["leaf_index"])
+    anchor_day = doc.anchor["day"]
+    notary.seal_day(anchor_day)
+    proof = notary.inclusion_proof(anchor_day, doc.anchor["leaf_index"])
     doc.anchor = {
+        "day": anchor_day,
         "leaf_index": proof["index"],
         "sealed": True,
         "proof": proof["proof"],

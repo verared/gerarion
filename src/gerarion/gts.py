@@ -159,26 +159,51 @@ def notarize(doc: GtsDocument, notary) -> GtsDocument:
     doc.anchor = {
         "leaf_index": leaf_index,
         "sealed": False,
+        "day": notary.current_day,
     }
     return doc
 
 
 def verify_anchor(doc: GtsDocument, notary) -> dict:
-    """Verifica el anclaje de una GST contra el log sellado del notario."""
+    """Verifica el anclaje de una GST CONTRA EL NOTARIO DE POLÍTICA.
+
+    La raíz y la prueba de inclusión AUTORITATIVAS son las del `notary`
+    provisto por el verificador (fuera del documento): la raíz incrustada
+    en el documento no es evidencia de nada (cualquiera puede fabricar un
+    ancla autoconsistente). Sin `notary` el resultado es fallo explícito
+    (GERO_ENOTARY); si el documento además trae una raíz distinta de la del
+    notario de política, se marca como divergencia.
+    """
     from .notary import verify_inclusion
 
+    if notary is None:
+        return {
+            "ok": False,
+            "errors": [
+                "GERO_ENOTARY: se requiere un notario/testigo de política "
+                "(fuera del documento) para verificar el anclaje; la raíz "
+                "incluida en el documento no es evidencia por sí sola"
+            ],
+        }
     if not doc.anchor:
         return {"ok": False, "errors": ["sin anclaje de notario"]}
     if not doc.anchor.get("sealed"):
         return {"ok": False, "errors": ["anclaje pendiente de sellado diario"]}
-    if "proof" not in doc.anchor or "root" not in doc.anchor:
+    if "leaf_index" not in doc.anchor:
         return {"ok": False, "errors": ["anclaje incompleto"]}
     payload = fmt.canonical_bytes(doc.ts, doc.instant, doc.ctx)
     leaf = bytes.fromhex(hashlib.sha256(b"\x00" + payload).hexdigest())
-    ok = verify_inclusion(
-        leaf,
-        doc.anchor["proof"],
-        doc.anchor.get("leaf_index", 0),
-        bytes.fromhex(doc.anchor["root"]),
-    )
-    return {"ok": ok, "errors": [] if ok else ["la marca no está incluida en la raíz"]}
+    try:
+        proof = notary.inclusion_proof(
+            int(doc.anchor.get("day", doc.day)), int(doc.anchor["leaf_index"])
+        )
+    except KeyError as exc:
+        return {
+            "ok": False,
+            "errors": [f"GERO_ENOANCHOR: el notario de política no tiene sellado ese día ({exc})"],
+        }
+    ok = verify_inclusion(leaf, proof["proof"], proof["index"], bytes.fromhex(proof["root"]))
+    errors = [] if ok else ["la marca no está incluida en la raíz del notario de política"]
+    if ok and doc.anchor.get("root") and doc.anchor["root"] != proof["root"]:
+        errors.append("la raíz incrustada en el documento diverge del notario de política")
+    return {"ok": ok, "errors": errors}

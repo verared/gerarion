@@ -22,6 +22,7 @@ hace que ambas coexistan y sean verificables con el mismo documento GST.
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from . import hashots
@@ -41,7 +42,11 @@ class SigningAdapter:
 
 
 class HashRefSigner(SigningAdapter):
-    """Adaptador del firmante hash-only de referencia (hashots.py)."""
+    """Adaptador del firmante hash-only de referencia (hashots.py).
+
+    DEPRECATED para uso real: es una construcción educativa sin auditoría;
+    ver `make_adapter`: está deshabilitado por defecto.
+    """
 
     def __init__(self, signer: hashots.WotsMerkleSigner):
         self._signer = signer
@@ -119,10 +124,31 @@ class SlhDsaSigner(SigningAdapter):
 # ---------------------------------------------------------------------------
 
 
-def make_adapter(signer) -> SigningAdapter:
-    """Envuelve cualquier firmante en la interfaz común."""
+def _insecure_ref_allowed(explicit: Optional[bool]) -> bool:
+    if explicit is not None:
+        return explicit
+    return os.environ.get("GUS_ALLOW_INSECURE_REF") == "1"
+
+
+def make_adapter(signer, *, allow_insecure_ref: Optional[bool] = None) -> SigningAdapter:
+    """Envuelve cualquier firmante en la interfaz común.
+
+    El firmante hash-only de referencia (WOTS16-MERKLE-REF-SHA256) está
+    DEPRECADO y deshabilitado por defecto: es una construcción educativa sin
+    auditoría y NO debe asumirse resistente a un atacante activo; los tests
+    del paquete lo habilitan explícitamente (o GUS_ALLOW_INSECURE_REF=1).
+    Producción: SLH-DSA (FIPS 205) vía el adaptadorSlhDsaSigner.
+    """
     if isinstance(signer, SigningAdapter):
         return signer
     if isinstance(signer, hashots.WotsMerkleSigner):
+        if not _insecure_ref_allowed(allow_insecure_ref):
+            raise ValueError(
+                "GERO_EINSECURE: el firmante hash-only de referencia "
+                "(WOTS16-MERKLE-REF-SHA256) está deprecado y deshabilitado por "
+                "defecto (solo pruebas/referencia, sin auditoría). Para usarlo "
+                "en laboratorio pasa allow_insecure_ref=True o exporta "
+                "GUS_ALLOW_INSECURE_REF=1. Producción: SLH-DSA (FIPS 205)."
+            )
         return HashRefSigner(signer)
     raise TypeError(f"firmante no soportado: {type(signer).__name__}")

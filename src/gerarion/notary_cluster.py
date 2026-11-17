@@ -127,14 +127,22 @@ class NotaryCluster:
     def quorum(
         publications: List[ReplicaPublication], threshold: int
     ) -> Tuple[bool, Optional[str], List[str]]:
-        """Devuelve (quorum alcanzado, raíz dominante, réplicas divergentes)."""
+        """Devuelve (quorum alcanzado, raíz dominante, réplicas divergentes).
+
+        Cada IDENTIDAD (réplica por nombre) cuenta UNA sola vez por raíz:
+        duplicar la lista de publicaciones de una misma réplica no infla el
+        quórum (S5). La correspondencia nombre→clave pública se fija fuera
+        (trust root / política del despliegue).
+        """
         if not publications:
             return False, None, []
-        counts: Dict[str, List[str]] = {}
+        counts: Dict[str, set] = {}
         for pub in publications:
-            counts.setdefault(pub.day_root, []).append(pub.replica)
+            counts.setdefault(pub.day_root, set()).add(pub.replica)
         best_root, best_names = max(counts.items(), key=lambda kv: len(kv[1]))
-        divergent = [r for root, names in counts.items() if root != best_root for r in names]
+        divergent = sorted(
+            {r for root, names in counts.items() if root != best_root for r in names}
+        )
         return len(best_names) >= threshold, best_root, divergent
 
     def verify_day(self, publications: List[ReplicaPublication], threshold: Optional[int] = None) -> dict:

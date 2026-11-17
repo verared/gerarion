@@ -21,6 +21,7 @@ pruebas de laboratorio.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import os
 import sys
@@ -93,12 +94,37 @@ def main() -> int:  # noqa: C901 - herramienta CLI con tres subcomandos
         return 0
 
     if cmd == "verify":
-        path, = sys.argv[2:3]
-        with open(path, encoding="utf-8") as fh:
+        # Modelo de confianza: la clave de ceremonia se FIJA POR POLÍTICA
+        # (canal externo al documento). Verificar con la clave incluida en el
+        # propio documento no prova nada (S2). Sin --trust-key / GUS_TRUST_KEY:
+        # fallo explícito GERO_ETRUSTKEY.
+        import argparse
+
+        vp = argparse.ArgumentParser(prog="trust_root.py verify")
+        vp.add_argument("path")
+        vp.add_argument("--trust-key", default=None,
+                        help="hex de la clave de ceremonia fijada por política")
+        va = vp.parse_args(sys.argv[2:])
+        trust_hex = va.trust_key or os.environ.get("GUS_TRUST_KEY")
+        if not trust_hex:
+            print("GERO_ETRUSTKEY: falta la clave de confianza fijada por política "
+                  "(--trust-key <pub_hex> o GUS_TRUST_KEY); la clave embebida en el "
+                  "documento no es evidencia de confianza",
+                  file=sys.stderr)
+            return 2
+        with open(va.path, encoding="utf-8") as fh:
             doc = json.load(fh)
+        embedded = (doc.get("ceremony_pub") or "").strip().lower()
+        trust_norm = trust_hex.strip().lower()
+        if not hmac.compare_digest(embedded, trust_norm):
+            print("GERO_ETRUSTKEY_MISMATCH: la clave embebida en el documento no es "
+                  "la clave de confianza fijada por política → documento rechazado",
+                  file=sys.stderr)
+            return 1
         message = canonical_for_signing(doc)
-        ok = SlhDsaSigner.verify(doc["ceremony_pub"], message, doc["signature"], "SLH-DSA-SHA2-128F")
-        print("VERIFICADA" if ok else "FALLIDA: trust root rechazada")
+        ok = SlhDsaSigner.verify(trust_norm, message, doc["signature"], "SLH-DSA-SHA2-128F")
+        print("VERIFICADA (contra la clave de confianza de política)" if ok
+              else "FALLIDA: firma inválida para la clave de confianza de política")
         return 0 if ok else 1
 
     print(__doc__)

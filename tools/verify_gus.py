@@ -67,30 +67,23 @@ def jdn(year: int, month: int, day: int) -> int:
 
 
 def is_gran_tempalum(year: int) -> bool:
-    if year < 0:
-        return False
-    r = 0
-    found = False
-    for n in range(year + 1):
-        r += SOLAR_DELTA_UD
-        if r >= SOLAR_THRESHOLD_UD:
-            found = True
-            r -= SOLAR_THRESHOLD_UD
-        else:
-            found = False
-    return found
+    """Regla simétrica e infinita (spec GUS 2.1 §3), bit a bit idéntica al
+    núcleo (r = residuo euclidiano al inicio del año; GT <=> r + S >= U)."""
+    r_y = ((year % SOLAR_THRESHOLD_UD) + SOLAR_THRESHOLD_UD) % SOLAR_THRESHOLD_UD
+    r = (r_y * SOLAR_DELTA_UD) % SOLAR_THRESHOLD_UD
+    return r + SOLAR_DELTA_UD >= SOLAR_THRESHOLD_UD
 
 
 def year_length(year: int) -> int:
-    if year < 0:
-        return YEAR_COMMON_DAYS
     return YEAR_GRAN_DAYS if is_gran_tempalum(year) else YEAR_COMMON_DAYS
 
 
 def year_start_day_index(year: int) -> int:
-    if year >= 0:
-        return sum(year_length(n) for n in range(year))
-    return year * YEAR_COMMON_DAYS
+    """O(1), simétrico: q, r = divmod piso(year, U); gt = q*S + (r*S)//U."""
+    q = year // SOLAR_THRESHOLD_UD          # división piso (trunca hacia -inf)
+    r = year - q * SOLAR_THRESHOLD_UD
+    gt_count = q * SOLAR_DELTA_UD + (r * SOLAR_DELTA_UD) // SOLAR_THRESHOLD_UD
+    return year * YEAR_COMMON_DAYS + 7 * gt_count
 
 
 def locate(day_index: int):
@@ -246,13 +239,40 @@ def verify_hashonly(public_key_bytes: bytes, message: bytes, signature: dict) ->
 
 
 def verify_slhdsa(public_key_hex: str, message: bytes, sig_b64: str, alg: str):
+    """Verificación SLH-DSA (FIPS 205) con la API real del paquete `slh-dsa`
+    (0.2.x: KeyPair/PublicKey/SecretKey + verify_pure con contexto).
+
+    La firma viaja en hex (formato del adaptador de referencia); se acepta
+    también base64 por compatibilidad con documentos antiguos. Sin el
+    paquete instalado: GERO_ENOALG — nunca un resultado ambiguo.
+    """
     try:
-        from slhdsa import SlhDsa
+        import slhdsa
     except ImportError:
         raise RuntimeError("GERO_ENOALG: algoritmo %s requiere el paquete 'slh-dsa'" % alg)
-    params = alg.split("-", 1)[1] if "-" in alg else alg
-    key = SlhDsa(params, bytes.fromhex(public_key_hex))
-    return key.verify(message, base64.b64decode(sig_b64))
+    params = alg.removeprefix("SLH-DSA-") if hasattr(str, "removeprefix") else alg[8:]
+    alias = {"SHA2-128F": "128f", "SHA2-128S": "128s", "SHA2-192F": "192f", "SHA2-256S": "256s"}
+    key = alias.get(params.upper())
+    if key is None or not hasattr(slhdsa, f"sha2_{key}"):
+        raise RuntimeError("GERO_ENOALG: parameter set desconocido para 'slh-dsa': %s" % alg)
+    param = getattr(slhdsa, f"sha2_{key}")
+    try:
+        pub = slhdsa.PublicKey.from_digest(bytes.fromhex(public_key_hex), param)
+    except Exception:  # noqa: BLE001 - llave malformada = firma inválida
+        return False
+    raw = bytes.fromhex(sig_b64) if _is_hex(sig_b64) else base64.b64decode(sig_b64)
+    try:
+        return pub.verify_pure(message, raw, ctx=b"GUS2-TS")
+    except Exception:  # noqa: BLE001 - firma malformada = inválida
+        return False
+
+
+def _is_hex(s: str) -> bool:
+    try:
+        bytes.fromhex(s)
+        return True
+    except ValueError:
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -350,21 +370,54 @@ def verify_document(doc: dict) -> dict:
     return {"ok": not errors, "errors": errors, "flags": flags}
 
 
+def anchor_status(doc) -> str:
+    """Estado del anclaje declarado: ANCLA_AUSENTE / ANCLA_PENDIENTE /
+    ANCLA_INCOMPLETA / ANCLA_CONSISTENTE (la consistencia interna de la raíz
+    autoincluida NO prueba origen: contrastarla es papel del trust root)."""
+    if hasattr(doc, "anchor"):
+        doc = {"anchor": doc.anchor, "ts": doc.ts, "ins": doc.instant, "ctx": doc.ctx}
+    anchor = doc.get("anchor")
+    if not anchor:
+        return "ANCLA_AUSENTE"
+    if not anchor.get("sealed"):
+        return "ANCLA_PENDIENTE"
+    if "root" not in anchor or "proof" not in anchor:
+        return "ANCLA_INCOMPLETA"
+    leaf = hashlib.sha256(b"\x00" + canonical_bytes_from(
+        doc["ts"], int(doc.get("ins", -1)), doc.get("ctx", TS_CONTEXT))).digest()
+    if verify_inclusion(leaf, anchor.get("proof", []), int(anchor.get("index", 0)),
+                        bytes.fromhex(anchor["root"])):
+        return "ANCLA_CONSISTENTE"
+    return "ANCLA_INVALIDA"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Verificador monolítico GST (GUS 2.0)")
     ap.add_argument("gst", help="archivo JSON del documento GST")
-    ap.add_argument("--no-anchor", action="store_true",
-                    help="no exigir anchor de notario (no está definido exigirlo por defecto)")
+    ap.add_argument("--require-anchor", action="store_true",
+                    help="exigir un anchor internamente consistente (rc 2 si falta/inválido)")
     args = ap.parse_args(argv)
     with open(args.gst, "r", encoding="utf-8") as fh:
         doc = json.load(fh)
     res = verify_document(doc)
+    status = anchor_status(doc)
     if res["ok"]:
-        print("OK %s (instant=%s day=%s flags=%s)" % (
-            doc.get("ts"), doc.get("ins"), doc.get("day"), res["flags"]))
+        sig_line = "FIRMA_VALIDA"
+        if status == "ANCLA_CONSISTENTE":
+            print("%s %s | %s (consistencia interna; la raíz debe contrastarse "
+                  "con un notario de política)" % (sig_line, doc.get("ts"), status))
+            return 0
+        print("%s %s | %s" % (sig_line, doc.get("ts"), status))
+        if args.require_anchor:
+            print("FAIL GERO_ENOANCHOR: --require-anchor exige un anchor "
+                  "internamente consistente (rc 2)", file=sys.stderr)
+            return 2
+        print("nota: el anclaje no está verificado; usa --require-anchor para exigirlo",
+              file=sys.stderr)
         return 0
     for err in res["errors"]:
         print("FAIL %s" % err, file=sys.stderr)
+    print("estado del anclaje: %s" % status, file=sys.stderr)
     return 1
 
 
