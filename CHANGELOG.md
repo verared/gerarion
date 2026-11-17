@@ -1,5 +1,28 @@
 # Changelog — GUS
 
+## Sin publicar (web-ux) — UX del portal
+
+- **Portal reordenado:** el traductor de fechas pasa a ser la primera
+  sección (título «Traductor de fechas entre calendarios», con
+  «Piedra Rosetta» de subtítulo); conversiones rápidas plegadas,
+  reloj «Ahora en Gerarion» compacto, mini-navegación por anclas,
+  jerga técnica (day_index/JDN/instant, límites Intl/Umm al-Qura/chino/
+  bahá'í) dentro de `<details>`.
+- **Enlace compartible:** cada traducción escribe `#cal=<modo>&d=<fecha>`
+  (solo hash); botón «Copiar enlace»; al cargar y en `hashchange` el
+  resultado se reproduce en el navegador, sin red.
+- **Errores con formato esperado:** los mensajes de entrada inválida
+  indican formato y ejemplo por calendario en lugar de «Error» a secas.
+- **Accesibilidad:** etiquetas métricas por `aria-labelledby` (deja de
+  abusar de `<label>` sin `for`), `role=status` en toasts, `aria-live` en
+  resultados, foco visible, contraste reforzado por `data-theme`.
+- **CSP y metadatos:** `<meta http-equiv="Content-Security-Policy">`
+  (`default-src 'self'`, sin inline scripts), `theme-color`, favicon SVG
+  inline (data URI), Open Graph.
+- **E2E (Playwright) actualizado a la nueva estructura (32 checks) + job
+  CI `web-e2e`** que levanta un servidor estático y ejecuta Chromium
+  headless, fallando si hay peticiones externas.
+
 ## 2.4.0 — Gran Tempalum simétrico + spec GUS 2.1.0 (2026-11-17)
 
 **Cambio normativo (kernel §3/§5, spec 2.0 → 2.1.0): el Gran Tempalum es

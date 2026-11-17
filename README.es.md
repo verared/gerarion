@@ -13,6 +13,19 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 
 **Tiempo regular, universal y verificable.**
 
+## Probar en línea (sin instalar nada, sin cuentas)
+
+El **traductor de fechas** corre íntegramente en el navegador en
+<https://verared.github.io/gerarion/>: introduce una fecha en cualquiera de
+los diez calendarios soportados (Gerarion GUS 2.1.0 —incluidos años AY de
+5–6 dígitos—, gregoriano/juliano prolépticos, egipcio, etíope, bahá'í,
+cuenta larga maya, hebreo, islámico y chino) y obtén todas las equivalencias
+de golpe, con enlaces compartibles por fecha (`#cal=…&d=…`), reloj GUS en
+vivo, calendario del mes y calculadora de distancias. Sin peticiones de red,
+sin cookies, sin cuentas; funciona sin conexión una vez cargada.
+Para opciones de instalación (Python, JS, C11) por GitHub Releases, mira la
+sección de distribución del README en inglés `README.md`.
+
 Un estándar de tiempo que integra tres capas bajo una misma especificación
 máquina-verificable:
 
