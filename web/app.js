@@ -9,6 +9,7 @@ import {
   ORIGIN_JDN,
   dayIndexFromGregorian,
   gregorianFromDayIndex,
+  fromGerarion,
   toGerarion,
   parse,
   canonicalOf,
@@ -17,34 +18,30 @@ import {
   tempalumName,
   WEEKDAYS,
   MONTHS,
-  GUS_UNIX_OFFSET,
   GeroError,
 } from './gerarion.mjs';
 
 import {
-  gregorianToJdn,
+  INPUT_MODES,
   jdnToGregorianStr,
-  julianToJdn,
   jdnToJulian,
-  egyptianToJdn,
   jdnToEgyptian,
   EGYPT_EPOCH_JDN,
   EGYPT_MONTHS,
-  ethiopicToJdn,
   jdnToEthiopic,
   ETHIOPIC_EPOCH_JDN,
   ETHIOPIC_MONTHS,
   isEthiopicLeap,
-  bahaiToJdn,
   jdnToBahai,
+  bahaiYearIsExact,
   BAHAI_EPOCH_JDN,
   BAHAI_MONTHS,
-  mayaToJdn,
   jdnToMaya,
   MAYA_CORRELATION_JDN,
   intlCalendar,
   civilWeekday,
   gusView,
+  autodetectToJdn,
 } from './calendars.mjs';
 
 import { report, failed } from './tests.mjs';
@@ -53,6 +50,13 @@ const $ = (id) => document.getElementById(id);
 
 function pad2(n) {
   return String(n).padStart(2, '0');
+}
+
+function todayJdnUtc() {
+  const now = new Date();
+  return ORIGIN_JDN + dayIndexFromGregorian(
+    now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate(),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -65,6 +69,7 @@ function toast(text) {
   if (!el) {
     el = document.createElement('div');
     el.className = 'toast';
+    el.setAttribute('role', 'status');
     document.body.appendChild(el);
   }
   el.textContent = text;
@@ -91,28 +96,31 @@ function copyText(text) {
 }
 
 // ---------------------------------------------------------------------------
-// Tema claro/oscuro (sin persistencia: no cookies ni storage)
+// Contraste reforzado (accesibilidad). Sin persistencia: ni cookies ni storage.
+// data-theme ausente = claro estándar; data-theme="light" = contraste alto.
 // ---------------------------------------------------------------------------
 
 function bindTheme() {
   const btn = $('theme-toggle');
   if (!btn) return;
   btn.addEventListener('click', () => {
-    const light = document.documentElement.getAttribute('data-theme') === 'light';
-    if (light) {
+    const forced = document.documentElement.getAttribute('data-theme') === 'light';
+    if (forced) {
       document.documentElement.removeAttribute('data-theme');
+      btn.setAttribute('aria-pressed', 'false');
     } else {
       document.documentElement.setAttribute('data-theme', 'light');
+      btn.setAttribute('aria-pressed', 'true');
     }
-    btn.textContent = light ? 'tema' : 'tema ☾';
   });
 }
 
 // ---------------------------------------------------------------------------
 // Reloj en vivo
-// Convención de la spec: el día rueda a medianoche (el instante continuo es
-// lineal día*86400 + h*3600 + m*60 + s); el ciclo SC/LC es solo la etiqueta
-// luminosa de la hora actual (SC 06:00-17:59, LC 18:00-05:59).
+// Convención de la spec: el día rueda a medianoche UTC (el instante continuo
+// es lineal día*86400 + h*3600 + m*60 + s); el ciclo SC/LC es solo la etiqueta
+// luminosa de la hora de referencia (SC 06:00-17:59, LC 18:00-05:59, en UTC
+// para el modo TCJ+0).
 // ---------------------------------------------------------------------------
 
 let clockMode = 'utc';
@@ -164,7 +172,8 @@ function bindClock() {
       tickClock();
     });
     // si el offset local ya es UTC, la opción TCJ+0 es la misma hora
-    sel.options[1].textContent = `TCJ local (${-(new Date().getTimezoneOffset() / 60) >= 0 ? '+' : ''}${-new Date().getTimezoneOffset() / 60})`;
+    const off = -(new Date().getTimezoneOffset() / 60);
+    sel.options[1].textContent = `TCJ local (${off >= 0 ? '+' : ''}${off})`;
   }
   const copy = $('now-copy');
   if (copy) {
@@ -178,110 +187,41 @@ function bindClock() {
 }
 
 // ---------------------------------------------------------------------------
-// Traductor universal: parseo por modo y autodetección
+// Estado central: currentJdn alimenta la cuadrícula y el calendario mensual
 // ---------------------------------------------------------------------------
 
-const MODES = [
-  {
-    id: 'gero',
-    label: 'Gerarion',
-    placeholder: '2031DY-03-08-T-09:30:00-SC-TCJ+0  ·  12000AY-01-01-S',
-    hint: 'marca canónica GUS completa o fecha AAAAYY-MM-DD-X',
-    toJdn(text) {
-      const ts = parse(text);
-      return { jdn: ORIGIN_JDN + ts.dayIndex, label: canonicalOf(ts) };
-    },
-  },
-  {
-    id: 'greg',
-    label: 'Gregoriano',
-    placeholder: '2026-03-17',
-    hint: 'gregoriano proléptico ISO (años negativos = a.C.)',
-    toJdn(text) {
-      const m = /^(-?\d{1,6})-(\d{1,2})-(\d{1,2})$/.exec(text.trim());
-      if (!m) throw new Error('formato esperado: AAAA-MM-DD');
-      const y = Number(m[1]);
-      const j = gregorianToJdn(y, Number(m[2]), Number(m[3]));
-      return { jdn: j, label: `gregoriano ${y}-${pad2(Number(m[2]))}-${pad2(Number(m[3]))}` };
-    },
-  },
-  {
-    id: 'julian',
-    label: 'Juliano',
-    placeholder: '2026 11 4',
-    hint: 'año mes día julianos (enteros; años a.C. = negativos)',
-    toJdn(text) {
-      const p = triplet(text);
-      return { jdn: julianToJdn(p[0], p[1], p[2]), label: `juliano ${p.join(' ')}` };
-    },
-  },
-  {
-    id: 'egyptian',
-    label: 'Egipcio',
-    placeholder: '3641 8 5',
-    hint: 'año Nabonassar · mes 1–12 (Thoth..Mesore) o 13 (epagómenos) · día',
-    toJdn(text) {
-      const p = triplet(text);
-      return { jdn: egyptianToJdn(p[0], p[1], p[2]), label: `año ${p[0]} Nabonassar` };
-    },
-  },
-  {
-    id: 'ethiopic',
-    label: 'Etíope',
-    placeholder: '2019 3 8',
-    hint: 'año EC · mes 1–13 (Meskerem..Pagume) · día',
-    toJdn(text) {
-      const p = triplet(text);
-      return { jdn: ethiopicToJdn(p[0], p[1], p[2]), label: `año ${p[0]} EC` };
-    },
-  },
-  {
-    id: 'bahai',
-    label: "Bahá'í",
-    placeholder: '183 13 14',
-    hint: 'año BE · mes 1–19 (0 = Ayyám-i-Há) · día',
-    toJdn(text) {
-      const p = triplet(text);
-      return { jdn: bahaiToJdn(p[0], p[1], p[2]), label: `año ${p[0]} BE` };
-    },
-  },
-  {
-    id: 'maya',
-    label: 'Maya',
-    placeholder: '13.0.14.1.19',
-    hint: 'cuenta larga B.K.T.U.K (correlación GMT)',
-    toJdn(text) {
-      const p = text.trim().split(/[.\s]+/).map(Number);
-      if (p.length !== 5 || p.some((n) => !Number.isInteger(n))) {
-        throw new Error('formato esperado: B.K.T.U.K (ej. 13.0.14.1.19)');
-      }
-      return { jdn: mayaToJdn(p[0], p[1], p[2], p[3], p[4]), label: `${p.join('.')} (cuenta larga)` };
-    },
-  },
-];
-
-function triplet(text) {
-  const parts = text.trim().split(/[\s,/.]+/).map(Number);
-  if (parts.length !== 3 || parts.some((n) => !Number.isInteger(n))) {
-    throw new Error('formato esperado: año mes día (ej. -6 3 21)');
-  }
-  return parts;
-}
-
-function autodetectJdn(text) {
-  const t = text.trim();
-  if (/^(DY|AY)/i.test(t) || /\d{4,6}(DY|AY)/i.test(t)) return MODES[0].toJdn(t);
-  if (/^-?\d{1,6}-\d{1,2}-\d{1,2}$/.test(t)) return MODES[1].toJdn(t);
-  if (/^-?\d+\.\d+\.\d+\.\d+\.\d+$/.test(t)) return MODES[6].toJdn(t);
-  if (/^[\s(),\.\-\/]*-?\d+[\s,\/]+-?\d+[\s,\/]+-?\d+/.test(t)) return MODES[2].toJdn(t);
-  throw new Error('formato no reconocido: usa una marca GUS (…DY/…AY), AAAA-MM-DD, «año mes día», o una cuenta larga maya');
-}
+let currentJdn = todayJdnUtc();
 
 // ---------------------------------------------------------------------------
 // Cuadrícula de calendarios (Piedra Rosetta): 10 tarjetas desde un JDN
 // ---------------------------------------------------------------------------
 
-function tile({ title, main, sub, note, check, copyText, accent }) {
+function tileActions(el, copyVal, origin) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cal-actions';
+  if (copyVal) {
+    const cp = document.createElement('button');
+    cp.type = 'button';
+    cp.className = 'cal-copy';
+    cp.textContent = 'copiar';
+    cp.setAttribute('aria-label', `Copiar ${copyVal}`);
+    cp.addEventListener('click', () => copyText(copyVal));
+    wrap.appendChild(cp);
+  }
+  if (origin) {
+    const og = document.createElement('button');
+    og.type = 'button';
+    og.className = 'cal-origin';
+    og.textContent = 'origen';
+    og.title = 'Usar esta fecha como origen del traductor';
+    og.setAttribute('aria-label', `Usar ${copyVal || 'esta fecha'} como origen`);
+    og.addEventListener('click', () => setOrigin(origin.mode, origin.text));
+    wrap.appendChild(og);
+  }
+  el.appendChild(wrap);
+}
+
+function tile({ title, main, sub, note, check, copyText: cval, origin, accent }) {
   const el = document.createElement('div');
   el.className = `cal-tile${accent ? ' tile-gero' : ''}`;
 
@@ -312,20 +252,37 @@ function tile({ title, main, sub, note, check, copyText, accent }) {
     chk.textContent = check;
     el.appendChild(chk);
   }
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'cal-copy';
-  btn.textContent = '⧉';
-  btn.title = 'Copiar';
-  btn.setAttribute('aria-label', `Copiar ${title}`);
-  btn.addEventListener('click', () => copyText(copyText ?? main));
-  el.appendChild(btn);
-
+  tileActions(el, cval, origin);
   return el;
 }
 
 function signedYearIso(y, m, d) {
   return `${String(y).padStart(4, '0')}-${pad2(m)}-${pad2(d)}`;
+}
+
+// Texto de origen para volver a introducir la misma fecha en cada sistema.
+function originFor(kind, comps) {
+  return { mode: kind, text: comps };
+}
+
+function hebrewDisplay(r) {
+  // r.month ya viene normalizado (12 = Adar I en bisiesto, 13 = Adar II)
+  const hist = { 1: 'Tishrei', 2: 'Jeshvan', 3: 'Kislev', 4: 'Tevet', 5: 'Shevat', 6: 'Adar', 7: 'Nisán', 8: 'Iyar', 9: 'Siván', 10: 'Tamuz', 11: 'Av', 12: 'Elul' };
+  let name;
+  if (r.month === 13) name = 'Adar II';
+  else if (r.month === 6) name = 'Adar I';
+  else name = hist[r.month] || `mes ${r.month}`;
+  return `${r.day} de ${name} de ${r.year} AM`;
+}
+
+function islamicDisplay(r) {
+  return `${r.day}/${r.month}/${r.year} AH`;
+}
+
+function chineseDisplay(r) {
+  const leap = r.leapMonth ? 'bis' : '';
+  const rel = r.year !== null ? r.year : r.relatedYear;
+  return `mes ${r.month}${leap} · día ${r.day} · año chino ${rel}`;
 }
 
 function renderGrid(container, jdnVal, pivotLabel) {
@@ -339,9 +296,11 @@ function renderGrid(container, jdnVal, pivotLabel) {
   container.appendChild(tile({
     title: 'Gerarion · GUS 2.1.0',
     main: gv.canonical,
-    sub: gusSub + (gv.special ? ` · ${gv.special}` : ''),
+    sub: gusSub + (gv.special ? ` · ${gv.special}` : '') +
+      (gv.granTempalum ? ' · año Gran Tempalum (371 días)' : ''),
     check: `day_index ${dayIndex}${pivotLabel ? ` · ${pivotLabel}` : ''}`,
     copyText: gv.canonical,
+    origin: originFor('gero', gv.canonical),
     accent: true,
   }));
 
@@ -353,52 +312,63 @@ function renderGrid(container, jdnVal, pivotLabel) {
     sub: `era ${gr.year < 0 ? `${-gr.year} a.C.` : 'e.c.'} · ${civilWeekday(jdnVal)}`,
     check: `JDN ${jdnVal}`,
     copyText: gr.iso,
+    origin: originFor('greg', gr.iso),
   }));
 
   // 3. Juliano
   const jl = jdnToJulian(jdnVal);
+  const jlText = `${jl.year} ${jl.month} ${jl.day}`;
   container.appendChild(tile({
     title: 'Juliano',
     main: signedYearIso(jl.year, jl.month, jl.day),
     sub: `${civilWeekday(jdnVal)} · año juliano`,
     check: 'exacto con JDN',
-    copyText: signedYearIso(jl.year, jl.month, jl.day),
+    copyText: jlText,
+    origin: originFor('julian', jlText),
   }));
 
   // 4. Egipcio (Vago)
   const eg = jdnToEgyptian(jdnVal);
   const egMonth = eg.month === 13 ? EGYPT_MONTHS[12] : EGYPT_MONTHS[eg.month - 1];
+  const egText = `${eg.year} ${eg.month} ${eg.day}`;
   container.appendChild(tile({
     title: 'Egipcio antiguo (Vago)',
     main: `${egMonth} ${eg.day} · año ${eg.year} Nab.`,
     sub: eg.epagomenos ? `${eg.day}.º epagómeno` : '12 × 30 + 5 epagómenos',
     note: eg.year <= 0 ? 'extensión proleptica (año ≤ 0 Nabonassar)' : null,
     check: `época: JDN ${EGYPT_EPOCH_JDN} (Nabonassar 1)`,
-    copyText: `${eg.year} ${eg.month} ${eg.day}`,
+    copyText: egText,
+    origin: originFor('egyptian', egText),
   }));
 
   // 5. Etíope
   const et = jdnToEthiopic(jdnVal);
   const etMonth = ETHIOPIC_MONTHS[et.month - 1] || '?';
+  const etText = `${et.year} ${et.month} ${et.day}`;
   container.appendChild(tile({
     title: 'Etíope (Amete Mihret)',
     main: `${etMonth} ${et.day} · ${et.year} EC`,
-    sub: et.pagume ? 'Pagume (mes intercalar de 6 días)' : '12 × 30 + Pagume (5/6)',
+    sub: et.pagume ? 'Pagume (mes intercalar)' : '12 × 30 + Pagume (5/6)',
     note: et.year <= 0 ? 'extensión proleptica' : null,
     check: `bisiesto EC: ${isEthiopicLeap(et.year) ? 'sí' : 'no'}`,
-    copyText: `${et.year} ${et.month} ${et.day}`,
+    copyText: etText,
+    origin: originFor('ethiopic', etText),
   }));
 
-  // 6. Bahá'í (Badí')
+  // 6. Bahá'í (Badí') — tabla oficial UHJ 172–221; fuera, convención 21-mar
   const bh = jdnToBahai(jdnVal);
   const bhMonth = BAHAI_MONTHS[bh.month] || '?';
+  const bhText = `${bh.year} ${bh.month} ${bh.day}`;
   container.appendChild(tile({
     title: "Bahá'í (Badí')",
     main: `${bhMonth} ${bh.day} · ${bh.year} BE`,
-    sub: bh.month === 0 ? 'días intercalares antes de ʿAláʼ' : '19 × 19 + Ayyám-i-Há',
-    note: 'convención Naw-Rúz = 21 de marzo (sesgo ≤ 1 día vs. astronomía desde 2015)',
-    check: 'época: JDN 2394647 (21 mar 1844)',
-    copyText: `${bh.year} ${bh.month} ${bh.day}`,
+    sub: bh.month === 0 ? 'Ayyám-i-Há (días intercalares)' : '19 × 19 + Ayyám-i-Há',
+    note: bahaiYearIsExact(bh.year)
+      ? 'tabla oficial UHJ: Naw-Rúz exacto'
+      : 'convención Naw-Rúz = 21 de marzo (aproximada, sesgo ≤ 1 día)',
+    check: `época: JDN ${BAHAI_EPOCH_JDN} (21 mar 1844)`,
+    copyText: bhText,
+    origin: originFor('bahai', bhText),
   }));
 
   // 7. Cuenta Larga Maya
@@ -411,52 +381,91 @@ function renderGrid(container, jdnVal, pivotLabel) {
     note: my.days < 0 ? 'antes de la correlación GMT (proleptico)' : 'correlación GMT (584283)',
     check: '13.0.0.0.0 = 21 dic 2012',
     copyText: lcStr,
+    origin: originFor('maya', lcStr),
   }));
 
-  // 8-10. Intl: hebreo, islámico-civil, chino
-  for (const [which, title, enumNote] of [
-    ['hebrew', 'Hebreo', 'cuenta Anno Mundi (ICU)'],
-    ['islamic', 'Islámico (civil)', 'Hijri aritmético (tabular)'],
-    ['chinese', 'Chino', 'lunar; aprox. astronómica de ICU'],
-  ]) {
+  // 8. Hebreo / 9. Islámico / 10. Chino — Intl nativo con inverso verificado
+  const intlTiles = [
+    ['hebrew', 'Hebreo', 'cuenta Anno Mundi (ICU; Adar II = mes 13 en bisiesto)', hebrewDisplay, 'hebrew'],
+    ['islamicCivil', 'Islámico (civil)', 'Hijri tabular con JDN (exacto en todo el rango Date)', islamicDisplay, 'islamicCivil'],
+    ['chinese', 'Chino', 'lunar; aprox. astronómica de ICU; fiable ≈ 1900–2100', chineseDisplay, 'chinese'],
+  ];
+  for (const [which, title, enumNote, display, modeId] of intlTiles) {
     const r = intlCalendar(jdnVal, which);
     if (r.ok) {
+      let text;
+      try {
+        text = display(r);
+      } catch {
+        text = r.text;
+      }
+      const origText = which === 'chinese'
+        ? `${r.year} ${r.month} ${r.day}${r.leapMonth ? ' bis' : ''}`
+        : `${r.year} ${r.month} ${r.day}`;
       container.appendChild(tile({
         title,
-        main: r.text,
+        main: text,
         sub: [
-          r.year !== null ? `año ${r.year}` : null,
+          r.era ? `era ${r.era}` : null,
           r.leapMonth ? 'mes bisiesto' : null,
-          r.era ? r.era : null,
-        ].filter(Boolean).join(' · ') || enumNote,
-        note: which === 'chinese' ? 'los meses bisiestos se marcan «bis»' : null,
-        check: enumNote,
-        copyText: r.text,
+        ].filter(Boolean).join(' · ') || null,
+        note: r.note ? `nota: ${r.note}` : null,
+        check: `${enumNote} · conversión inversa verificada con Intl`,
+        copyText: origText,
+        origin: originFor(modeId === 'islamicCivil' ? 'islamicCivil' : modeId, origText),
       }));
     } else {
       container.appendChild(tile({
         title,
         main: '—',
-        note: `fecha no representable: ${r.note}`,
-        sub: null,
+        sub: 'fecha no representable en este calendario',
+        note: r.note || null,
+        check: enumNote,
+        copyText: null,
+        origin: null,
       }));
     }
   }
 }
 
 // ---------------------------------------------------------------------------
-// Traductor universal: modos + envío
+// Traductor universal: modos (datasource única: INPUT_MODES de calendars.mjs)
 // ---------------------------------------------------------------------------
+
+const MODES = Object.values(INPUT_MODES);
 
 let currentMode = MODES[0];
 
+function setMode(mode, value = '') {
+  currentMode = mode;
+  const modeRow = $('uni-modes');
+  for (const btn of modeRow.children) {
+    const active = btn.dataset.mode === mode.id;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  }
+  $('uni-label').textContent = `${mode.hint} — ${mode.label}`;
+  const input = $('uni-in');
+  input.placeholder = mode.placeholder;
+  input.value = value;
+}
+
+function setOrigin(modeId, text) {
+  const mode = MODES.find((mm) => mm.id === modeId) || MODES[0];
+  setMode(mode, text);
+  try {
+    const res = mode.toJdn(text);
+    applyPivot(res, `recibido desde tarjeta ${mode.label.toLowerCase()}`);
+  } catch {
+    // si el texto no re-parses (p. ej. fuera de rango Intl), deja la entrada lista
+    $('uni-in').focus();
+  }
+}
+
 function bindTranslator() {
   const modeRow = $('uni-modes');
-  const input = $('uni-in');
-  const label = $('uni-label');
-  const status = $('rosetta-status');
-  const grid = $('rosetta-grid');
   const form = $('form-uni');
+  const input = $('uni-in');
 
   for (const mode of MODES) {
     const btn = document.createElement('button');
@@ -470,23 +479,11 @@ function bindTranslator() {
     modeRow.appendChild(btn);
   }
 
-  function setMode(mode, value = '') {
-    currentMode = mode;
-    for (const btn of modeRow.children) {
-      const active = btn.dataset.mode === mode.id;
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-checked', active ? 'true' : 'false');
-    }
-    label.textContent = `${mode.hint} — ${mode.label}`;
-    input.placeholder = mode.placeholder;
-    input.value = value;
-  }
-
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
+    const status = $('rosetta-status');
     status.textContent = '';
     status.classList.remove('error');
-    grid.textContent = '';
     let res;
     try {
       res = currentMode.toJdn(input.value);
@@ -495,18 +492,124 @@ function bindTranslator() {
       status.classList.add('error');
       return;
     }
-    const di = res.jdn - ORIGIN_JDN;
-    status.textContent = `Pivote: ${res.label} → day_index ${di} → JDN ${res.jdn}`;
-    renderGrid(grid, res.jdn, `traducido desde ${currentMode.label.toLowerCase()}`);
+    applyPivot(res, `traducido desde ${currentMode.label.toLowerCase()}`);
   });
+}
 
-  window.__setUni = (modeId, value) => {
-    const mode = MODES.find((mm) => mm.id === modeId) || MODES[0];
-    setMode(mode, value);
-    form.requestSubmit();
+function applyPivot(res, pivotLabel) {
+  currentJdn = res.jdn;
+  const status = $('rosetta-status');
+  const di = res.jdn - ORIGIN_JDN;
+  status.textContent = `Pivote: ${res.label} → day_index ${di} → JDN ${res.jdn}`;
+  renderGrid($('rosetta-grid'), res.jdn, pivotLabel);
+  renderMonth();
+}
+
+// ---------------------------------------------------------------------------
+// Calendario mensual Gerarion navegable (incluye Tempalum y días sagrados)
+// ---------------------------------------------------------------------------
+
+const SACRED_DAYS = { '1-12': 'Cruxyphi', '1-15': 'Resinove', '1-30': 'Yeshuvid' };
+
+function gusMarkFor(di) {
+  const g = toGerarion(di);
+  let special = tempalumName(g) || SACRED_DAYS[`${g.month}-${g.day}`] || '';
+  return { g, special };
+}
+
+function renderMonth() {
+  const grid = $('month-grid');
+  const status = $('month-status');
+  if (!grid) return;
+  const di = currentJdn - ORIGIN_JDN;
+  const g = toGerarion(di);
+  const monthName = g.month === 0 ? 'Tempalum' : `${MONTHS[g.month][0]} — ${MONTHS[g.month][1]}`;
+  const era = g.year >= 0 ? 'DY' : 'AY';
+  const yearStr = `${String(Math.abs(g.year)).padStart(4, '0')}${era}`;
+  const title = `Calendario del mes: ${monthName} · año ${yearStr}`;
+  const h2 = $('month-title');
+  if (h2) h2.textContent = title;
+
+  const start = fromGerarion(g.year, g.month, 1);
+  const len = g.month === 0 ? tempalumDays(g.year) : 30;
+  const startWd = start.weekdayIndex;
+
+  grid.textContent = '';
+  for (const wd of WEEKDAYS) {
+    const c = document.createElement('span');
+    c.className = 'wd';
+    c.textContent = wd[1];
+    grid.appendChild(c);
+  }
+  for (let i = 0; i < startWd; i++) {
+    const c = document.createElement('span');
+    c.className = 'month-empty';
+    c.setAttribute('aria-hidden', 'true');
+    grid.appendChild(c);
+  }
+  for (let d = 1; d <= len; d++) {
+    const dayDi = start.dayIndex + (d - 1);
+    const { g: gd, special } = gusMarkFor(dayDi);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'month-cell';
+    btn.textContent = String(d);
+    btn.setAttribute('aria-label', `${gd.canonical}${special ? ` — ${special}` : ''}`);
+    if (special) btn.title = special;
+    if (dayDi === di) {
+      btn.classList.add('selected');
+      btn.setAttribute('aria-current', 'date');
+    }
+    btn.addEventListener('click', () => {
+      currentJdn = ORIGIN_JDN + dayDi;
+      setOrigin('gero', canonicalOf(gv));
+    });
+    grid.appendChild(btn);
+  }
+  if (status) {
+    status.textContent = `seleccionado: ${canonicalOf(g)} (día ${di})`;
+  }
+}
+
+function bindMonthNav() {
+  const prev = $('month-prev');
+  const next = $('month-next');
+  const hoy = $('month-hoy');
+  const shift = (delta) => {
+    const g = toGerarion(currentJdn - ORIGIN_JDN);
+    let y = g.year;
+    let m = g.month + delta;
+    if (m > 12) { m = 0; }          // tras Ichtys (12) viene Tempalum (00) del mismo año
+    if (m < 0) { y -= 1; m = 12; }  // antes de Tempalum (00) está 12 del año anterior
+    try {
+      const start = fromGerarion(y, m, 1);
+      currentJdn = ORIGIN_JDN + start.dayIndex;
+      renderGrid($('rosetta-grid'), currentJdn, 'navegación de mes');
+      renderMonth();
+    } catch (err) {
+      toast(`no se puede navegar: ${err.message}`);
+    }
   };
+  if (prev) prev.addEventListener('click', () => shift(-1));
+  if (next) next.addEventListener('click', () => shift(1));
+  if (hoy) {
+    hoy.addEventListener('click', () => {
+      currentJdn = todayJdnUtc();
+      renderGrid($('rosetta-grid'), currentJdn, 'hoy UTC');
+      renderMonth();
+    });
+  }
+}
 
-  setMode(MODES[0]);
+function bindHoyUtc() {
+  const hoy = $('hoy-utc');
+  if (!hoy) return;
+  hoy.addEventListener('click', () => {
+    const j = todayJdnUtc();
+    const gd = toGerarion(j - ORIGIN_JDN);
+    setOrigin('gero', canonicalOf(gd));
+    toast('Hoy UTC');
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -514,7 +617,13 @@ function bindTranslator() {
 // ---------------------------------------------------------------------------
 
 const PRESETS = [
-  { label: 'Hoy', run: () => showDay(ORIGIN_JDN + dayIndexFromGregorian(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, new Date().getUTCDate())) },
+  {
+    label: 'Hoy',
+    run: () => {
+      const j = todayJdnUtc();
+      setOrigin('gero', canonicalOf(toGerarion(j - ORIGIN_JDN)));
+    },
+  },
   { label: 'Inicio año 2031 DY', ts: '2031DY-01-01-S' },
   { label: 'Cruxyphi · 2031DY-01-12-T', ts: '2031DY-01-12-T' },
   { label: 'Origen · 0000DY-01-01-S', ts: '0000DY-01-01-S' },
@@ -542,7 +651,7 @@ function bindPresets() {
       }
       try {
         const ts = parse(p.ts);
-        showDay(ORIGIN_JDN + ts.dayIndex);
+        setOrigin('gero', canonicalOf(ts));
         toast(p.label);
       } catch (err) {
         toast(`preset inválido: ${err.message}`);
@@ -550,23 +659,6 @@ function bindPresets() {
     });
     row.appendChild(btn);
   }
-}
-
-function showDay(jdnVal) {
-  const di = jdnVal - ORIGIN_JDN;
-  // carga la fecha en el traductor universal (modo Gerarion, marca canónica)
-  const g = toGerarion(di);
-  if (typeof window.__setUni === 'function') {
-    window.__setUni('gero', canonicalOf(g));
-  } else {
-    renderPresetStatus(jdnVal);
-  }
-}
-
-function renderPresetStatus(jdnVal) {
-  const status = $('rosetta-status');
-  const di = jdnVal - ORIGIN_JDN;
-  status.textContent = `Pivote: day_index ${di} → JDN ${jdnVal}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -593,7 +685,7 @@ function bindGregForm() {
       const g = toGerarion(dayIndex);
       const lines = [
         `instante continuo: día ${dayIndex}`,
-        `gerearion:         ${canonicalOf(g)}`,
+        `gerarion:          ${canonicalOf(g)}`,
         `nombre del día:    ${WEEKDAYS[g.weekdayIndex][0]}`,
       ];
       if (g.month === 0) {
@@ -614,7 +706,7 @@ function bindGeroForm() {
     ev.preventDefault();
     const input = $('gero-ts').value;
     if (!input.trim()) {
-      showOutput('output-gero', ['Introduce un sello GTS.'], true);
+      showOutput('output-gero', ['Introduce una marca GUS (sello GUS).'], true);
       return;
     }
     try {
@@ -622,16 +714,18 @@ function bindGeroForm() {
       const [gy, gm, gd] = gregorianFromDayIndex(ts.dayIndex);
       const grid = $('rosetta-grid');
       if (grid) {
+        currentJdn = ORIGIN_JDN + ts.dayIndex;
         renderGrid(grid, ORIGIN_JDN + ts.dayIndex, `traducido desde «${input}»`);
+        renderMonth();
       }
       const lines = [
         `canónico:          ${canonicalOf(ts)}`,
         `instante continuo: día ${ts.dayIndex}`,
         `gregoriano:        ${gy}-${pad2(gm)}-${pad2(gd)}`,
-        `nombre del día:     ${WEEKDAYS[ts.weekdayIndex][0]}`,
+        `nombre del día:    ${WEEKDAYS[ts.weekdayIndex][0]}`,
       ];
       if (ts.flags.length > 0) {
-        lines.push(`nota:              campos corregidos: ${ts.flags.join(', ')}`);
+        lines.push(`nota:              campos corregidos (weekday_corrected): ${ts.flags.join(', ')}`);
       }
       showOutput('output-gero', lines);
     } catch (err) {
@@ -645,7 +739,7 @@ function bindGeroForm() {
 }
 
 // ---------------------------------------------------------------------------
-// Distancia entre fechas (AY ↦ DY, libre)
+// Distancia entre fechas (AY ↦ DY, libre; autodetección de formato)
 // ---------------------------------------------------------------------------
 
 function bindIntervals() {
@@ -653,8 +747,8 @@ function bindIntervals() {
     ev.preventDefault();
     let a, b;
     try {
-      a = autodetectJdn($('int-a').value);
-      b = autodetectJdn($('int-b').value);
+      a = autodetectToJdn($('int-a').value);
+      b = autodetectToJdn($('int-b').value);
     } catch (err) {
       showOutput('output-int', [err.message], true);
       return;
@@ -669,12 +763,13 @@ function bindIntervals() {
     const weeksStr = Number.isInteger(weeksGus)
       ? `${weeksGus} semanas Gerarion exactas`
       : `${weeksGus.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} semanas Gerarion`;
+    const eraOf = (g) => (g.year < 0 ? `${-g.year} AY` : `${g.year} DY`);
     showOutput('output-int', [
       `${a.label} ${sign} ${b.label}`,
       `distancia: ${days.toLocaleString('es')} días (${sign})`,
       `         = ${weeksStr}`,
-      `         = ${secondsSi.toLocaleString('es')} segundos SI (${days} × 86.400, sin intercalares)`,
-      `años Gerarion: ${yA.year < 0 ? `${-yA.year} AY` : `${yA.year} DY`} ${sign} ${yB.year < 0 ? `${-yB.year} AY` : `${yB.year} DY`} (Δ año: ${yearSpan > 0 ? '+' : ''}${yearSpan})`,
+      `         = ${secondsSi.toLocaleString('es')} segundos SI (${days} × 86.400, sin segundos intercalares)`,
+      `años Gerarion: ${eraOf(yA)} ${sign} ${eraOf(yB)} (Δ año: ${yearSpan > 0 ? '+' : ''}${yearSpan})`,
       `  · JDN: ${a.jdn.toLocaleString('es')} ${sign} ${b.jdn.toLocaleString('es')}`,
     ]);
   });
@@ -729,7 +824,12 @@ function main() {
   bindTranslator();
   bindPresets();
   bindIntervals();
+  bindMonthNav();
+  bindHoyUtc();
   runSelfTest();
+  setMode(MODES[0]);
+  renderGrid($('rosetta-grid'), currentJdn, 'hoy UTC (estado inicial)');
+  renderMonth();
 }
 
 main();

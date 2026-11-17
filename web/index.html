@@ -4,28 +4,32 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Gerarion · Portal y Traductor Cronológico Universal — GUS 2.1.0</title>
-<meta name="description" content="Traductor cronológico universal: Gerarion (GUS v2.1.0), gregoriano, juliano, egipcio, etíope, bahá'í, maya, hebreo, islámico y chino. 100% local, cero dependencias." />
+<meta name="description" content="Traductor cronológico universal: Gerarion (GUS v2.1.0), gregoriano, juliano, egipcio, etíope, bahá'í, maya, hebreo, islámico y chino. 100% local, cero dependencias, funciona sin conexión." />
+<link rel="preload" href="fonts/AtkinsonHyperlegible-Regular.woff2" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="fonts/AtkinsonHyperlegible-Bold.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <a class="skip-link" href="#main">Saltar al contenido principal</a>
+
   <header class="site-header">
     <div class="brand">
       <h1>Gerarion</h1>
       <p class="tagline">Portal &amp; Traductor Cronológico Universal — <span class="mono">GUS v2.1.0</span></p>
     </div>
     <div class="header-actions">
-      <a class="chip link-chip" href="https://verared.github.io/gerarion/" title="Demo interactiva en vivo">docs</a>
       <a class="chip link-chip" href="https://github.com/verared/gerarion" title="Repositorio normativo y Releases">repo</a>
-      <button id="theme-toggle" class="chip" type="button" title="Cambiar tema claro/oscuro">tema</button>
+      <button id="theme-toggle" class="chip" type="button" title="Alternar contraste reforzado" aria-pressed="false">contraste alto</button>
     </div>
   </header>
 
-  <main>
+  <main id="main">
     <!-- Reloj en vivo -->
     <section class="card clock-card" aria-labelledby="clock-title">
       <div class="card-head">
         <h2 id="clock-title">Reloj en vivo</h2>
         <div class="clock-controls">
+          <label class="visually-hidden" for="clock-tz">Zona de referencia</label>
           <select id="clock-tz" class="chip" title="Zona de referencia">
             <option value="utc">TCJ+0 (UTC)</option>
             <option value="local">TCJ local</option>
@@ -34,15 +38,15 @@
         </div>
       </div>
       <div id="now-gero" class="big mono">—</div>
-      <div id="now-details" class="dim"></div>
+      <div id="now-details" class="dim" aria-live="off"></div>
       <div class="cycle-box">
         <span id="now-cycle" class="cycle">—</span>
-        <span class="cycle-legend">SC 06:00–17:59 · LC 18:00–05:59</span>
+        <span class="cycle-legend">SC 06:00–17:59 · LC 18:00–05:59 (hora de referencia: UTC)</span>
       </div>
       <div class="metrics">
-        <span class="metric"><label>day_index</label><b id="now-dayindex" class="mono">—</b></span>
-        <span class="metric"><label>JDN</label><b id="now-jdn" class="mono">—</b></span>
-        <span class="metric"><label>instant</label><b id="now-instant" class="mono">—</b></span>
+        <span class="metric"><label for="now-dayindex">day_index</label><b id="now-dayindex" class="mono">—</b></span>
+        <span class="metric"><label for="now-jdn">JDN</label><b id="now-jdn" class="mono">—</b></span>
+        <span class="metric"><label for="now-instant">instant</label><b id="now-instant" class="mono">—</b></span>
       </div>
     </section>
 
@@ -50,22 +54,24 @@
     <section class="card" aria-labelledby="rosetta-title">
       <div class="card-head">
         <h2 id="rosetta-title">Piedra Rosetta · traductor universal</h2>
+        <button id="hoy-utc" class="btn chip" type="button" title="Traducir hoy (fecha y hora UTC)">Hoy UTC</button>
       </div>
       <p class="dim">
-        Dimensiona cualquier fecha —incluida la era <b>AY</b> con años de 5–6
-        dígitos (<tt>12000AY-01-01-S</tt>)— en un solo calendario y se traduce
-        a los <b>10 sistemas</b> a la vez: el <em>day_index</em> GUS y su JDN
-        son el pivote matemático.
+        Elige el calendario de origen, introduce la fecha y se traduce a los
+        <b>10 sistemas</b> a la vez: el <b>day_index</b> GUS y su <b>JDN</b>
+        son el pivote matemático. Cada tarjeta puede usarse como nuevo origen.
+        Eras GUS: <b>DY</b> (futura) y <b>AY</b> (pasada, años de 5–6 dígitos,
+        con Gran Tempalum simétrico).
       </p>
       <form id="form-uni" class="uni-form">
-        <div class="mode-row" id="uni-modes" role="radiogroup"></div>
+        <div class="mode-row" id="uni-modes" role="radiogroup" aria-label="Calendario de origen"></div>
         <div class="uni-input">
           <label class="dim" for="uni-in" id="uni-label"></label>
           <input type="text" id="uni-in" spellcheck="false" autocomplete="off" class="mono" />
-          <button type="submit">Traducir</button>
+          <button type="submit" class="btn-primary">Traducir</button>
         </div>
       </form>
-      <div id="rosetta-status" class="output dim"></div>
+      <div id="rosetta-status" class="output dim" aria-live="polite"></div>
       <div id="rosetta-grid" class="cal-grid"></div>
       <div class="presets-row dim" id="presets"></div>
     </section>
@@ -74,16 +80,18 @@
     <section class="card" aria-labelledby="greg-title">
       <h2 id="greg-title">Gregoriano → Gerarion</h2>
       <form id="form-greg" class="inline-form">
+        <label class="visually-hidden" for="greg-date">Fecha gregoriana</label>
         <input type="date" id="greg-date" min="0001-01-01" required />
-        <button type="submit">Convertir</button>
+        <button type="submit" class="btn-primary">Convertir</button>
       </form>
       <div id="output-greg" class="output"></div>
     </section>
 
-    <!-- Quick: gerarion -> gregoriano (regla 7 completa, flags, errores) -->
+    <!-- Quick: gerarion -> todo (regla 7 completa, flags, errores) -->
     <section class="card" aria-labelledby="gero-title">
       <h2 id="gero-title">Gerarion → todo</h2>
       <form id="form-gero" class="inline-form">
+        <label class="visually-hidden" for="gero-ts">Marca canónica GUS</label>
         <input
           type="text"
           id="gero-ts"
@@ -91,7 +99,7 @@
           spellcheck="false"
           class="mono"
         />
-        <button type="submit">Convertir</button>
+        <button type="submit" class="btn-primary">Convertir</button>
       </form>
       <div id="output-gero" class="output"></div>
       <p class="dim hint">
@@ -100,21 +108,37 @@
       </p>
     </section>
 
+    <!-- Calendario mensual navegable -->
+    <section class="card" aria-labelledby="month-title">
+      <div class="card-head">
+        <h2 id="month-title">Calendario del mes</h2>
+      </div>
+      <div class="month-nav">
+        <button id="month-prev" class="chip" type="button" title="Mes anterior">← anterior</button>
+        <button id="month-next" class="chip" type="button" title="Mes siguiente">siguiente →</button>
+        <button id="month-hoy" class="chip" type="button" title="Ir a hoy (fecha UTC)">hoy UTC</button>
+        <span id="month-status" class="dim" aria-live="polite"></span>
+      </div>
+      <div id="month-grid" class="month-grid" role="grid" aria-label="Días del mes Gerarion"></div>
+    </section>
+
     <!-- Intervalos -->
     <section class="card" aria-labelledby="int-title">
       <h2 id="int-title">Distancia entre fechas</h2>
       <p class="dim">
-        Dos fechas en cualquier formato soportado (marca GUS o
-        <tt>AAAA-MM-DD</tt>); calcula la distancia exacta cruzando
-        libremente entre era <b>AY</b> y era <b>DY</b>.
+        Dos fechas en cualquier formato soportado (marca GUS,
+        <tt>AAAA-MM-DD</tt>, «año mes día» o cuenta larga maya); calcula la
+        distancia exacta cruzando libremente entre era <b>AY</b> y era <b>DY</b>.
       </p>
       <form id="form-int" class="inline-form">
+        <label class="visually-hidden" for="int-a">Fecha inicial</label>
         <input type="text" id="int-a" class="mono" placeholder="0001AY-00-11-B" spellcheck="false" />
-        <span class="arrow">→</span>
+        <span class="arrow" aria-hidden="true">→</span>
+        <label class="visually-hidden" for="int-b">Fecha final</label>
         <input type="text" id="int-b" class="mono" placeholder="2031DY-01-01-S" spellcheck="false" />
-        <button type="submit">Calcular</button>
+        <button type="submit" class="btn-primary">Calcular</button>
       </form>
-      <div id="output-int" class="output"></div>
+      <div id="output-int" class="output" aria-live="polite"></div>
     </section>
 
     <!-- Autoverificación normativa -->
@@ -131,12 +155,18 @@
 
   <footer>
     <p class="dim">
-      Matemática 100% local: cero backend, cero cookies, cero telemetría, cero
-      dependencias. La exactitud histórica sigue la convención declarada de
-      cada calendario (nota en su tarjeta). Las marcas temporalmente
-      verificables (GST + notario Merkle) viven en el repo:
-      <a href="https://github.com/verared/gerarion">github.com/verared/gerarion</a> —
-      spec <a href="https://github.com/verared/gerarion/blob/main/docs/spec/gus-2.1.0.md">gus-2.1.0.md</a>.
+      Matemática 100 % local: cero backend, cero cookies, cero telemetría, cero
+      dependencias; una vez cargada, la página funciona sin conexión.
+      Convención de hora: todo pivote usa medianoche UTC como inicio del día
+      GUS (el sello conserva la hora como dato adjunto). Límites: los
+      calendarios nativos (hebreo, islámico, chino) usan <tt>Intl</tt> del
+      navegador (tabla Umm al-Qura ≈ 1900–2074 e.c.; chino fiable ≈ 1900–2100;
+      fuera de rango la tarjeta lo indica y las demás conversiones siguen).
+      Bahá'í: tabla oficial UHJ de Naw-Rúz 172–221 BE; fuera de ella,
+      convención 21 de marzo (aproximada, sesgo ≤ 1 día).
+      Espec: <a href="https://github.com/verared/gerarion/blob/main/docs/spec/gus-2.1.0.md">gus-2.1.0.md</a> —
+      Releases con <tt>SHA256SUMS.txt</tt>:
+      <a href="https://github.com/verared/gerarion/releases">github.com/verared/gerarion/releases</a>.
     </p>
   </footer>
 

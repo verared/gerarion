@@ -19,10 +19,12 @@ import {
   jdnToMaya,
   MAYA_CORRELATION_JDN,
   intlCalendar,
+  intlToJdn,
   civilWeekday,
   gregorianToJdn,
+  gusView,
 } from './calendars.mjs';
-import { jdn, dayIndexFromGregorian, parse, toGerarion, canonicalOf } from './gerarion.mjs';
+import { ORIGIN_JDN, dayIndexFromGregorian, gregorianFromDayIndex, parse, toGerarion, canonicalOf } from './gerarion.mjs';
 
 const failures = [];
 let checks = 0;
@@ -134,16 +136,17 @@ check('bahai: Naw-Rúz 180 BE = 21 mar 2023 gregoriano (convención 21-mar)', ()
   assertEq(bahaiYearStartJdn(180), gregorianToJdn(2023, 3, 21));
 });
 
-check('bahai: Ayyám-i-Há de 5 días en año Y con (Y+1844) bisiesto gregoriano', () => {
-  // Y = 180 → 180 + 1844 = 2024, bisiesto (el 29 feb 2024 cae dentro de BE 180)
-  const j1 = bahaiToJdn(180, 0, 1);
-  const j5 = bahaiToJdn(180, 0, 5);
+check('bahai: Ayyám-i-Há de 5 días según tabla oficial UHJ (BE 182)', () => {
+  // BE 182: Naw-Rúz 2025-03-20 → 2026-03-21 (tabla UHJ) = 366 días → 5 Ayyám-i-Há
+  const j1 = bahaiToJdn(182, 0, 1);
+  const j5 = bahaiToJdn(182, 0, 5);
   assertEq(j5 - j1, 4);
   assertEq(jdnToBahai(j1).month, 0);
   assertEq(jdnToBahai(j5).day, 5);
   // el día siguiente ya es 1 de 'Alá' (mes 19)
-  assertEq(jdnToBahai(j5 + 1), { year: 180, month: 19, day: 1 });
-  // y en año sin 29 feb dentro (181 → 2025) Ayyám-i-Há dura 4 días
+  const nx = jdnToBahai(j5 + 1);
+  assertEq({ year: nx.year, month: nx.month, day: nx.day }, { year: 182, month: 19, day: 1 });
+  // en BE 181 (2024-03-20 → 2025-03-20, 365 días) Ayyám-i-Há dura 4 días
   const j4n = bahaiToJdn(181, 0, 4);
   assertEq(bahaiToJdn(181, 19, 1) - j4n, 1);
 });
@@ -250,6 +253,73 @@ check('civilWeekday: JDN 2451545 (1 ene 2000) = Sábado', () => {
 
 check('civilWeekday: JDN 0 = Lunes', () => {
   assertEq(civilWeekday(0), 'Lunes');
+});
+
+// ---------- Vectores de verificación del portal (marzo 2026) ----------
+
+check('vector: 17 mar 2026 gregoriano = 2031DY-01-01-S', () => {
+  const jc = gregorianToJdn(2026, 3, 17);
+  assertEq(canonicalOf(toGerarion(jc - ORIGIN_JDN)), '2031DY-01-01-S');
+});
+
+check('vector: 14 mar 2030 = 2034DY-00-07-M, Nuvivid III (Tempalum de GT)', () => {
+  const jc = gregorianToJdn(2030, 3, 14);
+  const d = toGerarion(jc - ORIGIN_JDN);
+  assertEq(canonicalOf(d), '2034DY-00-07-M');
+  assertEq(gusView(jc - ORIGIN_JDN).special, 'Nuvivid III');
+});
+
+check('vector: 0001AY-00-11-B = 20 marzo del año astronómico −5 (ida y vuelta)', () => {
+  const ts = parse('0001AY-00-11-B');
+  assertEq(gregorianFromDayIndex(ts.dayIndex), [-5, 3, 20]);
+  const j = ORIGIN_JDN + ts.dayIndex;
+  const back = parse(canonicalOf(toGerarion(ts.dayIndex)));
+  assertEq(back.dayIndex, ts.dayIndex);
+  assertEq(j, gregorianToJdn(-5, 3, 20));
+});
+
+check('vector: chino 1/1 de 2026 = 17 feb 2026 = 2030DY-12-07-S', () => {
+  const r = intlToJdn('chinese', { year: 2026, month: 1, day: 1 });
+  assertEq(r.ok, true);
+  const [gy, gm, gd] = gregorianFromDayIndex(r.jdn - ORIGIN_JDN);
+  assertEq(`${gy}-${gm}-${gd}`, '2026-2-17');
+  assertEq(canonicalOf(toGerarion(r.jdn - ORIGIN_JDN)), '2030DY-12-07-S');
+});
+
+check('vector: primer día del segundo mes intercalar chino de 2023 = 22 mar 2023', () => {
+  const r = intlToJdn('chinese', { year: 2023, month: 2, day: 1, leapMonth: true });
+  assertEq(r.ok, true);
+  assertEq(r.jdn, 2460026);
+  const [gy, gm, gd] = gregorianFromDayIndex(r.jdn - ORIGIN_JDN);
+  assertEq(`${gy}-${gm}-${gd}`, '2023-3-22');
+  // ida y vuelta con el mismo motor
+  const p = intlCalendar(r.jdn, 'chinese');
+  assertEq([p.year, p.month, p.day, p.leapMonth], [2023, 2, 1, true]);
+});
+
+check('vector: hebreo 5784 bisiesto: 13/2 (Adar II) = 12 mar 2024; 5786 avisa', () => {
+  const r = intlToJdn('hebrew', { year: 5784, month: 13, day: 2 });
+  assertEq(r.ok, true);
+  const [gy, gm, gd] = gregorianFromDayIndex(r.jdn - ORIGIN_JDN);
+  assertEq(`${gy}-${gm}-${gd}`, '2024-3-12');
+  const back = intlCalendar(r.jdn, 'hebrew');
+  assertEq([back.year, back.month, back.day], [5784, 13, 2]);
+  const no = intlToJdn('hebrew', { year: 5786, month: 13, day: 1 });
+  assertEq(no.ok, false);
+  assertEq(/no es bisiesto/.test(no.note), true);
+});
+
+check('vector: umalqura 6/7/1448 AH = 17 nov 2026, ida y vuelta', () => {
+  const r = intlToJdn('islamicUmalqura', { year: 1448, month: 6, day: 7 });
+  assertEq(r.ok, true);
+  const [gy, gm, gd] = gregorianFromDayIndex(r.jdn - ORIGIN_JDN);
+  assertEq(`${gy}-${gm}-${gd}`, '2026-11-17');
+  const back = intlCalendar(r.jdn, 'islamicUmalqura');
+  assertEq([back.year, back.month, back.day], [1448, 6, 7]);
+});
+
+check('vector: etíope Meskerem 1 de 2019 EC = 11 sep 2026', () => {
+  assertEq(ethiopicToJdn(2019, 1, 1), gregorianToJdn(2026, 9, 11));
 });
 
 // ---------- reporte ----------

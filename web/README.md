@@ -59,10 +59,52 @@ tarball (lo automatiza el workflow `release.yml` en cada tag `v*`).
 
 ## Convención horaria
 
-El día rueda a medianoche: el instante continuo es lineal
-`día×86400 + h×3600 + m×60 + s` (sin segundos intercalares). El ciclo
-SC (06:00-17:59) / LC (18:00-05:59) es una etiqueta luminosa de la hora
-actual, no una frontera de fecha. La página muestra la hora TCJ+0 (UTC).
+Las fechas de todos los calendarios son días civiles completos en **UTC**:
+el pivote es el JDN del mediodía UTC del día civil (JDN = 1719313 +
+day_index para Gerarion). Medianoche UTC es el cambio de día; al proyectar
+un instante hacia otro calendario la hora se conserva como dato adjunto.
+El instante continuo es lineal `día×86400 + h×3600 + m×60 + s` (sin
+segundos intercalares). El ciclo SC (06:00–17:59) / LC (18:00–05:59) es una
+etiqueta luminosa de la hora de referencia (UTC en modo TCJ+0), no una
+frontera de fecha. El reloj admite además la zona local del visitante.
+
+## Convenciones calendáricas y límites documentados
+
+- **Gerarion (GUS 2.1.0)** — exacto: aritmética entera, Gran Tempalum
+  simétrico en DY y AY (371 días), era AY con años de 5–6 dígitos.
+- **Gregoriano y juliano prolépticos** — exactos con años negativos
+  (numeración astronómica; 1 a.C. = año 0).
+- **Egipcio (Vago)** — 12 × 30 + 5 epagómenos, época Nabonassar
+  (JDN 1448638). No tiene año cero propio: la extensión proleptica puede
+  mostrar años ≤ 0.
+- **Etíope** — Amete Mihret, época JDN 1724221; bisiesto cuando
+  `año % 4 == 3` (Pagume de 5/6 días). Exacto con JDN.
+- **Bahá'í (Badí')** — tabla oficial UHJ de Naw-Rúz para los años BE
+  172–221; en ese rango el Naw-Rúz y la longitud de Ayyám-i-Há (4 o 5 días)
+  son exactos. Fuera de la tabla se usa la convención 21 de marzo
+  (aproximación, sesgo ≤ 1 día respecto a la astronomía desde 2015); la
+  tarjeta lo indica.
+- **Maya (cuenta larga)** — correlación GMT (584283). Exacta con JDN en
+  toda la extensión.
+- **Hebreo, islámico y chino** — vía `Intl.DateTimeFormat` del navegador.
+  Cobertura: todo el rango de `Date` (±8,64·10¹⁵ ms ≈ ±273.790 años), con
+  extrapolación matemática de ICU fuera de las tablas históricas
+  (chino fiable ≈ 1900–2100; Umm al-Qura ≈ 1900–2074; el islámico civil es
+  tabular y exacto en todo el rango). El hebreo distingue Adar I/II en años
+  bisiestos; el chino permite introducir meses intercalares con la marca
+  `bis`. Si una fecha está fuera de rango, su tarjeta lo dice con claridad
+  sin afectar a las demás conversiones.
+- **Conversión inversa Intl** — los tres calendarios nativos también
+  hacen de origen: se busca el JDN cuyo `Intl` produce los componentes
+  pedidos y se verifica con el mismo motor (ida y vuelta) antes de aceptarlo.
+
+## Accesibilidad
+
+Tipografía Atkinson Hyperlegible (OFL, archivos locales en `fonts/`),
+texto ≥ 16 px, controles ≥ 2,4 rem de alto, foco visible, navegación
+completa por teclado, `aria-live` en resultados y modo de contraste
+reforzado (botón «contraste alto» en la cabecera). Diseño verificado a
+320, 390, 768 y 1440 px, y funcionando sin conexión una vez cargada.
 
 ## Qué no puede hacer esta página
 
