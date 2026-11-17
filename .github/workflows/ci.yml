@@ -6,8 +6,10 @@ permissions:
   contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # ubuntu-latest es ya Ubuntu 26.04, donde setup-python no suministra 3.9.
+    runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
@@ -26,6 +28,8 @@ jobs:
       - name: Conformance C (independent implementation)
         run: make -C impl-c conformance
       - name: Differential fuzzing Python-JS-C
-        run: python tools/fuzz_diff.py --n 500
+        run: |
+          make -C impl-c gus-cli
+          python tools/fuzz_diff.py --n 500
         # Manual runs use --n 1500 (CI keeps 500 for a ~15 min job budget);
         # the CI run is statistical coverage, the vector set is the hard proof.
