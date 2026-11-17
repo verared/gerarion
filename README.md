@@ -476,4 +476,4 @@ ninguno de sus fragmentos. Ver [NOTICE](NOTICE) y [sbom.cdx.json](sbom.cdx.json)
 |---|---|---|
 | Especificación normativa (`docs/spec/gus-2.0.md`) | **2.0** | El estándar en sí; solo cambia con cambios normativos aprobados (ventana de revisión de 90 días) |
 | Draft IETF (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | El documento de envío (individual submission) que describe la spec; puede avanzar sin que la spec cambie |
-| Paquetes (`pyproject.toml`, `web/package.json`) | **2.3.4-alpha.1** | Los artefactos de software: kernel Python/JS/C, tests, docs y erratas aplicadas. Puede cambiar entre releases de la spec |
+| Paquetes (`pyproject.toml`, `web/package.json`) | **2.3.4-alpha.2** | Los artefactos de software: kernel Python/JS/C, tests, docs y erratas aplicadas. Puede cambiar entre releases de la spec |

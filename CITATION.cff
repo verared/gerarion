@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use GUS, please cite it as below."
 title: "Gerarion Universal Standard (GUS): calendario regular y marca temporal verificable, post-quantum by design"
-version: 2.3.4a1
+version: 2.3.4a2
 date-released: "2026-11-16"
 license:
   - MIT
