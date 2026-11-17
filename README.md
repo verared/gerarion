@@ -27,18 +27,21 @@ live GUS clock, month calendar and interval calculator. No network calls,
 no cookies, no accounts; it keeps working offline once loaded.
 For CUDA-free install options see [Distribution](#distribution) below.
 
-> **STATUS: BETA (alpha-final).** Spec **GUS v2.1.0**: the Gran Tempalum
-> rule is symmetric and infinite in both eras (DY/AY), and the UTC/TAI
-> boundary is normative (`docs/TODO-pendientes.md` TODO-001 closed; only
-> D-001, midnight-TAI, stays open as a 2.x proposal). The remaining
-> open work before v1.0 is the optional crypto adapters.
+> **STATUS: BETA.** Spec **GUS v2.1.0**: the Gran Tempalum
+> rule is symmetric and infinite in both eras (DY/AY), and the day
+> boundary is normative (`docs/TODO-pendientes.md` TODO-001 closed;
+> only D-001 stays open as a 2.x proposal — see
+> [Time scale](#time-scale)). The remaining
+> open work before v1.0 is the optional crypto adapters and the beta
+> hardening review.
 
-A time standard integrating three layers under one machine-verifiable
-specification:
+An open specification and standards-track time project integrating three
+layers under one machine-verifiable specification:
 
 1. **Regular calendar:** 12 months of exactly 30 days + closing Tempalum
    (4/11 days). Every fixed date falls on the same weekday, every year.
-2. **Continuous scale:** linear instants over TAI, no leap seconds.
+2. **Continuous scale:** linear instants over midnight-UTC day labels, with
+   no leap-second table applied (see [Time scale](#time-scale)).
    Comparisons, ranges and totals trivial in any language.
 3. **Verifiable timestamp (GST):** post-quantum signature + chained daily
    Merkle notary. The effective security level is ~2^128 against a
@@ -194,7 +197,7 @@ that 364 and 371 are multiples of 7: no day ever falls outside the weekly
 cycle (see [Related work](#related-work)).
 
 Names such as **Keuphero** (month 1), **Tempalum** (closing month), the
-weekday letters and the DY/AY eras are *opaque labels* of the standard: no
+weekday letters and the DY/AY eras are *opaque labels* of the specification: no
 normative rule depends on their meaning. Their etymology, philosophy and
 origin notes have a cultural origin documented outside this repository
 (not published).
@@ -237,6 +240,42 @@ C binaries) plus `SHA256SUMS.txt` for integrity verification
 project's only dependency.
 
 ## Normative language
+
+(The key words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD,
+SHOULD NOT, RECOMMENDED, MAY, OPTIONAL in this document are to be
+interpreted as described in RFC 2119 / RFC 8174.)
+
+## Time scale
+
+This is the single authoritative statement of what the code does; it
+replaces every earlier phrasing that mentioned TAI (spec §9 is the
+normative home of this text; TODO-001 is closed, D-001 stays open as a
+2.x proposal — DECISIÓN DEL AUTOR).
+
+- **The GUS day starts at midnight UTC.** Day `[n, n+1)` is the integer
+  range of GUS seconds `[n·86400, (n+1)·86400)`; it is not midnight-TAI
+  and not local civil midnight.
+- **The integer does not apply a TAI−UTC table.** The mapping is
+  Unix/POSIX-style: each UTC label `AAAA-MM-DDTHH:MM:SSZ` maps to one
+  integer by pure arithmetic. The scale is *linear in labels*, and the
+  label line does not count historical leap seconds.
+- **Crossing a historical leap second does not preserve physical
+  duration.** Measured with the reference implementation:
+  `2016-12-31T23:59:59Z → 2017-01-01T00:00:00Z` advances the GUS integer
+  by **1 s**, while **2 SI seconds** actually elapsed (the UTC label
+  2016-12-31T23:59:60Z existed). Integer differences of GUS per this
+  profile are therefore *label durations*, not always exact physical
+  durations across historical intercalations. If your use case needs
+  physical duration across those dates, convert through a leap-second
+  table (IERS) or use a TSA that stamps on a continuous scale.
+- **Context (verified sources):** NIST documents TAI − UTC = 37 s
+  (nist.gov, leap seconds). CGPM Resolution 5 (2026) decided that
+  continuous UTC takes effect on 20 May 2027 with a maximum |UT1−UTC|
+  of 3.600 s (bipm.org, DOI 10.59161/CGPM2026RES5E). Neither fact
+  changes the mapping above: historical intercalaries remain, and the
+  clock source is still the operator's responsibility.
+- **Pre-1958 extension** is a declared proleptic convention; it does not
+  claim to reproduce any historical TAI realization (spec §9).
 
 The English version of `docs/spec/gus-2.1.0.md`, `docs/spec/threat-model.md`,
 `docs/errata-v1.2.md` and the adoption report lives in
@@ -374,12 +413,13 @@ Declared with the same force as the guarantees:
    map still needs tzdata. Physical clocks still need a source
    (GNSS/NTP). GUS makes the *value* verifiable; it does not replace
    physical synchronization.
-5. **The TAI scale is not "100% mathematical".** What is purely
-   mathematical is the calendar: a total function of the day index. TAI
-   depends on physical atomic clocks maintained by the BIPM, and the
-   divergence from the solar day (UT1) keeps growing — exactly the price
-   of eliminating leap seconds. GUS's guarantee about time is *verifiable
-   consistency*, not astronomical truth.
+5. **Reference time scales are not "100% mathematical".** What is purely
+   mathematical is the calendar: a total function of the day index. Real
+   reference scales kept by the BIPM depend on physical atomic clocks, and
+   the divergence from the solar day (UT1) keeps growing.
+   GUS's guarantee about time is *verifiable consistency*, not astronomical
+   truth — see [Time scale](#time-scale) for exactly what the integer
+   counts.
 6. **It does not require universal adoption to be useful.** The notary
    works with any calendar (a `day_root` is just a chain of signed roots);
    GUS offers it *integrated* with a regular calendar and vectors, but it
@@ -448,16 +488,24 @@ governance are human-trust questions (formal governance in
 and it is worth saying so.**
 
 - **12×30 + closing days:** the ancient Egyptian civil calendar
-  (12×30+5), the French Republican calendar (12×30 + 5/6 complementary
-  days), the Coptic, the Ethiopian and the Bahá'í (19×19 + intercalary).
-  These are the closest structural ancestors of the GUS block.
-- **Invariant week with intercalary week:** Symmetry454, Hanke-Henry
-  and Pax. The GUS Tempalum is, conceptually, an *intercalary week*
-  (leap week) and should be read as such.
+  (12×30+5 — WebExhibits, *Ancient calendars*:
+  webexhibits.org/calendars/calendar-ancient.html — "a solar year of
+  365 days (12 months × 30 + 5 extra)"), the French Republican calendar
+  (12×30 + 5/6 complementary days), the Coptic, the Ethiopian and the
+  Bahá'í (19×19 + intercalary). These are the closest structural
+  ancestors of the GUS block.
+- **Invariant week with intercalary week:** Symmetry454 (months of 28/35
+  days, quarters of 13 weeks, normal years of 364 days and a leap week
+  extending leap years to 371 — Threeten-Extra javadoc,
+  threeten.org), Hanke-Henry and Pax. The GUS Tempalum is, conceptually,
+  an *intercalary week* (leap week) and should be read as such.
+- **Known cost, shared with those designs:** three regular months sum
+  **90 days, not 13 weeks**, and not every month begins on the same
+  weekday of the cycle.
 - **Purely arithmetic calendars:** the Hebrew (computable arithmetically
   since the 4th century), the tabular Hijri, the 33-year Persian.
 - **Continuous day counting:** Julian Day Number, the Maya long count,
-  Unix time, TAI.
+  Unix time.
 - **Chained timestamping:** Haber and Stornetta (1991) — whence Surety,
   publishing weekly hashes in the New York Times since 1995 — plus RFC
   3161, OpenTimestamps, Certificate Transparency and Roughtime.
@@ -495,8 +543,9 @@ UTC plus offset solves instant *representation* — and is the right exchange
 format. It does not solve calendar arithmetic (irregular months), scale
 stability (leap seconds the CGPM has not yet abolished in practice,
 vendor-specific smears), or verifiability (a `2026-05-23T09:30:00Z` is just
-a number; nothing certifies it). GUS uses a continuous TAI scale and adds
-the verification layer; the TCJ±O offset keeps presentation compatibility
+a number; nothing certifies it). GUS uses a continuous linear scale on
+midnight-UTC day labels (see [Time scale](#time-scale)) and adds the
+verification layer; the TCJ±O offset keeps presentation compatibility
 with civil reading.
 
 **Why not just use the notary over a Gregorian calendar?**
@@ -518,7 +567,7 @@ proleptic gregorian conversion is used as an interoperability service. The year 
 2026 — is a vector-set example: the year is determined by the solar
 recurrence; the normative guarantee is the oscillation bound (|Δ| < 7 days),
 which follows from 1 Keuphero always falling on Soludyia: any correction is
-applied in whole 7-day steps (the standard's mean-year constant guarantees
+applied in whole 7-day steps (the specification's mean-year constant guarantees
 it), so the bound holds as a model property but does NOT cover the real
 physical drift of the tropical year over millennia; and the date window is
 **observed, not structural** (year starts fall
@@ -537,6 +586,7 @@ dependencies. The GST/notary layer is opt-in.
 docs/
 ├── spec/gus-2.1.0.md          Normative specification (v2.1.0; EN mirror at docs/en)
 ├── spec/threat-model.md     Threat model and guarantees
+├── GLOSSARY.md              Single-definition glossary, ES and EN
 ├── informe-adopcion-gus.md  Technical report: why adopt GUS in computing (ES)
 ├── errata-v1.2.md           The 6 defects of the historical v1.2 draft, test-verifiable
 ├── en/                      5 normative documents in English (EN>ES precedence)
@@ -554,7 +604,7 @@ xml2rfc v3 with proposed IANA registries, pending formal submission. The
 historical v1 Markdown draft is OBSOLETE (archived outside this
 repository, not published).
 
-The formal governance of the standard (who approves kernel changes, the
+The formal governance of the project (who approves kernel changes, the
 90-day Looking Period, fork certification, key policy, conflicts of
 interest) is in [GOVERNANCE.md](GOVERNANCE.md).
 
@@ -591,7 +641,7 @@ and this kernel are logged in [`docs/errata-v1.2.md`](docs/errata-v1.2.md).
 - [x] Normative English (`docs/en/`, 5 documents, EN>ES precedence)
 - [x] Interop profiles (GUS-3339, GUS-3161, GUS-Roughtime) with local e2e
       tests and a pure-stdlib monolithic verifier (`tools/verify_gus.py`);
-      decision D-001 (UTC/TAI boundary) as a public draft, in 90-day review
+      the open question D-001 (see [Time scale](#time-scale)) as a public draft, in 90-day review
 - [x] Minimal adoption document GUS-for-notation (notation only)
 - [x] First GitHub push + publication via GitHub Releases (independent distribution, no external registries)
 - [ ] First operational OpenTimestamps anchor

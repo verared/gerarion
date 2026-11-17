@@ -60,3 +60,40 @@ de nombre N0–N4 son solo presentación; no existen nombres N0 numéricos
 canónicos en la spec 2.0.** El N0 "numérico" es simplemente la numeración
 válida del formato canónico (mes `01`–`12`/`00`, día 1–30). No se define
 ninguna representación serializable adicional.
+
+## TODO-004 — Offsets de zona con minutos en `TCJ±O` (spec §6)
+
+Estado: **ABIERTO** (2026-11) — **DECISIÓN DEL AUTOR**.
+
+Contexto: el campo `TCJ±O` admite hoy solo horas enteras (`TCJ\d{1,2}`);
+existen zonas civiles con minutos, p. ej. `Asia/Kathmandu` con `+05:45`.
+El hallazgo F3 del informe técnico independiente lo reprodujo: Python y JS
+rechazan 2031DY-…-TCJ+5:45.
+
+Opciones:
+
+1. **Extensión compatible (propuesta en la spec §6 ES+EN):** aceptar en
+   ENTRADA la forma opcional `TCJ±H:MM` como presentación sin valor
+   canónico indefinido; el entero `instant` no cambia, y el formato
+   canónico sigue emitiendo horarios enteros. No rompe ningún vector
+   vigente (todos usan `TCJ+0`). Coste: el sello canónico no puede
+   expresar `+05:45` sin ampliar la gramática — hay que decidir la
+   forma canónica (redondeo prohibido; propongo `TCJ+05:45` literal).
+2. **No hacer nada:** documentar que los offsets con minutos quedan fuera
+   del perfil y que la lectura por zona (tzdata) sigue siendo tarea del
+   adaptador, no del formato.
+
+Mientras la decisión no se tome, el formato no cambia: ninguna
+implementación acepta hoy offsets con minutos (comportamiento actual).
+
+## TODO-005 — Era UTC continuo: contexto para 2.x (informativo)
+
+Estado: **CERRADO como documentación** (2026-11, verificado).
+
+Verificado con fuente primaria (BIPM, Resolución 5 de la 28.ª CGPM, 2026,
+DOI 10.59161/CGPM2026RES5E): el «UTC continuo» (sin intercalares,
+|UT1−UTC| ≤ 3.600 s) entra en vigor el **20 de mayo de 2027**. Esto NO
+cambia el kernel GUS 2.1 (mapeo midnight-UTC, sin tabla → ver README
+«Escala de tiempo»): los intercalares históricos siguen ahí y toda
+decisión tipo D-001 (etiquetado TAI) los conserva. Queda anotado aquí
+para la revisión 2.x del perfil de referencia.

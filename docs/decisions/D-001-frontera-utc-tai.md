@@ -1,12 +1,21 @@
 # Decisión D-001 (PROPUESTA para 2.x) — Frontera del instante GUS con UTC/TAI
 
-> **Estado**: PROPUESTA VIVA — la spec 2.0 quedó **congelada con medianoche
+> **Estado**: PROPUESTA VIVA — la spec 2.1 quedó **congelada con medianoche
 > UTC** (TODO-001 cerrado 2026-11-17, decisión de menor registro numérico).
 > Esta decisión permanece abierta como candidato a cambio de kernel en una
 > futura 2.x: exige ventana de revisión de 90 días (GOVERNANCE §3.1),
 > nuevo vector set (`gus-normative-002`) y regeneración de sellos, porque
 > cambia el valor numérico de los instantes. **EN normativo**:
 > [`docs/en/decisions/D-001-utc-tai-boundary.md`](../en/decisions/D-001-utc-tai-boundary.md).
+>
+> **Qué hace HOY el código** (sección única «Escala de tiempo» del README):
+> el día GUS rueda a medianoche UTC y el entero NO aplica tabla TAI−UTC
+> (mapeo tipo Unix/POSIX). Consecuencia medida: cruzar el intercalar
+> histórico 2016-12-31T23:59:60Z hace subir el entero 1 s mientras
+> transcurrieron 2 s SI — las diferencias de enteros son duraciones de
+> etiqueta, no siempre duraciones físicas exactas. Adoptar esta propuesta
+> (instante sobre TAI con tabla explícita) cambiaría esos valores: es una
+> DECISIÓN DEL AUTOR, no una omisión.
 
 ## 1. Contexto
 
