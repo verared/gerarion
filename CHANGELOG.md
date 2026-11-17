@@ -1,5 +1,21 @@
 # Changelog — GUS
 
+## 2.3.4-alpha.2 — arreglo de CI (2026-11)
+
+Equivalencia de versiones: `2.3.4a2` en PEP 440 (pyproject, CITATION, SBOM)
+= `2.3.4-alpha.2` en semver (web/package.json, README, tag `v2.3.4-alpha.2`).
+
+Sin cambios normativos: GUS, GTS, GST y los códigos `GERO_*` no cambian; los
+vectores no se regeneran.
+
+- **CI (GitHub Actions):** la matriz de Python fallaba porque
+  `setup-python` no suministra CPython 3.9 en Ubuntu 26.04 (`ubuntu-latest`
+  actual); se fija `runs-on: ubuntu-24.04` y `fail-fast: false`.
+- **CI:** el paso de fuzzing diferencial requiere `impl-c/gus-cli`, que no
+  se compilaba; ahora el propio paso ejecuta `make -C impl-c gus-cli`.
+- **Pages:** el sitio web (calculador GUS) se publica vía GitHub Actions
+  en https://verared.github.io/gerarion/.
+
 ## 2.3.4-alpha.1 — prepush (rebrand: Gerarion, 2026-11)
 
 Equivalencia de versiones: `2.3.4a1` en PEP 440 (pyproject, CITATION, SBOM)
