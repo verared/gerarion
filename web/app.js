@@ -177,20 +177,28 @@ let clockMode = 'utc';
 function clockStamp() {
   const now = new Date();
   const utcMode = clockMode === 'utc';
-  const y = utcMode ? now.getUTCFullYear() : now.getFullYear();
-  const mo = (utcMode ? now.getUTCMonth() : now.getMonth()) + 1;
-  const d = utcMode ? now.getUTCDate() : now.getDate();
-  const h = utcMode ? now.getUTCHours() : now.getHours();
-  const mi = utcMode ? now.getUTCMinutes() : now.getMinutes();
-  const s = utcMode ? now.getUTCSeconds() : now.getSeconds();
+  // W2: día, JDN, day_index, instant y sello canónico son SIEMPRE UTC
+  // (TCJ+0). El modo local solo cambia la PRESENTACIÓN de la hora y la
+  // etiqueta TCJ±O; nunca desplaza el entero ni el sello.
+  const y = now.getUTCFullYear();
+  const mo = now.getUTCMonth() + 1;
+  const d = now.getUTCDate();
+  const h = now.getUTCHours();
+  const mi = now.getUTCMinutes();
+  const s = now.getUTCSeconds();
   const dayIndex = dayIndexFromGregorian(y, mo, d);
   const g = toGerarion(dayIndex);
   const cyc = cycleOf(h);
-  const stamp = canonicalOf({ ...g, hour: h, minute: mi, second: s, cycle: cyc, offset: 0 });
   const offsetHours = utcMode ? 0 : -now.getTimezoneOffset() / 60;
+  const stamp = canonicalOf({ ...g, hour: h, minute: mi, second: s, cycle: cyc, offset: 0 });
+  // W2: presentación local es solo texto auxiliar; el sello y el entero
+  // (instant) permanecen en TCJ+0 en ambos modos.
+  const localText = utcMode
+    ? 'TCJ+0 (UTC)'
+    : `TCJ (local) ${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())} · offset UTC ${offsetHours >= 0 ? '+' : ''}${offsetHours} h`;
   const jdnNow = ORIGIN_JDN + dayIndex;
   const instant = dayIndex * 86400 + h * 3600 + mi * 60 + s;
-  return { stamp, dayIndex, jdnNow, instant, g, cyc, offsetHours, utcMode };
+  return { stamp, dayIndex, jdnNow, instant, g, cyc, offsetHours, utcMode, localText };
 }
 
 function tickClock() {
@@ -200,7 +208,7 @@ function tickClock() {
   setText(
     'now-details',
     `día ${t.dayIndex} · ${t.g.weekday} · ${monthName} (mes ${pad2(t.g.month)}) · ` +
-      `ciclo ${t.cyc} · hora ${t.utcMode ? 'TCJ+0 (UTC)' : `TCJ${t.offsetHours >= 0 ? '+' : ''}${t.offsetHours} (local)`}`,
+      `ciclo ${t.cyc} · hora ${t.localText}`,
   );
   const cycEl = $('now-cycle');
   if (cycEl) {
@@ -316,11 +324,13 @@ function originFor(kind, comps) {
 }
 
 function hebrewDisplay(r) {
-  // r.month ya viene normalizado (12 = Adar I en bisiesto, 13 = Adar II)
-  const hist = { 1: 'Tishrei', 2: 'Jeshvan', 3: 'Kislev', 4: 'Tevet', 5: 'Shevat', 6: 'Adar', 7: 'Nisán', 8: 'Iyar', 9: 'Siván', 10: 'Tamuz', 11: 'Av', 12: 'Elul' };
+  // Numeración rabínica (Nisán=1 … , Adar I/II=12/13 en bisiesto), que es
+  // la que usa calendars.mjs para los componentes; el nombre visible sale
+  // de ICU (r.monthName) cuando está disponible (W1).
+  const hist = { 1: 'Nisán', 2: 'Iyar', 3: 'Siván', 4: 'Tamuz', 5: 'Av', 6: 'Elul', 7: 'Tishrei', 8: 'Jeshvan', 9: 'Kislev', 10: 'Tevet', 11: 'Shevat' };
   let name;
   if (r.month === 13) name = 'Adar II';
-  else if (r.month === 6) name = 'Adar I';
+  else if (r.month === 12) name = 'Adar I';
   else name = hist[r.month] || `mes ${r.month}`;
   return `${r.day} de ${name} de ${r.year} AM`;
 }
