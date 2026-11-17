@@ -1,5 +1,7 @@
 # Gerarion Universal Standard (GUS)
 
+[![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
+
 > **STATUS: ALPHA.** Functional, verified standard, pre-adoption; the API and paths may change before v1.0.
 
 **Regular, universal, verifiable time.**
