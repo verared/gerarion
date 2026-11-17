@@ -34,7 +34,7 @@ jobs:
       - name: pip-audit
         run: |
           python -m pip install pip-audit
-          python -m pip-audit --strict || python -m pip-audit
+          python -m pip_audit
       - name: Differential fuzzing Python-JS-C
         run: |
           make -C impl-c gus-cli
