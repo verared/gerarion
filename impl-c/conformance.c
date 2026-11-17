@@ -523,15 +523,16 @@ static void check_ay_regression(JNode *v)
             fail(cat, "to_gerarion falló");
             continue;
         }
-        char canon[36];
-        if (gus_canonical(&d, canon, sizeof(canon)) != GUS_OK) {
+        char canon[48]; /* gus_canonical exige al menos 48 bytes */
+        if (gus_canonical(&p, canon, sizeof(canon)) != GUS_OK) {
             fail(cat, "canon overflow");
             continue;
         }
         if (strcmp(canon, js(row, "canonical")) != 0) {
             fail3(cat, "canon", d.day_index, jn(row, "day_index"));
         }
-        if (gus_is_gran_tempalum(d.year) != (row && jo(row, "gran_tempalum")->boolean != 0)) {
+        const bool gt_expected = jo(row, "gran_tempalum")->boolean != 0;
+        if (gus_is_gran_tempalum(d.year) != gt_expected) {
             fail(cat, "gran_tempalum divergente");
         }
     }
