@@ -1,9 +1,11 @@
-# Decision D-001 (DRAFT) — GUS instant boundary with UTC/TAI
+# Decision D-001 (PROPOSED for 2.x) — GUS instant boundary with UTC/TAI
 
-> **Status**: PROPOSED — closing TODO-001 requires the 90-day review window
-> (GOVERNANCE §3.1) because it changes the numeric value of instants versus
-> the current option (3). It does not modify spec 2.0 or the current vector
-> set.
+> **Status**: PROPOSAL STILL OPEN — spec 2.0 got **frozen with midnight
+> UTC** (TODO-001 closed 2026-11-17; the lowest-numerical-registry decision).
+> This decision stays open as a kernel-change candidate for a future 2.x:
+> it requires the 90-day review window (GOVERNANCE §3.1), a new vector set
+> (`gus-normative-002`) and witness regeneration, because it changes the
+> numeric value of instants.
 > **Spanish mirror**: [`docs/decisions/D-001-frontera-utc-tai.md`](../../decisions/D-001-frontera-utc-tai.md).
 
 ## 1. Context

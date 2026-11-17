@@ -1,5 +1,34 @@
 # Changelog — GUS
 
+## 2.3.5 — alpha-final (GUS v2.0 congelado, 2026-11-17)
+
+Cierre documental: **sin cambios normativos de kernel ni nuevos vectores** —
+la salida numérica es idéntica a `2.3.4-alpha.2` (verificado: 110 tests +
+`gus-normative-001.json` sin tocar).
+
+- **README principal en inglés** (`README.md`): badges (CI, Pages), demo
+  en vivo, "Why Gerarion", 30-Second Quickstart (Python/JS/C reales),
+  tabla de componentes y verificación por `SHA256SUMS.txt`. El README
+  completo en español pasa a `README.es.md` (espejo; EN > ES en
+  divergencia).
+- **Spec §9 normativizada (TODO-001 cerrado 2026-11-17, ES+EN):**
+  - Meridiano del día GUS: **medianoche UTC** (la regla de facto de las
+    tres implementaciones pasa a regla normativa explícita).
+  - Pre-1958: **convención proléptica declarada** (aritmética entera
+    extendida hacia atrás, sin pretensión de coincidir con UT1/TAI
+    históricas).
+  - Divergencia TAI/GUS declarada (37 s en 2026, valor congelado en los
+    vectores). Sin cambio numérico: vectores intactos.
+- **D-001 (medianoche TAI con tabla) queda viva como PROPUESTA 2.x**
+  (Looking Period, GOVERNANCE §3.1; exigiría `gus-normative-002` y
+  regeneración de sellos).
+- Distribución: GitHub Releases como único canal (workflow `release.yml`:
+  wheel + sdist + tarball npm + `SHA256SUMS.txt`); sin PyPI ni npm.
+- Estado del estándar: **ALFA-FINAL — GUS v2.0 congelado**; camino a 1.0
+  queda: adaptadores criptográficos opcionales y pase a beta.
+- `docs/TODO-pendientes.md`: TODO-001 CERRADO; TODO-002 (Roughtime UDP)
+  sigue ABIERTO.
+
 ## 2.3.4-alpha.2 — arreglo de CI (2026-11)
 
 Equivalencia de versiones: `2.3.4a2` en PEP 440 (pyproject, CITATION, SBOM)

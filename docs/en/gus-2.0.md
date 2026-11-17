@@ -194,17 +194,24 @@ What the reference implementation does **exactly** (verified in
   with a table**: there is no TAI−UTC table anywhere in the code or in
   the vectors; leap seconds accumulated since 1972 (37 s at the time of
   this version) are **never applied** to any instant.
-- Conversion from a wall-clock UTC time (as the reference web clock
-  does): the labeled UTC second is interpreted directly as a GUS
-  second. Honest consequence: the GUS instant derived from a UTC time
-  differs from actual elapsed TAI by the number of leap seconds
-  accumulated up to that date. For most uses (ordering, logs,
-  contracts) the difference is constant and known; for fine metrology,
-  apply the official TAI−UTC table outside GUS.
-- Day start: the GUS day rolls at **midnight UTC** in the reference web
-  clock. Specification 2.0 does **not** normatively fix the day's
-  meridian (midnight UTC vs midnight TAI) nor the treatment of TAI
-  before 1958 — registered as pending in `docs/TODO-pendientes.md`.
+- Day start (**NORMATIVE, D-001 resolved**): the GUS day rolls at
+  **midnight UTC** — the day `[n, n+1)` is the GUS-second interval
+  `[n×86,400, (n+1)×86,400)` in the scale above. The day meridian is the
+  reference civil clock's midnight UTC; it is **not** midnight TAI nor
+  midnight in any local time zone.
+- Before 1958 (**NORMATIVE, declared convention**): the same integer
+  arithmetic extends **proleptically** to dates before the introduction
+  of TAI (1958) and of the TAI−UTC table (1972): a pre-1958 GUS instant
+  is a linear count of wall-clock civil UTC seconds on the proleptic
+  gregorian, with no claim of matching historical UT1/TAI ephemerides.
+  Correspondence with those scales stays outside GUS (adapters, not the
+  core).
+- Declared consequence: the GUS instant derived from a UTC time differs
+  from actual elapsed TAI by the accumulated leap seconds (37 s in 2026,
+  value frozen in the normative vectors). Any future change of this rule
+  (e.g. proposal D-001 of midnight TAI) requires a new spec version and
+  a new vector set via the Looking Period (GOVERNANCE §3.1) — it is not
+  a retroactive application of this version.
 
 ## 10. Interoperability
 

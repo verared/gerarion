@@ -193,17 +193,25 @@ Qué hace **exactamente** la implementación de referencia (verificado en
   TAI con tabla**: no existe ninguna tabla TAI−UTC en el código ni en los
   vectores; los segundos intercalares acumulados desde 1972 (37 s en la
   fecha de esta versión) **no se aplican** a ningún instante.
-- Conversión desde un reloj UTC de pared (como el reloj vivo de la web de
-  referencia): el segundo UTC etiquetado se interpreta directamente como
-  segundo GUS. Consecuencia honesta: el instante GUS derivado de una hora
-  UTC difiere del tiempo TAI transcurrido real en el número de segundos
-  intercalares acumulados hasta esa fecha. Para la mayoría de usos
-  (orden, logs, contratos) la diferencia es constante y conocida; para
-  metrología fina, aplica la tabla oficial TAI−UTC fuera de GUS.
-- Inicio del día: el día GUS rueda a **medianoche UTC** en el reloj de
-  referencia web. La spec 2.0 **no fija** normativamente el meridiano del
-  día (midnight UTC vs midnight TAI) ni el tratamiento de TAI antes de
-  1958 — está registrado como pendiente en `docs/TODO-pendientes.md`.
+- Inicio del día (**NORMATIVO, D-001 resuelta**): el día GUS rueda a
+  **medianoche UTC** — el día `[n, n+1)` es el intervalo de segundos GUS
+  `[n×86.400, (n+1)×86.400)` en la escala anterior. El meridiano del día
+  queda fijado a la medianoche UTC del reloj civil de referencia; **no**
+  es medianoche TAI ni medianoche en zona horaria local.
+- Pre-1958 (**NORMATIVO, convención declarada**): la misma aritmética
+  entera se extiende **prolépticamente** para fechas anteriores a la
+  introducción de TAI (1958) y de la tabla TAI−UTC (1972): un instante
+  GUS pre-1958 es un recuento lineal de segundos civiles UTC de pared
+  sobre el gregoriano proléptico, sin pretensión de coincidir con las
+  efemérides históricas UT1/TAI. La correspondencia con esas escalas
+  queda fuera de GUS (adaptadores, no núcleo).
+- Consecuencia declarada: el instante GUS derivado de una hora UTC
+  difiere del tiempo TAI transcurrido real en los segundos intercalares
+  acumulados (37 s en 2026, valor congelado en los vectores
+  normativos). Cualquier cambio futuro de esta regla (p. ej. la
+  propuesta D-001 de medianoche TAI) exige nueva versión de spec y del
+  vector set vía el Looking Period (GOVERNANCE §3.1) — no es aplicación
+  retroactiva de esta versión.
 
 ## 10. Interoperabilidad
 

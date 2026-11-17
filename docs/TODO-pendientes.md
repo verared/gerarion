@@ -8,39 +8,28 @@ la spec (ES+EN), (2) vectores normativos actualizados si toca al kernel y
 
 ## TODO-001 — Frontera exacta del día GUS con UTC/TAI (spec §9)
 
-Estado: **BORRADOR DE DECISIÓN** — la propuesta D-001 vive en
-`docs/decisions/D-001-frontera-utc-tai.md` (ES espejo) /
-`docs/en/decisions/D-001-utc-tai-boundary.md` (EN normativo):
-instante sobre TAI, día a medianoche TAI, adaptador UTC con tabla
-explícita, TAI pre-1958 como convención declarada. Pasa a RESUELTO solo
-tras la ventana de revisión de 90 días (GOVERNANCE §3.1), con nueva
-versión del vector set.
+Estado: **CERRADO** (2026-11-17) — decisión normativizada en la spec §9
+(ES+EN), **sin cambio de valores** (los vectores `gus-normative-001.json`
+quedan intactos y siguen siendo el criterio de conformancia):
 
-Demanda de decisión normativa entre al menos tres opciones:
+- **Meridiano del día GUS: medianoche UTC.** El día `[n, n+1)` es el
+  intervalo de segundos GUS `[n×86.400, (n+1)×86.400)`; no es medianoche
+  TAI ni medianoche local. Se fija la regla de facto ya implementada y
+  verificada en las tres implementaciones (Python/JS/C).
+- **Pre-1958: convención proléptica declarada.** La misma aritmética
+  entera se extiende hacia atrás sin pretensión de coincidir con las
+  efemérides históricas UT1/TAI; la correspondencia con esas escalas es
+  adaptador, no núcleo.
+- **Divergencia TAI declarada:** el instante GUS difiere del TAI real en
+  los segundos intercalares acumulados (37 s en 2026, congelado en los
+  vectores). La propuesta D-001 (medianoche TAI con tabla) queda **viva
+  como PROPUESTA** para una futura versión 2.x por el Looking Period
+  (GOVERNANCE §3.1): exigiría nuevo vector set (`gus-normative-002`) y
+  regeneración de sellos; no es aplicación retroactiva de la 2.0.
 
-1. **Medianoche UTC** (comportamiento de facto del reloj de referencia web
-   y, por extensión, de cualquier consumidor que re-etiquete una hora UTC).
-   Ventaja: mapeo trivial con la hora civil actual. Defecto: el segundo
-   intercalar hace que algunos "días UTC" fueran 1 s más largos; el instante
-   GUS congelaría esa diferencia como una deriva acumulada de 37 s (y
-   creciendo), no documentada como tal frente a TAI.
-2. **Medianoche TAI** (día GUS = TAI transcurrido real desde el origen).
-   Ventaja: escala física pura, coherente con "análogo a TAI". Defecto: la
-   lectura civil exige tabla TAI−UTC, que es otra dependencia mutable.
-3. **Época TAI declarada sin tabla** (status quo documentado en la spec
-   2.0): instante = re-etiquetado directo del reloj UTC de pared; la
-   divergencia con TAI fino se declara explícitamente.
-
-Impacto normativo: cualquier decisión de las opciones 1↔2 cambia el valor
-numérico de los instantes (offset constante de 37 s en 2026) → toca el
-vector set (`instant`) y exige Looking Period de 90 días según
-GOVERNANCE.md §3.1. Por eso la 2.0 lo declara **no especificado** y la
-implementación de referencia documenta lo que hace (medianoche UTC,
-sin tabla), sin convertirlo en regla normativa todavía.
-
-Además, pendiente de decisión en el mismo paquete: mapeo de la escala para
-fechas anteriores a la introducción de TAI (1958) y al inicio de la tabla
-TAI−UTC (1972).
+Registro de la revisión: el cierre no altera el kernel (los 6 ítems de
+GOVERNANCE §2): salida numérica idéntica antes y después, verificada por
+la suite y por el vector set vigente.
 
 ## TODO-002 — Wire-format UDP del protocolo Roughtime (perfil roughtime-001)
 

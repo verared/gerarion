@@ -1,9 +1,12 @@
-# Decisión D-001 (BORRADOR) — Frontera del instante GUS con UTC/TAI
+# Decisión D-001 (PROPUESTA para 2.x) — Frontera del instante GUS con UTC/TAI
 
-> **Estado**: PROPUESTA — cerrar TODO-001 exige ventana de revisión de 90 días
-> (GOVERNANCE §3.1) porque cambia el valor numérico de los instantes frente a
-> la opción (3) actual. No modifica la spec 2.0 ni el vector set vigente.
-> **EN normativo**: [`docs/en/decisions/D-001-utc-tai-boundary.md`](../en/decisions/D-001-utc-tai-boundary.md).
+> **Estado**: PROPUESTA VIVA — la spec 2.0 quedó **congelada con medianoche
+> UTC** (TODO-001 cerrado 2026-11-17, decisión de menor registro numérico).
+> Esta decisión permanece abierta como candidato a cambio de kernel en una
+> futura 2.x: exige ventana de revisión de 90 días (GOVERNANCE §3.1),
+> nuevo vector set (`gus-normative-002`) y regeneración de sellos, porque
+> cambia el valor numérico de los instantes. **EN normativo**:
+> [`docs/en/decisions/D-001-utc-tai-boundary.md`](../en/decisions/D-001-utc-tai-boundary.md).
 
 ## 1. Contexto
 
