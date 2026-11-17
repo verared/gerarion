@@ -83,7 +83,14 @@ def instant_from_rfc3339(stamp: str) -> int:
     m = _RFC3339_RE.match(stamp)
     if not m:
         raise GeroEinval(f"GERO_E3339: sintaxis fuera de perfil: {stamp!r}")
+    hour = int(m.group("hour"))
+    minute = int(m.group("minute"))
     second = int(m.group("second"))
+    # F1: la hora no se normaliza nunca; campos fuera de rango se rechazan.
+    if hour > 23 or minute > 59 or second > 59:
+        raise GeroEinval(
+            f"GERO_E3339: campo horario fuera de rango (00–23:59:59): {stamp!r}"
+        )
     if second == 60:
         raise GeroEinval(
             "GERO_E3339: :60 (segundo intercalar UTC) no pertenece a la "

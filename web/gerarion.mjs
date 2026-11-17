@@ -281,6 +281,12 @@ export function instantFromRFC3339(stamp) {
   const m = R3339_RE.exec(stamp);
   assertProfile(m !== null, `sintaxis fuera de perfil: ${JSON.stringify(stamp)}`);
   const [year, month, day, hour, minute, second] = m.slice(1).map(Number);
+  // F1: la hora no se normaliza nunca; campos fuera de rango se rechazan.
+  if (hour > 23 || minute > 59 || second > 59) {
+    throw new GeroError(
+      `GERO_E3339: campo horario fuera de rango (00-23:59:59): ${stamp}`
+    );
+  }
   if (second === 60) {
     throw new GeroError(
       "GERO_E3339: :60 (segundo intercalar UTC) no pertenece a la escala GUS; conviértelo a etiqueta UTC/Unix antes (MUST del perfil)"

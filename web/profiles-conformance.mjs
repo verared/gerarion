@@ -87,5 +87,40 @@ for (const c of v.gus3339_canonical) {
   }
 }
 
-console.log(`conformance GUS-3339 (JS): ${v.gus3339.length} vectores + ${v.gus3339_canonical.length} canon, ${errors} fallos`);
+// F1: casos negativos compartidos — una entrada inválida se rechaza, jamás
+// se normaliza. Archivo nuevo (gus-3339-negative-001.json); no toca el
+// vector normativo gus-3339-001.json.
+const negPath = fileURLToPath(new URL("../vectors/gus-3339-negative-001.json", import.meta.url));
+const neg = JSON.parse(readFileSync(negPath, "utf8"));
+let negTotal = 0;
+
+for (const c of neg.reject_rfc3339) {
+  negTotal++;
+  let threw = false;
+  try {
+    g.instantFromRFC3339(c.rfc3339);
+  } catch (e) {
+    threw = e.message.startsWith("GERO_");
+  }
+  if (!threw) {
+    errors++;
+    console.log(`FALLA negativa ${c.rfc3339}: debía rechazarse (${c.why})`);
+  }
+}
+
+for (const c of neg.instant_parts) {
+  negTotal++;
+  let threw = false;
+  try {
+    g.instantFromParts(c.day_index, c.hour, c.minute, c.second);
+  } catch (e) {
+    threw = e.message.startsWith("GERO_");
+  }
+  if (!threw) {
+    errors++;
+    console.log(`FALLA negativa parts ${JSON.stringify(c)}: debía rechazarse (${c.why})`);
+  }
+}
+
+console.log(`conformance GUS-3339 (JS): ${v.gus3339.length} vectores + ${v.gus3339_canonical.length} canon + ${negTotal} negativos, ${errors} fallos`);
 process.exit(errors > 0 ? 1 : 0);
