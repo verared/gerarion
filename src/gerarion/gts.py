@@ -1,12 +1,11 @@
 """Marca temporal Geroriana firmada (GST, *Gerarion Signed Timestamp*).
 
-Una hora que no se puede falsificar barato combina tres capas:
+AVISO DE BETA: el esquema hash-only de referencia en este módulo es
+EDUCATIVO y NO está auditado; no debe usarse para decisiones de seguridad
+de producción (ver SECURITY.md / threat-model.md y el gate de
+`adapters.make_adapter`).
 
-    1. Valor canónico  — el instante en formato GUS (convertible, verificable)
-    2. Firma           — hash-only en la referencia (post-cuántica por diseño)
-    3. Notarización    — inclusión en el log diario del notario (objetividad)
-
-Formato de documento GST (JSON), versión 2:
+Estructura del documento GST (JSON), versión 2:
 
     {
       "v": 2,
@@ -20,13 +19,13 @@ Formato de documento GST (JSON), versión 2:
       "anchor": { "day": ..., "index": ..., "proof": [...], "root": ... }
     }
 
-Definición de "imposible de falsificar" que GUS 2.1 sostiene:
+Propiedades de la CONSTRUCCIÓN (never "garantías de producto"):
 
-    Falsificar una GST válida exige (a) romper la resistencia de preimagen de
-    SHA-256, o (b) alterar simultáneamente el log de TODOS los notarios
-    independientes que anclaron ese día, sin que ninguna réplica externa
-    detecte la divergencia. El coste (a) es 2^256 operaciones; el coste (b)
-    crece con el número de réplicas y no se reduce con tiempo ni con dinero.
+    La firma de este documento (hash-only, sin auditoría) fija el valor de
+    la marca a una clave. Para que la marca sea "no removible" haría falta,
+    además, un notario externo con réplicas independientes y una confianza
+    política previamente fijada: ver docs/threat-model.md. Ninguna frase
+    de este módulo debe leerse como "no falsificable en producción".
 """
 
 from __future__ import annotations

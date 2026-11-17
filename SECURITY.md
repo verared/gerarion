@@ -1,18 +1,32 @@
-# Política de seguridad
+# Política de seguridad — verared/gerarion
 
-## Alcance
-- `src/gerarion/` — implementación de referencia del estándar GUS 2.0.
-- `docs/spec/` — garantías declaradas (ver threat-model.md).
+> **AVISO DE BETA (leer primero).** Implementación DE REFERENCIA del
+> estándar GUS 2.1.0. NO está auditado criptográficamente. El esquema
+> hash-only de referencia, la raíz de confianza y el notario NO deben
+> usarse para decisiones de seguridad reales. Úsalo solo para pruebas,
+> evaluación y desarrollo de la especificación.
 
-## Denunciar una vulnerabilidad
-Reportes: abrir una *security advisory* en GitHub (Security > Advisories) o
-contactar a los mantenedores de verared (github.com/verared). Respuesta objetivo: 7 días para
-triage, 30 días para fix o mitigación documentada.
+## Reportar una vulnerabilidad
 
-## Reglas del proyecto
-1. Toda nueva propiedad de seguridad llega con su test (vectores).
-2. La suite completa debe pasar antes de cualquier release: la spec y el
-   código no pueden divergir.
-3. Las claves firmantes jamás se versionan en este repositorio.
-4. Toda afirmación de "post-cuántico" debe expresar sus premisas exactas
-   (ver threat-model.md sección 3).
+- Canal: **Private vulnerability reporting** de GitHub (botón "Report a
+  vulnerability" en Security → Advisories). NO abras un issue público.
+- Plazos objetivo desde el reporte: **7 días** acuse de recibo,
+  **30 días** evaluación y decisión, **90 días**
+  fix + CVE (si procede) o justificación de ignorar.
+- Coordinamos la divulgación con el reportante; crédito bajo el nombre que
+  indique en el reporte.
+
+## Versiones con soporte de seguridad
+
+| Versión | Soporte |
+|---|---|
+| 2.5.0b1 (rama `beta-hardening`) | sí (beta) |
+| <= 2.4.0 | solo actualizaciones de disponibilidad crítica; beta sin garantías |
+
+## Qué SÍ es seguridad de producción hoy
+
+Nada. La distribución recomendada es por GitHub Releases con
+`SHA256SUMS.txt` para integridad de descarga; la existencia de la firma
+hash-only y del notario es de REFERENCIA EDUCATIVA (semántica de la spec).
+Producción requiere SLH-DSA (FIPS 205) con biblioteca auditada y un
+despliegue de notario diseñado para ello (nevera el threat-model).

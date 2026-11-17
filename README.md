@@ -8,6 +8,14 @@
 Live demo: **<https://verared.github.io/gerarion/>** — EN spec below;
 🇪🇸 Español: [README.es.md](README.es.md).
 
+> ⚠ **STATUS: EARLY BETA — NOT FOR PRODUCTION SECURITY.**
+> The reference hash-only signature scheme, the trust root and the notary
+> are **reference implementations for evaluation only**: they are NOT
+> suitable for production security decisions and are not cryptographically
+> audited. See [SECURITY.md](SECURITY.md) and [docs/threat-model.md](docs/threat-model.md).
+> Recommended production path: an audited SLH-DSA (FIPS 205) library
+> and/or an external RFC 3161 TSA.
+
 ## Try online (no install, no account)
 
 The **date translator** runs entirely in your browser at
