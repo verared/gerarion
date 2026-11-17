@@ -3,8 +3,8 @@
 Implementación independiente del núcleo normativo de GUS 2.x: calendario
 regular, semana invariante, conversión JDN exacta (enteros, sin punto
 flotante), formato canónico `AAAAYY-MM-DD-X[-HH:MM:SS-CC-TCJ±O]` e instante
-continuo. Escrita a partir de `docs/spec/gus-2.0.md` y de
-`vectors/gus-normative-001.json`, no por transcripción del código Python.
+continuo. Escrita a partir de `docs/spec/gus-2.1.0.md` y de
+`vectors/gus-normative-002.json`, no por transcripción del código Python.
 
 Alcance deliberado: **solo categorías del núcleo** (ver `vectors/README.md`).
 No implementa criptografía: GST, firma SLH-DSA y notario exigen bibliotecas

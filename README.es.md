@@ -5,10 +5,11 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 
 [![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
 
-> **ESTADO: BETA (alpha-final).** GUS v2.0 está congelado: las cuestiones
-> normativas abiertas de la fase alfa quedaron resueltas (ver
-> [registro TODO](docs/TODO-pendientes.md)); pueden cambiar antes de la
-> v1.0 los adaptadores criptográficos opcionales y el packaging.
+> **ESTADO: BETA (alpha-final).** Spec **GUS v2.1.0**: el Gran Tempalum
+> es simétrico e infinito en ambas eras (DY/AY) y la frontera UTC/TAI es
+> normativa (`docs/TODO-pendientes.md` TODO-001 cerrado; queda abierto
+> D-001, medianoche TAI, como propuesta 2.x). Antes de la v1.0 quedan
+> los adaptadores criptográficos opcionales.
 
 **Tiempo regular, universal y verificable.**
 
@@ -126,7 +127,7 @@ dependencia de todo el proyecto.
 
 ## Idioma normativo
 
-La versión inglesa de `docs/spec/gus-2.0.md`, `docs/spec/threat-model.md`,
+La versión inglesa de `docs/spec/gus-2.1.0.md`, `docs/spec/threat-model.md`,
 `docs/errata-v1.2.md` y el informe de adopción vive en
 [`docs/en/`](docs/en/), junto con [`README.md`](README.md) (principal, en
 inglés), del que este documento es espejo completo en español. **En caso de
@@ -146,7 +147,7 @@ como capa informativa, no normativa (ver [Créditos y contexto cultural](#crédi
   suite Python + JS + conformancia JS y C antes de publicar).
 - **SBOM**: [`sbom.cdx.json`](sbom.cdx.json) (CycloneDX 1.5).
 - **Vectores normativos**:
-  [`vectors/gus-normative-001.json`](vectors/gus-normative-001.json) — la
+  [`vectors/gus-normative-002.json`](vectors/gus-normative-002.json) — la
   conformancia de toda implementación (Python, JS, C y terceros) se
   declara contra este archivo. Cláusula completa en
   [`vectors/README.md`](vectors/README.md).
@@ -432,7 +433,7 @@ criptográficas. La capa GST/notario es opt-in.
 
 ```
 docs/
-├── spec/gus-2.0.md          Especificación normativa (v2.0; EN normativo en docs/en/)
+├── spec/gus-2.1.0.md          Especificación normativa (v2.1.0; EN normativo en docs/en/)
 ├── spec/threat-model.md     Modelo de amenazas y garantías
 ├── informe-adopcion-gus.md  Informe técnico: por qué adoptar GUS en cómputo
 ├── errata-v1.2.md           Los 6 defectos del borrador histórico v1.2, verificables en tests
@@ -473,7 +474,7 @@ y este kernel están registradas en [`docs/errata-v1.2.md`](docs/errata-v1.2.md)
 
 - [x] Núcleo de calendario exacto (enteros, sin floats) — 91 tests Python
       (incl. 6 fuzzing + 2 conformancia) + 22 vectores JS en verde
-- [x] Conformancia contra `vectors/gus-normative-001.json`: Python, JS y
+- [x] Conformancia contra `vectors/gus-normative-002.json`: Python, JS y
       C, 7/7 categorías núcleo cada uno; fuzzing diferencial entre las
       tres implementaciones (1500×3 casos idénticos)
 - [x] Formato canónico + normalización (reglas 1–7, errores GERO_*)
@@ -509,6 +510,6 @@ ninguno de sus fragmentos. Ver [NOTICE](NOTICE) y [sbom.cdx.json](sbom.cdx.json)
 
 | Artefacto | Versión | Qué numera |
 |---|---|---|
-| Especificación normativa (`docs/spec/gus-2.0.md`) | **2.0** | El estándar en sí; solo cambia con cambios normativos aprobados (ventana de revisión de 90 días) |
+| Especificación normativa (`docs/spec/gus-2.1.0.md`) | **2.1.0** | El estándar en sí; solo cambia con cambios normativos aprobados (ventana de revisión de 90 días) |
 | Draft IETF (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | El documento de envío (individual submission) que describe la spec; puede avanzar sin que la spec cambie |
-| Paquetes (`pyproject.toml`, `web/package.json`) | **2.3.5** | Los artefactos de software: kernel Python/JS/C, tests, docs y erratas aplicadas. Puede cambiar entre releases de la spec |
+| Paquetes (`pyproject.toml`, `web/package.json`) | **2.4.0** | Los artefactos de software: kernel Python/JS/C, tests, docs y erratas aplicadas. Puede cambiar entre releases de la spec |

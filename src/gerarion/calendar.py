@@ -110,7 +110,7 @@ class GeroEinval(GeroError):
 
 
 class GeroItemporal(GeroError):
-    """Día Tempalum inválido para el tipo de año (ver spec GUS 2.0 §6)."""
+    """Día Tempalum inválido para el tipo de año (ver spec GUS 2.1 §6)."""
 
 
 # ---------------------------------------------------------------------------
@@ -123,37 +123,37 @@ _gt_cache: Dict[int, bool] = {}
 def is_gran_tempalum(year: int) -> bool:
     """True si el año Gerarion dado tiene Gran Tempalum (11 días de Tempalum).
 
-    Secuencia definida por recurrencia entera exacta:
+    Regla simétrica y cerrada (spec GUS 2.1 §3), válida para todo entero
+    `year` (era DY, era AY y año 0):
 
-        r(0) = 0
-        r(n) = r(n-1) + S  si r(n-1) + S <  U      (año n-1 común)
-        r(n) = r(n-1) + S - U  si r(n-1) + S >= U  (año n-1 Gran Tempalum)
+        r_y = ((year % U) + U) % U          # residuo euclidiano del año en [0, U)
+        r   = (r_y * S) % U                 # acumulador solar en [0, U)
+        es Gran Tempalum  <=>  r + S >= U
 
-    con S = SOLAR_DELTA_UD y U = SOLAR_THRESHOLD_UD. El año n es Gran
-    Tempalum si y solo si r(n) + S >= U. Determinista, cacheable, sin
-    punto flotante: idéntico en todas las plataformas.
+    con S = SOLAR_DELTA_UD y U = SOLAR_THRESHOLD_UD. Equivale bit a bit a la
+    recurrencia iterativa `r(n) = (r(n-1) + S) mod U` para `year >= 0`
+    (verificado contra el vector set `gus-normative-002`) y la extiende
+    hacia el pasado con módulo euclidiano: la secuencia es infinita en
+    ambas direcciones. Determinista, sin punto flotante, O(1).
+
+    Ejemplos: los años DY con GT empiezan en 5, 11, 16, 22, ...; los AY
+    en -1, -6, -12, -17, -23, -29, ... (0001AY es Gran Tempalum de 371
+    días; su año comienza en day_index -371).
     """
     if year in _gt_cache:
         return _gt_cache[year]
-    if year < 0:
-        return False
-    r = 0
-    found_gt = False
-    for n in range(year + 1):
-        r += SOLAR_DELTA_UD
-        if r >= SOLAR_THRESHOLD_UD:
-            found_gt = True
-            r -= SOLAR_THRESHOLD_UD
-        else:
-            found_gt = False
-        _gt_cache[n] = found_gt
-    return _gt_cache[year]
+    r_y = year % SOLAR_THRESHOLD_UD  # % de Python ya es euclidiano
+    r = (r_y * SOLAR_DELTA_UD) % SOLAR_THRESHOLD_UD
+    result = (r + SOLAR_DELTA_UD) >= SOLAR_THRESHOLD_UD
+    _gt_cache[year] = result
+    return result
 
 
 def year_length(year: int) -> int:
-    """Días del año Gerarion dado. Los años AY (negativos) usan 364."""
-    if year < 0:
-        return YEAR_COMMON_DAYS
+    """Días del año Gerarion dado: 371 si Gran Tempalum, 364 si común.
+
+    Simétrico: la regla vale para toda la recta entera (era DY y era AY).
+    """
     return YEAR_GRAN_DAYS if is_gran_tempalum(year) else YEAR_COMMON_DAYS
 
 
@@ -205,36 +205,42 @@ def gregorian_from_day_index(day_index: int) -> Tuple[int, int, int]:
 # ---------------------------------------------------------------------------
 
 def year_start_day_index(year: int) -> int:
-    """Índice del día 1 Keuphero del año dado.
+    """Índice del día 1 Keuphero del año dado, O(1) y simétrico (spec §3).
 
-    Hacia adelante (DY) usa la secuencia exacta de años comunes y de Gran
-    Tempalum. Hacia atrás (AY, años < 0) extiende con años comunes de 364
-    días: el desfase retroactivo queda acotado por la misma cota de drift y
-    la era AY no participa en la secuencia de Gran Tempalum.
+    Con división piso (`q, r = divmod(year, U)`, `0 <= r < U`,
+    euclidiana también para `year < 0`):
+
+        gt_count = q * S + (r * S) // U        # años Gran Tempalum acumulados
+        year_start_day_index = year * 364 + 7 * gt_count
+
+    Para `year=0` da `0`; para `year=-1` da `-371` (0001AY es Gran
+    Tempalum); para todo `year >= 0` coincide bit a bit con la suma
+    iterativa de longitudes (`ver gus-normative-002`).
     """
-    if year >= 0:
-        total = 0
-        for n in range(year):
-            total += year_length(n)
-        return total
-    return year * YEAR_COMMON_DAYS
+    q, r = divmod(year, SOLAR_THRESHOLD_UD)
+    gt_count = q * SOLAR_DELTA_UD + (r * SOLAR_DELTA_UD) // SOLAR_THRESHOLD_UD
+    return year * YEAR_COMMON_DAYS + 7 * gt_count
 
 
 def _locate(day_index: int) -> Tuple[int, int]:
-    """(año, día_del_año) para un índice de día, 0-based dentro del año."""
-    if day_index >= 0:
-        year = 0
-        rest = day_index
-        while True:
-            length = year_length(year)
-            if rest < length:
-                return year, rest
-            rest -= length
-            year += 1
-    years_back = (-day_index + YEAR_COMMON_DAYS - 1) // YEAR_COMMON_DAYS
-    year = -years_back
-    start = year_start_day_index(year)
-    return year, day_index - start
+    """(año, día_del_año) para un índice de día, 0-based dentro del año.
+
+    Inversa simétrica (spec §3): estima el año con la longitud media
+    exacta de año (`364 + 7*S/U` días, racional `D/U`) y corrige con
+    `year_start_day_index`, que es monótona. La estimación usa división
+    piso, idéntica en ambas eras; el error de la estimación es < 1 año,
+    así que la corrección es O(1).
+    """
+    if day_index == 0:
+        return 0, 0
+    est = (day_index * SOLAR_THRESHOLD_UD) // (
+        YEAR_COMMON_DAYS * SOLAR_THRESHOLD_UD + 7 * SOLAR_DELTA_UD
+    )
+    while year_start_day_index(est) > day_index:
+        est -= 1
+    while year_start_day_index(est + 1) <= day_index:
+        est += 1
+    return est, day_index - year_start_day_index(est)
 
 
 # ---------------------------------------------------------------------------

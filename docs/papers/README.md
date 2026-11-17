@@ -3,7 +3,7 @@
 Estos documentos conservan el fundamento histórico, cultural y religioso del
 Calendario Gerarion como investigación y documentación complementaria.
 **No son normativa de GUS**: el estándar solo usa el formato canónico de la
-spec (`docs/spec/gus-2.0.md` ES / `docs/en/gus-2.0.md` EN normativo) y los
+spec (`docs/spec/gus-2.1.0.md` ES / `docs/en/gus-2.1.0.md` EN normativo) y los
 vectores de `vectors/`. Las discrepancias conocidas entre este material y el
 kernel están registradas en `docs/errata-v1.2.md` (E-01..E-07).
 

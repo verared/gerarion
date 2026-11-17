@@ -2,16 +2,17 @@
 
 [![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
 [![Pages](https://github.com/verared/gerarion/actions/workflows/pages.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/pages.yml)
-![Specification: GUS v2.0 (frozen)](https://img.shields.io/badge/specification-GUS%20v2.0%20frozen-blue)
+![Specification: GUS v2.1.0](https://img.shields.io/badge/specification-GUS%20v2.1.0-blue)
 
 **Regular, universal, verifiable time.**
 Live demo: **<https://verared.github.io/gerarion/>** — EN spec below;
 🇪🇸 Español: [README.es.md](README.es.md).
 
-> **STATUS: BETA (alpha-final).** GUS v2.0 is frozen: the normative
-> open questions of the alpha phase are resolved (see
-> [TODO registry](docs/TODO-pendientes.md)); only the optional crypto
-> adapters and packaging may still change before v1.0.
+> **STATUS: BETA (alpha-final).** Spec **GUS v2.1.0**: the Gran Tempalum
+> rule is symmetric and infinite in both eras (DY/AY), and the UTC/TAI
+> boundary is normative (`docs/TODO-pendientes.md` TODO-001 closed; only
+> D-001, midnight-TAI, stays open as a 2.x proposal). The remaining
+> open work before v1.0 is the optional crypto adapters.
 
 A time standard integrating three layers under one machine-verifiable
 specification:
@@ -36,7 +37,7 @@ this English version and the Spanish original
 
 ---
 
-## Why Gerarion (GUS v2.0)?
+## Why Gerarion (GUS v2.1.0)?
 
 - **No leap seconds, ever.** One day is always exactly 86,400 seconds.
   Reading the Civil-TCJ clock (`H:MM:SS` plus the day) relative to another reading is a plain
@@ -121,7 +122,7 @@ Canonical output agrees in all three: `day=742049`, `2031DY-09-06-S`,
 | `src/gerarion/` | Python SDK / reference implementation (kernel, GST, adapters) | `pytest tests/` (110 tests) |
 | `web/` | JS kernel (`gerarion.mjs`) + web calculator (static Pages) | `node web/tests.mjs`, `conformance.mjs`, `profiles-conformance.mjs` |
 | `impl-c/` | Independent C11 implementation of the kernel | `make -C impl-c conformance` |
-| `docs/spec/gus-2.0.md` | **Normative specification GUS v2.0 (frozen)** | normative vectors `vectors/gus-normative-*.json` |
+| `docs/spec/gus-2.1.0.md` | **Normative specification GUS v2.1.0** | normative vectors `vectors/gus-normative-*.json` |
 | `docs/ietf/` | IETF draft `draft-gerarion-gus-00` (submission document) | IETF nits style; follows the spec |
 | `vectors/` | Normative vector set (single source of conforming truth) | fingerprint in the SBOM and CHANGELOG |
 
@@ -218,7 +219,7 @@ project's only dependency.
 
 ## Normative language
 
-The English version of `docs/spec/gus-2.0.md`, `docs/spec/threat-model.md`,
+The English version of `docs/spec/gus-2.1.0.md`, `docs/spec/threat-model.md`,
 `docs/errata-v1.2.md` and the adoption report lives in
 [`docs/en/`](docs/en/). `README.es.md` is a complete Spanish mirror of this
 README. **In case of divergence between the English
@@ -237,7 +238,7 @@ historical documentation of the Gerarion Calendar lives in
   Python + JS suites + JS and C conformance before publishing).
 - **SBOM**: [`sbom.cdx.json`](sbom.cdx.json) (CycloneDX 1.5).
 - **Normative vectors**:
-  [`vectors/gus-normative-001.json`](vectors/gus-normative-001.json) — the
+  [`vectors/gus-normative-002.json`](vectors/gus-normative-002.json) — the
   conformance of every implementation (Python, JS, C and third parties)
   is declared against this file. Full clause in
   [`vectors/README.md`](vectors/README.md).
@@ -515,7 +516,7 @@ dependencies. The GST/notary layer is opt-in.
 
 ```
 docs/
-├── spec/gus-2.0.md          Normative specification (v2.0; ES mirror at docs/spec)
+├── spec/gus-2.1.0.md          Normative specification (v2.1.0; EN mirror at docs/en)
 ├── spec/threat-model.md     Threat model and guarantees
 ├── informe-adopcion-gus.md  Technical report: why adopt GUS in computing (ES)
 ├── errata-v1.2.md           The 6 defects of the historical v1.2 draft, test-verifiable
@@ -557,7 +558,7 @@ and this kernel are logged in [`docs/errata-v1.2.md`](docs/errata-v1.2.md).
 
 - [x] Exact calendar core (integers, no floats) — 91 Python tests
       (incl. 6 fuzzing + 2 conformance) + 22 JS vectors green
-- [x] Conformance against `vectors/gus-normative-001.json`: Python, JS and
+- [x] Conformance against `vectors/gus-normative-002.json`: Python, JS and
       C, 7/7 core categories each; differential fuzzing across the three
       implementations (1500×3 identical cases)
 - [x] Canonical format + normalization (rules 1–7, GERO_* errors)
@@ -593,6 +594,6 @@ See [NOTICE](NOTICE) and [sbom.cdx.json](sbom.cdx.json).
 
 | Artifact | Version | What it numbers |
 |---|---|---|
-| Normative specification (`docs/spec/gus-2.0.md`) | **2.0** | The standard itself; it only changes with approved normative changes (90-day review window) |
+| Normative specification (`docs/spec/gus-2.1.0.md`) | **2.1.0** | The standard itself; only approved normative changes (90-day review window) |
 | IETF draft (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | The submission document (individual submission) that describes the spec; it can advance without the spec changing |
-| Packages (`pyproject.toml`, `web/package.json`) | **2.3.5** | The software artifacts: Python/JS/C kernel, tests, docs and applied errata. Can change between spec releases |
+| Packages (`pyproject.toml`, `web/package.json`) | **2.4.0** | The software artifacts: Python/JS/C kernel, tests, docs and applied errata. Can change between spec releases |

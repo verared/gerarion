@@ -48,7 +48,7 @@ Equivalence: for a GUS instant `I`, the labeled UTC second is
 An implementation declares the GUS-3339 profile if and only if it passes
 100 % of the vectors in `vectors/gus-3339-001.json` (8 mappings,
 8 rejections, 3 canonical-format coherence cases). Core conformance
-(`gus-normative-001.json`) is independent and does not imply this
+(`gus-normative-002.json`) is independent and does not imply this
 profile. Verified in: Python (`tests/test_profiles.py`), JavaScript
 (`web/tests.mjs`, `node web/profiles-conformance.mjs`). The reference C
 implementation does not implement profiles (core only).

@@ -6,7 +6,7 @@
  * AAAAYY-MM-DD-X[-HH:MM:SS-SC/LC-TCJ±O] e instante continuo.
  *
  * CONFORMANCIA: según vectors/README.md, esta implementación es conforme si
- * pasa las categorías del núcleo de vectors/gus-normative-001.json
+ * pasa las categorías del núcleo de vectors/gus-normative-002.json
  * (make -C impl-c conformance). No implementa criptografía: las categorías
  * hashots/slh_dsa/notary exigen bibliotecas auditadas FIPS 205.
  *
@@ -68,7 +68,7 @@ typedef struct {
 
 /* ---------------- calendario ---------------- */
 
-bool gus_is_gran_tempalum(long long year);      /* false para la era AY */
+bool gus_is_gran_tempalum(long long year);      /* simétrico: GT también en la era AY (spec 2.1) */
 long long gus_year_length(long long year);
 long long gus_tempalum_days(long long year);
 long long gus_year_start_day_index(long long year);

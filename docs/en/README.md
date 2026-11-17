@@ -3,7 +3,7 @@
 The documents in `docs/en/` are the **normative English version** of the
 Gerarion Universal Standard (GUS).
 
-The Spanish originals (`docs/spec/gus-2.0.md`,
+The Spanish originals (`docs/spec/gus-2.1.0.md`,
 `docs/spec/threat-model.md`, `docs/errata-v1.2.md`,
 `docs/informe-adopcion-gus.md`) are **informative mirrors** of this
 English version: they exist for reference and reading convenience, but
@@ -24,7 +24,7 @@ two versions could be read differently.
 
 | English (normative, this folder) | Spanish original (informative mirror) |
 |---|---|
-| `docs/en/gus-2.0.md` | `docs/spec/gus-2.0.md` |
+| `docs/en/gus-2.1.0.md` | `docs/spec/gus-2.1.0.md` |
 | `docs/en/threat-model.md` | `docs/spec/threat-model.md` |
 | `docs/en/errata-v1.2.md` | `docs/errata-v1.2.md` |
 | `docs/en/adoption-report.md` | `docs/informe-adopcion-gus.md` |
@@ -54,4 +54,4 @@ Divergences between the English normative version and the Spanish mirrors
 are defects and are handled like any other erratum: an entry in
 `docs/en/errata-v1.2.md` — mirrored in the Spanish errata — plus the
 corresponding test, following the versioning rules of section 11 of
-`docs/en/gus-2.0.md`.
+`docs/en/gus-2.1.0.md`.

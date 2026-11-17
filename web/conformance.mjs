@@ -1,5 +1,5 @@
 /**
- * Runner de conformancia GUS — consume vectors/gus-normative-001.json (núcleo).
+ * Runner de conformancia GUS — consume vectors/gus-normative-002.json (núcleo).
  *
  * Cláusula de conformancia (vectors/README.md): una implementación es conforme
  * si y solo si pasa el 100 % de las categorías del núcleo que declara.
@@ -26,7 +26,7 @@ function resolveVectorsPath() {
     const next = process.argv[idx + 1];
     if (next) return next;
   }
-  return fileURLToPath(new URL("../vectors/gus-normative-001.json", import.meta.url));
+  return fileURLToPath(new URL("../vectors/gus-normative-002.json", import.meta.url));
 }
 
 // --- verificaciones ------------------------------------------------------
@@ -53,6 +53,11 @@ function checkGranTempalum(v, errors) {
   for (let y = 0; y < 46; y++) if (g.isGranTempalum(y)) pattern.push(y);
   if (JSON.stringify(pattern) !== JSON.stringify(v.gran_tempalum.pattern_years_0_45)) {
     errors.push(`gran_tempalum patrón 0-45: esperado ${JSON.stringify(v.gran_tempalum.pattern_years_0_45)}, obtenido ${JSON.stringify(pattern)}`);
+  }
+  const patternNeg = [];
+  for (let y = -46; y < 0; y++) if (g.isGranTempalum(y)) patternNeg.push(y);
+  if (JSON.stringify(patternNeg) !== JSON.stringify(v.gran_tempalum.pattern_years_m45_m1)) {
+    errors.push(`gran_tempalum patrón AY: esperado ${JSON.stringify(v.gran_tempalum.pattern_years_m45_m1)}, obtenido ${JSON.stringify(patternNeg)}`);
   }
   for (const [ys, isGt] of Object.entries(v.gran_tempalum.years_sample)) {
     if (g.isGranTempalum(parseInt(ys, 10)) !== isGt) {
@@ -82,11 +87,11 @@ function checkCalendar(v, errors) {
 
 function checkYearStarts(v, errors) {
   for (const row of v.year_starts) {
-    const y = row.era === "DY" ? row.year : -row.year;
+    const y = row.year; // signo ya presente en el vector (simétrico, GUS 2.1)
     const di = g.yearStartDayIndex(y);
     if (di !== row.day_index) { errors.push(`year_starts ${y}: ${di} != ${row.day_index}`); continue; }
     if (g.toGerarion(di).abbr !== "S") errors.push(`year_starts ${y}: no empieza en Soludyia`);
-    if (row.era === "DY" && g.isGranTempalum(y) !== row.gran_tempalum) {
+    if (g.isGranTempalum(y) !== row.gran_tempalum) {
       errors.push(`year_starts ${y}: gran_tempalum ${g.isGranTempalum(y)} != ${row.gran_tempalum}`);
     }
     if (g.tempalumDays(y) !== row.tempalum_days) {

@@ -1,7 +1,7 @@
 /** runbook del notario GUS en producción
  *
  * (documento operacional — capa 2; el protocolo normativo está en
- * docs/spec/gus-2.0.md §8 y en src/gerarion/notary_cluster.py)
+ * docs/spec/gus-2.1.0.md §8 y en src/gerarion/notary_cluster.py)
  */
 
 # Runbook del notario GUS en producción

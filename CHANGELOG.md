@@ -1,5 +1,53 @@
 # Changelog — GUS
 
+## 2.4.0 — Gran Tempalum simétrico + spec GUS 2.1.0 (2026-11-17)
+
+**Cambio normativo (kernel §3/§5, spec 2.0 → 2.1.0): el Gran Tempalum es
+simétrico e infinito hacia ambos lados del origen.** Nueva versión del
+vector set: `gus-normative-002.json` (la `gus-normative-001` queda
+archivada en `vectors/archive/` al exigirlo GOVERNANCE §3.1.4). Ningún
+vector de la era DY cambia: los valores DY de la 002 son bit a bit los de
+la 001 (verificado por comparación de categorías y por la suite completa).
+
+- **Regla matemática (idéntica en Python, C y JS), con S = 1_242_190 y
+  U = 7_000_000, para todo entero `year`:**
+  - `r_y = ((year % U) + U) % U` (residuo euclidiano);
+  - `r = (r_y * S) % U` (sin desbordamiento: `r_y < U` antes de
+    multiplicar; `U*S < 2^63`);
+  - `is_gran_tempalum(year) <=> r + S >= U`.
+  GT DY: `5, 11, 16, 22, 28...`; GT AY: `-1, -6, -12, -17, -23, -29...`
+  (`0001AY` es GT de 371 días; `r(-1) = 5_757_810`).
+- **`year_start_day_index` O(1) cerrado:** `q, r = divmod(year, U)` por
+  división piso (euclidiana también en AY);
+  `gt_count = q*S + floor(r*S/U)`;
+  `year_start = year*364 + 7*gt_count`. `ysi(0)=0`, `ysi(-1)=-371`;
+  para todo `year >= 0` coincide bit a bit con la suma iterativa anterior.
+- **Búsqueda inversa simétrica:** `_locate`/`gus_to_gerarion`/`toGerarion`
+  estiman el año con la longitud media exacta (`364 + 7*S/U`) y corrigen
+  de forma monotónica con `year_start_day_index`, usando la duración real
+  (364 o 371) de cada año AY (antes se asumían 364 fijos).
+- **Formato canónico:** años de más de 4 dígitos ahora parseables
+  (regex `\d{1,6}` en Python/JS; `is_digits(..., 1, 6)` en C) — los años
+  GT infinitos en ambas eras lo exigen (p. ej. `12000AY-01-01-S`).
+- **Vectores normativos 002:** añade patrón GT AY (`pattern_years_m45_m1`
+  = `[-46..-1]`), muestras `-1/-6/-12000`, `year_starts` AY
+  (`-1/-6/-12/-17/-29/-12000` con `gran_tempalum` real), roundtrip AY
+  (`-1,-5,-7,-10,-364,-365,-371,-372,-728,-1000,-4382910,-1000000`),
+  calendario AY (`0001AY-00-11-B` Nuvivid VII, `0001AY-01-04-A`,
+  `0006AY-01-01-S`, `0029AY-01-01-S`, `12000AY-01-01-S`) e instantes
+  (`0001AY-00-11-B-12:00:00-SC-TCJ+0` = -43200). SHA-256 del set:
+  `580d8843137c0e8f1a77c670773ce8090a49ea21cb0d70a9b6a5aec2c1de08b0`
+  (regeneración byte a byte idéntica).
+- **Runner de conformancia:** `year_starts` ya no invierte el signo del
+  año AY y valida `gran_tempalum`/`tempalum_days` en ambas eras (Python,
+  JS y C); `check_gran_tempalum` valida también `pattern_years_m45_m1`.
+- **Spec:** `docs/spec/gus-2.1.0.md` y `docs/en/gus-2.1.0.md`
+  (renombradas desde gus-2.0.md): §3 con la regla cerrada simétrica,
+  §5 eras con simetría y cota |Δ| < 7 días en ambos sentidos, §9 ya
+  normativa (medianoche UTC, pre-1958 proléptico).
+- **Distribución:** GitHub Releases (workflow `release.yml`) con nuevos
+  artefactos `gerarion-2.4.0-*` y `gerarion-kernel-2.4.0.tgz`.
+
 ## 2.3.5 — alpha-final (GUS v2.0 congelado, 2026-11-17)
 
 Cierre documental: **sin cambios normativos de kernel ni nuevos vectores** —

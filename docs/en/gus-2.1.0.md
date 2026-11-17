@@ -1,4 +1,11 @@
-# Gerarion Universal Standard (GUS) — Specification v2.0
+# Gerarion Universal Standard (GUS) — Specification v2.1.0
+
+> **v2.1.0 (alpha-final):** Gran Tempalum is symmetric and infinite in both
+> eras (DY/AY, spec §3/§6) and the UTC/TAI boundary is now normative (§9:
+> midnight UTC, proleptic pre-1958 convention). No output changes in the DY
+> era: the DY vectors of `gus-normative-001` are bit-for-bit those of
+> `gus-normative-002`. New rules: new AY vectors in the `gus-normative-002`
+> set. (v2.0: kept below as the base.)
 
 >This specification supersedes the historical v1.2 draft (documented as
 >non-normative complementary material in `docs/papers/`).
@@ -73,17 +80,38 @@ corresponds to no civil weekday. Measured example: 17 March 2026
 (gregorian), start of year 2031 DY, carries letter `S` (of the format; no
 claim is made about the civil weekday of that date).
 
-Gran Tempalum rule (exact, integer recurrence):
+Gran Tempalum rule (**symmetric in both eras**, closed form; spec 2.1):
+with `S = 1_242_190` µd and `U = 7_000_000` µd, for **every** integer `year`
+(positive, zero or negative; DY and AY eras):
 
 ```
-r(0)        = 0
-r(n)        = r(n-1) + 1_242_190_µd        si r(n-1) + 1_242_190_µd < 7_000_000_µd
-r(n)        = r(n-1) + 1_242_190_µd - 7_000_000_µd   en caso contrario
-GT(n)       = (r(n) + 1_242_190_µd >= 7_000_000_µd)
+r_y  = ((year mod U) + U) mod U        // euclidean residue: 0 <= r_y < U
+r    = (r_y × S) mod U                 // year's solar accumulator
+GT(year)  <=>  r + S >= U
 ```
 
-Normative vector of the pattern: the GT years are `5, 11, 16, 22, 28, 33, 39, 45...`
-(the v1 corpus also listed "2039 DY" — erratum: it corresponds to 2040 DY).
+Bit-for-bit equivalent to the iterative recurrence `r(n) = (r(n-1) + S) mod U`
+for `year >= 0` (the 2.0 rule, kept as justification); the mods are
+**euclidean** (result in `[0, U)`), never truncated toward zero — the only
+change versus 2.0 is the extension: the sequence is **infinite in both
+directions**. In C11, implement it with explicit `euclid_mod` and
+`floor_div` (`/` truncates toward zero in negatives).
+
+Normative vector of the pattern (`gus-normative-002`): the DY GT years are
+`5, 11, 16, 22, 28, 33, 39, 45...`; the AY GT years are `-1, -6, -12, -17, -23, -29...`
+(`0001AY` is a 371-day Gran Tempalum: `r(-1) = 5_757_810`, `r + S = U`).
+The v1 corpus also listed "2039 DY" — erratum: it corresponds to 2040 DY.
+
+Year start in closed O(1) form (proven equal to the length sum):
+
+```
+q, r = floor division of (year / U)      // 0 <= r < U, euclidean
+accumulated GT years = q×S + floor(r×S / U)
+year_start_day_index(year) = year×364 + 7×(accumulated GT years)
+```
+
+Verified: `year_start(0) = 0`, `year_start(-1) = -371`, and for every
+`year >= 0` it matches bit for bit the 2.0 iterative length sum.
 
 The carry is in **integer microdays**: no floating-point error at any
 time horizon. This is a deliberate divergence from v1, which used `float`
@@ -127,11 +155,11 @@ rules: see module `gerarion.format` (RULES 1-7 of the v1 corpus, preserved
 in full, incl. `weekday_corrected`, `GERO_ETEMPALUM`,
 `GERO_EINVAL`).
 
-Eras: `DY` (after the origin) and `AY` (before). Negative AY years extend
-with common years of 364 days: the Gran Tempalum sequence is defined
-forward from the origin, and the AY era does not take part in it. The
-backward count requires exactly that definition in order to be total and
-unambiguous.
+Eras: `DY` (after the origin) and `AY` (before). The Gran Tempalum rule is
+**symmetric** (§3): it operates identically in DY and AY via the euclidean
+modulus, keeping the solar drift bound |Δ| < 7 days on both sides of the
+origin. The backward count (`year_start_day_index` by floor division +
+accumulated GT years) is total and unambiguous: `year_start(-1) = -371`.
 
 ## 6.1 Name levels (presentation only)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Runner de conformancia GUS contra vectors/gus-normative-001.json.
+"""Runner de conformancia GUS contra vectors/gus-normative-002.json.
 
 Verifica que la implementación de referencia en src/gerarion sigue pasando
 los vectores normativos, categoría por categoría. Es la implementación de la
@@ -30,7 +30,7 @@ from gerarion import notary as nty  # noqa: E402
 from gerarion import notary_cluster as ncl  # noqa: E402
 
 DEFAULT_VECTORS = os.path.join(
-    os.path.dirname(__file__), "..", "vectors", "gus-normative-001.json"
+    os.path.dirname(__file__), "..", "vectors", "gus-normative-002.json"
 )
 
 CORE = ("constants", "gran_tempalum", "calendar", "year_starts",
@@ -64,6 +64,8 @@ def check_gran_tempalum(v: dict) -> None:
     g = v["gran_tempalum"]
     pattern = [y for y in range(46) if cal.is_gran_tempalum(y)]
     assert pattern == g["pattern_years_0_45"]
+    pattern_neg = [y for y in range(-46, 0) if cal.is_gran_tempalum(y)]
+    assert pattern_neg == g["pattern_years_m45_m1"]
     for ys, is_gt in g["years_sample"].items():
         assert cal.is_gran_tempalum(int(ys)) == is_gt
 
@@ -83,11 +85,11 @@ def check_calendar(v: dict) -> None:
 
 def check_year_starts(v: dict) -> None:
     for row in v["year_starts"]:
-        y = row["year"] if row["era"] == "DY" else -row["year"]
+        y = row["year"]  # el signo ya viene en el vector (simétrico, GUS 2.1)
         di = cal.year_start_day_index(y)
         assert di == row["day_index"], row
         assert cal.to_gerarion(di).weekday[1] == "S"
-        assert cal.is_gran_tempalum(y) == row["gran_tempalum"] or y < 0
+        assert cal.is_gran_tempalum(y) == row["gran_tempalum"]
         assert cal.tempalum_days(y) == row["tempalum_days"]
 
 

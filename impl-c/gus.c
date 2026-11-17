@@ -1,9 +1,10 @@
 /*
- * gus.c — Núcleo GUS 2.x en C (segunda implementación independiente).
+ * gus.c — Núcleo GUS 2.1 en C (segunda implementación independiente).
  *
- * Aritmética entera exacta; sin punto flotante. Los días fuera del rango
- * Dynastic Y anteriores usan años comunes de 364 (era AY), igual que la
- * implementación de referencia (src/gerarion/calendar.py).
+ * Aritmética entera exacta; sin punto flotante. El acumulador solar
+ * (Gran Tempalum) es simétrico e infinito en ambas eras (DY y AY), con
+ * módulo euclidiano y división piso explícitos, idéntico bit a bit a la
+ * implementación de referencia (src/gerarion/calendar.py) — spec §3.
  */
 
 #include "gus.h"
@@ -15,22 +16,35 @@
 
 /* ---------------- calendario ---------------- */
 
+/* Módulo euclidiano: resultado en [0, m) también para a < 0. */
+static long long euclid_mod(long long a, long long m)
+{
+    long long r = a % m; /* / y % en C truncan hacia cero */
+    return r < 0 ? r + m : r;
+}
+
+/* División piso (⊔), semántica de la referencia Python //. */
+static long long floor_div(long long a, long long b)
+{
+    long long q = a / b;
+    if ((a % b != 0) && ((a < 0) != (b < 0))) q -= 1;
+    return q;
+}
+
 bool gus_is_gran_tempalum(long long year)
 {
-    if (year < 0) return false;
-    long long r = 0;
-    for (long long n = 0; n <= year; n++) {
-        bool gt = (r + GUS_SOLAR_DELTA_UD) >= GUS_SOLAR_THRESHOLD_UD;
-        r += GUS_SOLAR_DELTA_UD;
-        if (r >= GUS_SOLAR_THRESHOLD_UD) r -= GUS_SOLAR_THRESHOLD_UD;
-        if (n == year) return gt;
-    }
-    return false;
+    /* Forma cerrada simétrica (spec §3): con q,r enteros tales que
+     * year = q*U + r (piso, 0 <= r < U), el acumulador del año es
+     * r_han = (r * S) mod U y el año es Gran Tempalum <=> r_han + S >= U.
+     * Valores intermedios <= U * S < 2^63 (sin desbordamiento) porque
+     * r < U queda acotado antes de multiplicar. */
+    long long r = euclid_mod(year, GUS_SOLAR_THRESHOLD_UD);
+    long long rc = (r * GUS_SOLAR_DELTA_UD) % GUS_SOLAR_THRESHOLD_UD;
+    return (rc + GUS_SOLAR_DELTA_UD) >= GUS_SOLAR_THRESHOLD_UD;
 }
 
 long long gus_year_length(long long year)
 {
-    if (year < 0) return GUS_YEAR_COMMON_DAYS;
     return gus_is_gran_tempalum(year) ? GUS_YEAR_GRAN_DAYS : GUS_YEAR_COMMON_DAYS;
 }
 
@@ -41,21 +55,20 @@ long long gus_tempalum_days(long long year)
 
 long long gus_year_start_day_index(long long year)
 {
-    if (year >= 0) {
-        long long total = 0;
-        for (long long y = 0; y < year; y++) total += gus_year_length(y);
-        return total;
-    }
-    return year * GUS_YEAR_COMMON_DAYS;
+    /* O(1) cerrado (spec §3): year = q*U + r por división piso
+     * (0 <= r < U, euclidiano también en AY):
+     *   gt_count = q*S + floor(r*S / U)
+     *   inicio   = year*364 + 7*gt_count
+     * ysi(0) = 0; ysi(-1) = -371 (0001AY es Gran Tempalum). */
+    long long q = floor_div(year, GUS_SOLAR_THRESHOLD_UD);
+    long long r = year - q * GUS_SOLAR_THRESHOLD_UD;
+    long long gt_count = q * GUS_SOLAR_DELTA_UD
+                       + (r * GUS_SOLAR_DELTA_UD) / GUS_SOLAR_THRESHOLD_UD;
+    return year * GUS_YEAR_COMMON_DAYS + 7 * gt_count;
 }
 
-/* División con redondeo al suelo (semántica de la referencia Python //). */
-static long long fdiv(long long a, long long b)
-{
-    long long q = a / b;
-    if ((a % b != 0) && ((a < 0) != (b < 0))) q -= 1;
-    return q;
-}
+/* División piso (⊔), semántica de la referencia Python //:
+ * en C, / y % truncan hacia cero en negativos; aquí se corrige. */
 
 long long gus_jdn(long long year, int month, int day)
 {
@@ -63,20 +76,20 @@ long long gus_jdn(long long year, int month, int day)
     long long y = year + 4800 - a;
     long long m = month + 12 * a - 3;
     long long jdn_val = day + (153 * m + 2) / 5 + 365 * y
-                        + fdiv(y, 4) - fdiv(y, 100) + fdiv(y, 400) - 32045;
+                        + floor_div(y, 4) - floor_div(y, 100) + floor_div(y, 400) - 32045;
     return jdn_val;
 }
 
 void gus_jdn_to_gregorian(long long j, long long *year, int *month, int *day)
 {
     long long a = j + 68569;
-    long long b = fdiv(4 * a, 146097);
-    long long c = a - fdiv(146097 * b + 3, 4);
-    long long d = fdiv(4000 * (c + 1), 1461001);
-    long long e = c - fdiv(1461 * d, 4) + 31;
-    long long f = fdiv(80 * e, 2447);
-    long long dd = e - fdiv(2447 * f, 80);
-    long long g = fdiv(f, 11);
+    long long b = floor_div(4 * a, 146097);
+    long long c = a - floor_div(146097 * b + 3, 4);
+    long long d = floor_div(4000 * (c + 1), 1461001);
+    long long e = c - floor_div(1461 * d, 4) + 31;
+    long long f = floor_div(80 * e, 2447);
+    long long dd = e - floor_div(2447 * f, 80);
+    long long g = floor_div(f, 11);
     long long mm = f + 2 - 12 * g;
     long long yy = 100 * (b - 49) + d + g;
     *year = yy; *month = (int)mm; *day = (int)dd;
@@ -99,24 +112,41 @@ static int weekday_index_of(long long day_index)
     return w;
 }
 
+/* Estimación del año para un day_index: primeros floor(day / longitud
+ * media exacta de año), con longitud media = 364 + 7*S/U días, es decir
+ * floor(day * U / (364*U + 7*S)). En 128 bits evita desbordamiento para
+ * años astronómicos; el fallback usa división directa y cuenta con la
+ * corrección iterativa de gus_to_gerarion. */
+/* Estimación del año para un day_index: floor(day / longitud media exacta
+ * de año), con longitud media = 364 + 7*S/U días, es decir
+ * floor(day * U / (364*U + 7*S)). En 128 bits evita desbordamiento para
+ * años astronómicos; el fallback usa división directa y cuenta con la
+ * corrección iterativa de gus_to_gerarion. */
+static long long estimate_year(long long day_index)
+{
+#if defined(__SIZEOF_INT128__)
+    __int128 num = (__int128)day_index * GUS_SOLAR_THRESHOLD_UD;
+    __int128 den = (__int128)GUS_YEAR_COMMON_DAYS * GUS_SOLAR_THRESHOLD_UD
+                 + 7 * ( __int128)GUS_SOLAR_DELTA_UD;
+    __int128 q = num / den;
+    if ((num % den != 0) && ((num < 0) != (den < 0))) q -= 1;
+    return (long long)q;
+#else
+    return floor_div(day_index, GUS_YEAR_COMMON_DAYS + 1);
+#endif
+}
+
 GusError gus_to_gerarion(long long day_index, GusDate *out)
 {
-    long long year, rest;
-    if (day_index >= 0) {
-        year = 0;
-        rest = day_index;
-        for (;;) {
-            long long len = gus_year_length(year);
-            if (rest < len) break;
-            rest -= len;
-            year += 1;
-        }
-    } else {
-        long long years_back = (-day_index + GUS_YEAR_COMMON_DAYS - 1) / GUS_YEAR_COMMON_DAYS;
-        year = -years_back;
-        rest = day_index - year * GUS_YEAR_COMMON_DAYS;
-        if (rest < 0 || rest >= GUS_YEAR_COMMON_DAYS) return GUS_EINVAL;
-    }
+    /* Inversa simétrica (spec §3): estimación con la longitud media exacta
+     * de año y corrección monotónica con year_start_day_index O(1); usa la
+     * duración real de cada año (364 o 371) en ambas eras. */
+    long long year = estimate_year(day_index);
+    while (gus_year_start_day_index(year) > day_index) year -= 1;
+    while (gus_year_start_day_index(year + 1) <= day_index) year += 1;
+    long long rest = day_index - gus_year_start_day_index(year);
+    if (rest < 0 || rest >= gus_year_length(year)) return GUS_EINVAL;
+
     int month, day;
     if (rest < GUS_MONTH_BLOCK_DAYS) {
         month = (int)(rest / 30) + 1;
@@ -239,7 +269,7 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
     const char *cur = s;
     size_t n;
     long long yy;
-    if (!is_digits(cur, 1, 4, &n)) return GUS_EINVAL;
+    if (!is_digits(cur, 1, 6, &n)) return GUS_EINVAL;
     if (!parse_int(cur, n, &yy)) return GUS_EINVAL;
     cur += n;
 

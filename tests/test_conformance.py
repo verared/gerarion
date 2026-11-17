@@ -32,7 +32,7 @@ def test_vectors_file_is_deterministic_and_loadable():
     from conformance import load_vectors
 
     data = load_vectors()
-    assert data["schema"] == "gus-normative-001"
+    assert data["schema"] == "gus-normative-002"
     assert data["deterministic"] is True
     core = set(data["categories_core"])
     full = set(data["categories_full"])

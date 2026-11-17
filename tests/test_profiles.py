@@ -3,7 +3,7 @@
 
 Cláusula de conformancia del perfil: una implementación que declara el
 perfil es conforme si y solo si pasa el 100 % de los vectores de
-vectors/gus-3339-001.json. El núcleo (gus-normative-001.json) no cambia.
+vectors/gus-3339-001.json. El núcleo (gus-normative-002.json) no cambia.
 """
 import json
 from pathlib import Path

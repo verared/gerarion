@@ -34,7 +34,7 @@ from .profiles import (
     instant_to_rfc3339,
 )
 
-__version__ = "2.3.5"
+__version__ = "2.4.0"
 
 __all__ = [
     "GeroEinval",

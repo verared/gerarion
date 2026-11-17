@@ -1,7 +1,7 @@
 /*
  * conformance.c — Runner de conformancia GUS (núcleo) para impl-c.
  *
- * Lee vectors/gus-normative-001.json con un parser JSON mínimo incluido
+ * Lee vectors/gus-normative-002.json con un parser JSON mínimo incluido
  * (objetos, arrays, strings, enteros, bools, null — sin floats) y ejecuta
  * las categorías del núcleo, igual que tools/conformance.py y
  * web/conformance.mjs.
@@ -308,6 +308,21 @@ static void check_gran_tempalum(JNode *v)
     if (idx != pattern->count) {
         fail3(cat, "cantidad de años GT 0-45", idx, pattern->count);
     }
+    /* Patrón simétrico en era AY (spec 2.1): rango [-46, -1]. */
+    JNode *pattern_neg = jo(g, "pattern_years_m45_m1");
+    idx = 0;
+    for (long long y = -46; y < 0; y++) {
+        if (gus_is_gran_tempalum(y)) {
+            if (idx >= pattern_neg->count || pattern_neg->items[idx]->num != y) {
+                fail3(cat, "patrón GT AY", y, idx < pattern_neg->count ? pattern_neg->items[idx]->num : -999999);
+                return;
+            }
+            idx++;
+        }
+    }
+    if (idx != pattern_neg->count) {
+        fail3(cat, "cantidad de años GT AY", idx, pattern_neg->count);
+    }
     JNode *sample = jo(g, "years_sample");
     for (int i = 0; i < sample->count; i++) {
         long long y = strtoll(sample->keys[i], NULL, 10);
@@ -358,12 +373,12 @@ static void check_year_starts(JNode *v)
     JNode *rows = jo(v, "year_starts");
     for (int i = 0; i < rows->count; i++) {
         JNode *row = rows->items[i];
-        long long y = strcmp(js(row, "era"), "DY") == 0 ? jn(row, "year") : -jn(row, "year");
+        long long y = jn(row, "year"); /* signo ya en el vector (simétrico, GUS 2.1) */
         long long di = gus_year_start_day_index(y);
         if (di != jn(row, "day_index")) fail3(cat, js(row, "greg"), di, jn(row, "day_index"));
         GusDate d;
         if (gus_to_gerarion(di, &d) != GUS_OK || d.abbr != 'S') fail(cat, "no empieza en Soludyia");
-        if (y >= 0 && gus_is_gran_tempalum(y) != (jo(row, "gran_tempalum")->boolean != 0)) {
+        if (gus_is_gran_tempalum(y) != (jo(row, "gran_tempalum")->boolean != 0)) {
             fail(cat, "gran_tempalum divergente");
         }
         if (gus_tempalum_days(y) != jn(row, "tempalum_days")) fail(cat, "tempalum_days");
@@ -471,7 +486,7 @@ static void check_instant(JNode *v)
 
 int main(int argc, char **argv)
 {
-    const char *path = argc > 1 ? argv[1] : "../vectors/gus-normative-001.json";
+    const char *path = argc > 1 ? argv[1] : "../vectors/gus-normative-002.json";
     JNode *v = jload(path);
     if (!v) return 2;
     printf("gus-normative conformance (C): %s\n", path);

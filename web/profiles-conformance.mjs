@@ -3,7 +3,7 @@
  *
  * Cláusula de conformancia (vectors/README.md): una implementación que declara
  * el perfil GUS-3339 es conforme si y solo si pasa el 100 % de los vectores de
- * este archivo. El núcleo de calendario (gus-normative-001.json) no cambia.
+ * este archivo. El núcleo de calendario (gus-normative-002.json) no cambia.
  *
  *   node web/profiles-conformance.mjs
  */

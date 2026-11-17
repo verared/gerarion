@@ -20,7 +20,7 @@ Formato de documento GST (JSON), versión 2:
       "anchor": { "day": ..., "index": ..., "proof": [...], "root": ... }
     }
 
-Definición de "imposible de falsificar" que GUS 2.0 sostiene:
+Definición de "imposible de falsificar" que GUS 2.1 sostiene:
 
     Falsificar una GST válida exige (a) romper la resistencia de preimagen de
     SHA-256, o (b) alterar simultáneamente el log de TODOS los notarios

@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Genera vectors/gus-normative-001.json — la única fuente normativa de vectores.
+"""Genera vectors/gus-normative-002.json — la única fuente normativa de vectores.
+
+Cambios respecto de `gus-normative-001` (archivada en vectors/archive/):
+kernel de calendario GUS 2.1 con Gran Tempalum simétrico (spec GUS v2.1.0,
+spec §3/§6): la regla es idéntica en ambas eras (DY y AY), por lo que los
+valores de vectores con día_index < 0 se recalculan y se añaden casos AY
+nuevos (0001AY-00-11-B, 12000AY-01-01-S, etc.). Los vectores de la era DY
+son bit a bit los de la 001: ningún dato de DY cambia.
 
 Reglas de generación:
 
@@ -32,8 +39,8 @@ from gerarion import notary as nty  # noqa: E402
 from gerarion import notary_cluster as ncl  # noqa: E402
 from gerarion import gts  # noqa: E402
 
-VECTOR_ID = "gus-normative-001"
-GUS_VERSION = "2.2.1"
+VECTOR_ID = "gus-normative-002"
+GUS_VERSION = "2.1.0"
 
 ERR_CODE = {
     cal.GeroEinval: "GERO_EINVAL",
@@ -54,7 +61,11 @@ ALG_DOC = {
 #: Fechas de borde calendario: gregoriano proleptico -> GUS
 CALENDAR_DATES = [
     (-5, 3, 21),     # origen: 0DY-01-01 Soludyia (por definición)
-    (-5, 3, 20),     # día -1: 1AY-00-04
+    (-5, 3, 20),     # día -1: 1AY-00-11 Tempalum día 11 (Nuvivid VII; GT AY simétrico, spec 2.1)
+    (-6, 3, 18),     # 1AY-01-04 Aisterdyia (primer regular del año GT 1AY)
+    (-11, 3, 14),    # 6AY-01-01 (inicio del año GT 6AY)
+    (-34, 3, 15),    # 29AY-01-01 (inicio del año GT 29AY, borde del patrón)
+    (-12005, 3, 21), # 12000AY-01-01
     (2026, 3, 16),   # víspera del cambio de año 2030->2031 (errata v1.2 E-01)
     (2026, 3, 17),   # 2031DY-01-01 (errata v1.2 E-01)
     (2026, 4, 15),   # Yeshuvid 2031DY-01-30 (errata v1.2 E-02)
@@ -70,10 +81,11 @@ CALENDAR_DATES = [
 GREG_ROUNDTRIP_INDICES = [
     0, 1, -1, 363, 364, 371, 727, 728, 735, 2030, 2031,
     73913, 100000, 1000000, 2000000,
-    -364, -365, -728, -1000, -1000000,
+    -1, -5, -7, -10, -364, -365, -371, -372, -728, -1000, -4382910, -1000000,  # AY simétrico (spec 2.1)
 ]
 
-YEAR_STARTS = [0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 45, 46,
+YEAR_STARTS = [-12000, -29, -17, -12, -6, -1,
+               0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 45, 46,
                2029, 2030, 2031, 2032, 2033, 2034, 2035, 2039, 2040, 2045]
 
 FORMAT_CANONICAL = [
@@ -87,7 +99,9 @@ FORMAT_CANONICAL = [
     {"input": "2031DY-03-08-T-21:45:10-SC-TCJ+3", "expected": "2031DY-03-08-T-21:45:10-LC-TCJ+3", "flags": ["cycle_corrected"]},
     {"input": "2034DY-00-07-M", "expected": "2034DY-00-07-M", "flags": []},
     {"input": "2034DY-00-07-V", "expected": "2034DY-00-07-M", "flags": ["weekday_corrected"]},
-    {"input": "1AY-00-04-B", "expected": "0001AY-00-04-B", "flags": []},
+    {"input": "1AY-00-11-B", "expected": "0001AY-00-11-B", "flags": []},
+    {"input": "6AY-01-01-S", "expected": "0006AY-01-01-S", "flags": []},
+    {"input": "12000AY-01-01-S", "expected": "12000AY-01-01-S", "flags": []},
     {"input": "31DY-03-08-t", "expected": "0031DY-03-08-T", "flags": []},
 ]
 
@@ -119,7 +133,7 @@ INSTANT_CASES = [
     ("0000DY-01-01-S-06:00:00-SC-TCJ+0", 21600),
     ("0000DY-01-01-S-17:59:59-SC-TCJ+0", 64799),
     ("0000DY-01-01-S-18:00:00-LC-TCJ+0", 64800),
-    ("0001AY-00-04-B-12:00:00-SC-TCJ+0", -43200),
+    ("0001AY-00-11-B-12:00:00-SC-TCJ+0", -43200),  # día -1: último día de 0001AY (GT AY simétrico)
 ]
 
 #: Caso de sello diario del notario determinista
@@ -180,7 +194,7 @@ def build_year_starts() -> list:
             "day_index": di,
             "greg": f"{gy:04d}-{gm:02d}-{gd:02d}",
             "greg_year": gy, "greg_month": gm, "greg_day": gd,
-            "gran_tempalum": cal.is_gran_tempalum(y) if y >= 0 else False,
+            "gran_tempalum": cal.is_gran_tempalum(y),  # simétrico: también en AY (spec 2.1)
             "tempalum_days": cal.tempalum_days(y),
             "abbr": "S",
         })
@@ -408,8 +422,9 @@ def main() -> None:
         "constants": build_constants(),
         "gran_tempalum": {
             "pattern_years_0_45": [y for y in range(46) if cal.is_gran_tempalum(y)],
+            "pattern_years_m45_m1": [y for y in range(-46, 0) if cal.is_gran_tempalum(y)],
             "years_sample": {str(y): cal.is_gran_tempalum(y)
-                             for y in [1, 2031, 2034, 2039, 2040]},
+                             for y in [-12000, -6, -1, 1, 2031, 2034, 2039, 2040]},
         },
         "calendar": build_calendar_vectors(),
         "year_starts": build_year_starts(),
@@ -420,7 +435,7 @@ def main() -> None:
         "slh_dsa": build_slhdsa_vectors(),
         "notary": build_notary_vectors(),
     }
-    out_path = os.path.join(os.path.dirname(__file__), "..", "vectors", "gus-normative-001.json")
+    out_path = os.path.join(os.path.dirname(__file__), "..", "vectors", "gus-normative-002.json")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2, ensure_ascii=False, sort_keys=False)

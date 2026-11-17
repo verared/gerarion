@@ -74,7 +74,7 @@ the English text; the Spanish mirror is informative (EN prevails).
 5. Conformance (the ONLY rule)
 
 An implementation is conformant to "GUS-for-notation" if and only if
-it consumes vectors/gus-normative-001.json (calendar and instant
+it consumes vectors/gus-normative-002.json (calendar and instant
 categories) and vectors/gus-3339-001.json (mapping category) and
 produces, for each input, exactly the output the vectors declare,
 including exact error codes. Two conformant implementations with the
@@ -95,7 +95,7 @@ No registry actions are required by this document.
 Author's Address / Normative References
 
 The vector set is the normative artifact:
-   vectors/gus-normative-001.json  (calendar core, instants, canonical)
+   vectors/gus-normative-002.json  (calendar core, instants, canonical)
    vectors/gus-3339-001.json       (RFC 3339 mapping)
 Reference implementations exist in Python (primary), JavaScript (web/)
 and C (impl-c/); the monolithic stdlib verifier tools/verify_gus.py

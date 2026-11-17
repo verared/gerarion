@@ -17,7 +17,7 @@ GUS es un estándar técnica-verificable. La legitimidad no proviene de una
 organización, ni de un autor, ni de una comunidad de afinidad: proviene de
 las **propiedades verificables del artefacto**. Un cambio al kernel GUS no
 "gana" porque lo apruebe un comité: gana porque siguiendo los vectores
-normativos publicados (`vectors/gus-normative-001.json`) todas las
+normativos publicados (`vectors/gus-normative-002.json`) todas las
 implementaciones siguen produciendo el mismo output, bitwise, desde tres
 bases de código (Python, JavaScript, C) escritas de forma independiente.
 
@@ -237,7 +237,7 @@ oficina de marcas, y esta gobernanza no declara registro alguno.
   usan libremente para implementaciones conformes (paso del vector set
   normativo) y para comunicación honesta sobre el estándar.
 - Se permite señalar conformidad ("implementación conforme a
-  gus-normative-001"); se prohibirá cualquier uso que declare conformidad
+  gus-normative-002"); se prohibirá cualquier uso que declare conformidad
   falsa o patrocinio inexistente, si en el futuro se formaliza registro.
 - Los forks conformes pueden mantener el nombre añadiendo su
   identificador (p. ej. "Gerarion — fork <nombre>"); los forks no
@@ -248,8 +248,8 @@ Si en el futuro se registra la marca, esta sección se actualiza primero
 
 ## 9. Glosario aquí no: apuntadores
 
-- Propiedades y regex del formato: `docs/spec/gus-2.0.md` (ES) /
-  `docs/en/gus-2.0.md` (EN normativo).
+- Propiedades y regex del formato: `docs/spec/gus-2.1.0.md` (ES) /
+  `docs/en/gus-2.1.0.md` (EN normativo).
 - Modelo de amenazas: `docs/spec/threat-model.md` (ES) / `docs/en/threat-model.md`.
 - Runbook del notario: `docs/notary-runbook.md`.
 - Vectores y cláusula de conformancia: `vectors/README.md`.

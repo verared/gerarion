@@ -55,7 +55,7 @@ todas las implementaciones).
 ## 5. Conformancia (única regla)
 
 Una implementación es conforme a GUS-for-notation si y solo si consume
-`vectors/gus-normative-001.json` y `vectors/gus-3339-001.json` y produce
+`vectors/gus-normative-002.json` y `vectors/gus-3339-001.json` y produce
 exactamente la salida declarada por los vectores, incluidos los códigos
 de error exactos. Dos implementaciones conformes con los mismos vectores
 NO pueden divergir silenciosamente: los vectores SON el estándar.

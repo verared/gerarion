@@ -157,7 +157,7 @@ gero-offset  = "TCJ" ("+" / "-") 1*2DIGIT
 
     <section title="Conformance">
       <t>The normative test vectors of GUS 2.1 are published as a
-      machine-readable file (gus-normative-001.json) in the specification
+      machine-readable file (gus-normative-002.json) in the specification
       repository. An implementation is conforming if and only if it passes
       100% of the categories of that file that it claims to support; the
       calendar, format and instant categories are mandatory for every
@@ -265,8 +265,8 @@ gero-offset  = "TCJ" ("+" / "-") 1*2DIGIT
         <author><organization>NIST</organization></author>
         <date year="2024"/></front>
       </reference>
-      <reference anchor="GUS-VEC" target="https://github.com/verared/gerarion/blob/main/vectors/gus-normative-001.json">
-        <front><title>GUS Normative Test Vectors (gus-normative-001)</title>
+      <reference anchor="GUS-VEC" target="https://github.com/verared/gerarion/blob/main/vectors/gus-normative-002.json">
+        <front><title>GUS Normative Test Vectors (gus-normative-002)</title>
         <author><organization>verared</organization></author></front>
       </reference>
     </references>

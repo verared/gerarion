@@ -1,6 +1,6 @@
 """Formato canónico de marca temporal Geroriana y normalización de entradas.
 
-Implementa la especificación de formatos (spec GUS 2.0, §6):
+Implementa la especificación de formatos (spec GUS 2.1, §6):
 
     AAAAYY-MM-DD-X[-HH:MM:SS-CC-TCJ±O]
 
@@ -23,7 +23,7 @@ from . import calendar as cal
 from .calendar import GeroEinval, GeroError, GeroItemporal
 
 TIMESTAMP_RE = re.compile(
-    r"^(?P<year>\d{1,4})(?:(?P<era>DY|AY))?"
+    r"^(?P<year>\d{1,6})(?:(?P<era>DY|AY))?"
     r"[-.](?P<month>\d{1,2})[-.](?P<day>\d{1,2})[-.]"
     r"(?P<weekday>[SLMATVBslmatvb])"
     r"(?:[-](?P<hour>\d{1,2}):(?P<minute>\d{1,2}):(?P<second>\d{1,2})"

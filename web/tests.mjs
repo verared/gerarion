@@ -176,7 +176,7 @@ check("GUS-3339: origen fuera de dominio RFC 3339", () => {
 // --- reporte --------------------------------------------------------------
 function report() {
   const lines = [
-    `GUS 2.0 vectores normativos: ${passed} pasan, ${failed} fallan`,
+    `GUS vectores normativos: ${passed} pasan, ${failed} fallan`,
     ...failures.map((f) => `  FALLA ${f}`),
   ];
   return lines.join("\n");

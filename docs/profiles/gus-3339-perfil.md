@@ -50,7 +50,7 @@ modo que el mapping es **biyectivo** en el dominio declarado.
 Una implementación declara el perfil GUS-3339 si y solo si pasa el 100 %
 de los vectores de `vectors/gus-3339-001.json` (8 mappings, 8 rechazos,
 3 casos de coherencia con el formato canónico GUS). La conformancia del
-núcleo (`gus-normative-001.json`) es independiente y no implica este
+núcleo (`gus-normative-002.json`) es independiente y no implica este
 perfil. Verificada en: Python (`tests/test_profiles.py`), JavaScript
 (`web/tests.mjs`, `node web/profiles-conformance.mjs`). La C de referencia
 no implementa perfiles (solo núcleo).

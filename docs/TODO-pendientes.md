@@ -9,7 +9,7 @@ la spec (ES+EN), (2) vectores normativos actualizados si toca al kernel y
 ## TODO-001 — Frontera exacta del día GUS con UTC/TAI (spec §9)
 
 Estado: **CERRADO** (2026-11-17) — decisión normativizada en la spec §9
-(ES+EN), **sin cambio de valores** (los vectores `gus-normative-001.json`
+(ES+EN), **sin cambio de valores** (los vectores `gus-normative-002.json`
 quedan intactos y siguen siendo el criterio de conformancia):
 
 - **Meridiano del día GUS: medianoche UTC.** El día `[n, n+1)` es el

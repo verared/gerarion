@@ -43,25 +43,26 @@ export const MONTHS = {
 
 const GT_CACHE = new Map();
 
-/** Recurrencia entera exacta del acumulador solar (spec §3). */
+/**
+ * Acumulador solar simétrico (spec GUS 2.1 §3), O(1), todo entero year.
+ *
+ *   r_y = ((year % U) + U) % U   // módulo euclidiano (JS trunca hacia 0)
+ *   r   = (r_y * S) % U
+ *   es Gran Tempalum <=> r + S >= U
+ *
+ * Igual bit a bit a la recurrencia iterativa para year >= 0 y extendida
+ * hacia el pasado: los años AY con GT empiezan en -1, -6, -12, -17, ...
+ */
 export function isGranTempalum(year) {
-  if (year < 0) return false;
   if (GT_CACHE.has(year)) return GT_CACHE.get(year);
-  let r = 0;
-  for (let n = 0; n <= year; n++) {
-    r += SOLAR_DELTA_UD;
-    if (r >= SOLAR_THRESHOLD_UD) {
-      GT_CACHE.set(n, true);
-      r -= SOLAR_THRESHOLD_UD;
-    } else {
-      GT_CACHE.set(n, false);
-    }
-  }
-  return GT_CACHE.get(year);
+  const rY = ((year % SOLAR_THRESHOLD_UD) + SOLAR_THRESHOLD_UD) % SOLAR_THRESHOLD_UD;
+  const r = (rY * SOLAR_DELTA_UD) % SOLAR_THRESHOLD_UD;
+  const isGt = r + SOLAR_DELTA_UD >= SOLAR_THRESHOLD_UD;
+  GT_CACHE.set(year, isGt);
+  return isGt;
 }
 
 export function yearLength(year) {
-  if (year < 0) return 364;
   return isGranTempalum(year) ? 371 : 364;
 }
 
@@ -98,28 +99,32 @@ export function gregorianFromDayIndex(dayIndex) {
   return jdnToGregorian(ORIGIN_JDN + dayIndex);
 }
 
+/**
+ * Inicio del año Gerarion, O(1) y simétrico (spec GUS 2.1 §3):
+ * con q = floor(year / U), r = year mod U (euclidiano):
+ *   gt_count = q*S + floor(r*S / U)
+ *   year_start_day_index = year*364 + 7*gt_count
+ * ysi(0) = 0; ysi(-1) = -371 (0001AY es Gran Tempalum).
+ */
 export function yearStartDayIndex(year) {
-  if (year >= 0) {
-    let total = 0;
-    for (let n = 0; n < year; n++) total += yearLength(n);
-    return total;
-  }
-  return year * 364;
+  const q = Math.floor(year / SOLAR_THRESHOLD_UD);
+  const r = year - q * SOLAR_THRESHOLD_UD;
+  const gtCount = q * SOLAR_DELTA_UD + Math.floor((r * SOLAR_DELTA_UD) / SOLAR_THRESHOLD_UD);
+  return year * 364 + 7 * gtCount;
 }
 
 export function toGerarion(dayIndex) {
-  let year = 0;
-  let rest = dayIndex;
-  if (dayIndex >= 0) {
-    while (true) {
-      const length = yearLength(year);
-      if (rest < length) break;
-      rest -= length;
-      year++;
-    }
+  // Inversa simétrica (spec GUS 2.1 §3): estimación con la longitud media
+  // exacta de año (364 + 7*S/U días) y corrección monotónica con
+  // yearStartDayIndex O(1); usa la duración real de cada año (364 o 371)
+  // en ambas eras.
+  let year, rest;
+  if (dayIndex === 0) {
+    year = 0; rest = 0;
   } else {
-    const yearsBack = Math.ceil(-dayIndex / 364);
-    year = -yearsBack;
+    year = Math.floor((dayIndex * SOLAR_THRESHOLD_UD) / (364 * SOLAR_THRESHOLD_UD + 7 * SOLAR_DELTA_UD));
+    while (yearStartDayIndex(year) > dayIndex) year--;
+    while (yearStartDayIndex(year + 1) <= dayIndex) year++;
     rest = dayIndex - yearStartDayIndex(year);
   }
   let month, day;
@@ -155,7 +160,7 @@ export class GeroError extends Error {}
 
 /*(mm) Formato canónico: AAAAYY-MM-DD-X[-HH:MM:SS-CC-TCJ±O] */
 const TS_RE =
-  /^(\d{1,4})(DY|AY)?[-.](\d{1,2})[-.](\d{1,2})[-.]([SLMATVB])(?:[-](\d{1,2}):(\d{1,2}):(\d{1,2})[-](SC|LC)[-]TCJ([+-]\d{1,2}))?$/;
+  /^(\d{1,6})(DY|AY)?[-.](\d{1,2})[-.](\d{1,2})[-.]([SLMATVB])(?:[-](\d{1,2}):(\d{1,2}):(\d{1,2})[-](SC|LC)[-]TCJ([+-]\d{1,2}))?$/;
 
 /** Normaliza: mayúsculas, separadores homogéneos (reglas 1, 6). */
 export function normalize(raw) {
