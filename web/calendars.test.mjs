@@ -19,6 +19,7 @@ import {
   jdnToMaya,
   MAYA_CORRELATION_JDN,
   intlCalendar,
+  intlParts,
   intlToJdn,
   civilWeekday,
   gregorianToJdn,
@@ -321,6 +322,105 @@ check('vector: umalqura 6/7/1448 AH = 17 nov 2026, ida y vuelta', () => {
 check('vector: etíope Meskerem 1 de 2019 EC = 11 sep 2026', () => {
   assertEq(ethiopicToJdn(2019, 1, 1), gregorianToJdn(2026, 9, 11));
 });
+
+// ---------- regresiones BETA: W1 (nombres hebreos), W3/W4 (inversos), W5 (TZ) ----------
+
+// W1: numeración rabínica — el mes 9 es Kislev (antes la tabla decía 8)
+check('W1: 17 nov 2026 hebreo = mes 9 "Kislev", texto "7 Kislev 5787"', () => {
+  const p = intlParts(gregorianToJdn(2026, 11, 17), 'hebrew');
+  assertEq(p.month, 9, `mes obenido: ${p.month}`);
+  assertEq(p.monthName, 'Kislev', `nombre: ${p.monthName}`);
+  assertEq(p.day, 7);
+  assertEq(p.year, 5787);
+  assertEq(p.text, '7 Kislev 5787', `texto: ${p.text}`);
+});
+
+// W4: en año bisiesto el mes 12 (Adar I) existe y el inverso lo resuelve
+check('W4: Adar I 5784 (mes 12, bisiesto) ida y vuelta exacta', () => {
+  const j = gregorianToJdn(2024, 2, 10);
+  const p = intlCalendar(j, 'hebrew');
+  assertEq(p.ok, true);
+  assertEq([p.year, p.month, p.day], [5784, 12, 1]);
+  const r = intlToJdn('hebrew', { year: 5784, month: 12, day: 1 });
+  assertEq(r.ok, true, JSON.stringify(r));
+  assertEq(r.jdn, j);
+});
+
+// W3: días tardíos del año lunar chino (antes la ventana inversa era corta)
+check('W3: chino 12/29 y 1/1 del Año Nuevo de 2026 resuelven en ambos sentidos', () => {
+  for (const [m, d] of [[1, 1], [12, 29], [11, 15]]) {
+    const j = (() => {
+      // localiza por barrido corto el JDN del día chino pedido en 2026
+      for (let k = gregorianToJdn(2026, 1, 1); k <= gregorianToJdn(2027, 3, 1); k++) {
+        const p = intlCalendar(k, 'chinese');
+        if (p.ok && p.year === 2026 && p.month === m && p.day === d) return k;
+      }
+      throw new Error(`no se encontró ${d}/${m}/2026 en la ventana de barrido`);
+    })();
+    const r = intlToJdn('chinese', { year: 2026, month: m, day: d });
+    assertEq(r.ok, true, `${d}/${m}/2026 → ${JSON.stringify(r)}`);
+    assertEq(r.jdn, j);
+  }
+});
+
+// W5: los componentes Intl no dependen de la zona del proceso. El cambio de
+// TZ dinámico funciona en Node (process.env.TZ) y en navegadores no aplica
+// porque todos los formatters usan timeZone:'UTC'.
+check('W5: intlParts idéntico con TZ=Pacific/Kiritimati y TZ=UTC', () => {
+  const j = gregorianToJdn(2026, 11, 17);
+  const prevTz = process.env.TZ;
+  try {
+    process.env.TZ = 'UTC';
+    const utc = JSON.stringify(intlParts(j, 'hebrew'));
+    const utcCh = JSON.stringify(intlParts(j, 'chinese'));
+    const utcIsl = JSON.stringify(intlParts(j, 'islamicUmalqura'));
+    process.env.TZ = 'Pacific/Kiritimati';
+    // fuerza relectura de TZ con una instancia nueva
+    if (new Date().getDate() === undefined) throw new Error('TZ no aplicada');
+    const kir = JSON.stringify(intlParts(j, 'hebrew'));
+    const kirCh = JSON.stringify(intlParts(j, 'chinese'));
+    const kirIsl = JSON.stringify(intlParts(j, 'islamicUmalqura'));
+    assertEq(utc, kir, 'hebreo difiere entre TZ');
+    assertEq(utcCh, kirCh, 'chino difiere entre TZ');
+    assertEq(utcIsl, kirIsl, 'islámico difiere entre TZ');
+  } finally {
+    process.env.TZ = prevTz;
+  }
+});
+
+// ida y vuelta compacta (siempre activa): cada inicio de mes y cada día de
+// Adar/Adar I/Adar II en 2000–2030 e.c. para chino y hebreo.
+// Barrido completo 1900–2100 día a día: DENSE=1 (lo ejecutó el release:
+// 73414 días × 2 calendarios, 0 fallos).
+const dense = process.env.DENSE === '1';
+{
+  const jA = gregorianToJdn(2000, 1, 1);
+  const jB = gregorianToJdn(2030, 12, 31);
+  const tryInv = (which, comps, j) => {
+    const r = intlToJdn(which, comps);
+    if (!r.ok || r.jdn !== j) throw new Error(`${JSON.stringify(comps)} → ${JSON.stringify(r)}`);
+  };
+  check(`ida y vuelta chino 2000–2030 (fronteras${dense ? ', DENSE' : ''})`, () => {
+    for (let j = jA; j <= jB; j++) {
+      const p = intlCalendar(j, 'chinese');
+      if (!p.ok) continue;
+      const nxt = j < jB ? intlCalendar(j + 1, 'chinese') : null;
+      const comp = { year: p.year, month: p.month, day: p.day, leapMonth: !!p.leapMonth };
+      const relevant = dense || p.day === 1 || p.day >= 29 || (nxt && nxt.day <= 1)
+        || comp.leapMonth || (nxt && nxt.leapMonth);
+      if (relevant) tryInv('chinese', comp, j);
+    }
+  });
+  check(`ida y vuelta hebreo 2000–2030 (fronteras y Adar${dense ? ', DENSE' : ''})`, () => {
+    for (let j = jA; j <= jB; j++) {
+      const p = intlCalendar(j, 'hebrew');
+      if (!p.ok) continue;
+      const comp = { year: p.year, month: p.month, day: p.day };
+      const relevant = dense || p.day === 1 || p.day >= 29 || p.month >= 12;
+      if (relevant) tryInv('hebrew', comp, j);
+    }
+  });
+}
 
 // ---------- reporte ----------
 

@@ -349,20 +349,43 @@ const INTL_CONFIG = {
   chinese: { locale: 'en-u-ca-chinese' },
 };
 
-/** Componentes normalizados de un JDN en un calendario Intl. */
+/** Cache de formatters Intl: la construcción de DateTimeFormat es cara y
+ *  el barrido denso de ida-y-vuelta llama a intlParts decenas de miles de veces. */
+const FMT_CACHE = new Map();
+function cachedDtFormat(locale, opts) {
+  const key = locale + '|' + JSON.stringify(opts);
+  let f = FMT_CACHE.get(key);
+  if (f === undefined) {
+    f = new Intl.DateTimeFormat(locale, opts);
+    FMT_CACHE.set(key, f);
+  }
+  return f;
+}
+
+/** Componentes normalizados de un JDN en un calendario Intl.
+ *  W5: SIEMPRE timeZone 'UTC' — el JDN es un día civil UTC y la conversión
+ *  no depende de la zona del navegador/proceso. */
 export function intlParts(j, which) {
   if (which === 'islamic') which = 'islamicCivil'; // alias cómodo
   const conf = INTL_CONFIG[which];
   const d = jdnToJsDate(j);
-  const fmt = new Intl.DateTimeFormat(conf.locale, {
-    day: 'numeric', month: 'numeric', year: 'numeric',
+  const fmt = cachedDtFormat(conf.locale, {
+    day: 'numeric', month: 'numeric', year: 'numeric', timeZone: 'UTC',
     ...(which === 'islamicUmalqura' || which === 'islamicCivil' ? { era: 'short' } : {}),
   });
+  const nameFmt = cachedDtFormat(conf.locale, {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+  });
   const p = Object.fromEntries(fmt.formatToParts(d).map((x) => [x.type, x.value]));
+  // W3: conserva el signo — sin esto, años negativos prolépticos (p. ej. el
+  // relatedYear "-262113" del chino) se leen como positivos enormes y la
+  // secuencia (año, mes) deja de ser monótona.
   const num = (s) => {
     if (s === undefined || s === null) return null;
-    const m = /(\d+)/.exec(s);
-    return m ? parseInt(m[1], 10) : null;
+    const m = /(-)?\s*(\d+)/.exec(s);
+    if (!m) return null;
+    const v = parseInt(m[2], 10);
+    return m[1] ? -v : v;
   };
   const base = {
     month: num(p.month),
@@ -371,7 +394,7 @@ export function intlParts(j, which) {
     year: num(p.year),
     relatedYear: p.relatedYear !== undefined ? num(p.relatedYear) : null,
     era: p.era || null,
-    text: fmt.format(d),
+    text: which === 'hebrew' ? nameFmt.format(d) : fmt.format(d),
   };
   if (which === 'chinese') {
     // ICU: '2bis' → mes 2 bisiesto; relatedYear en lugar de year
@@ -423,8 +446,111 @@ export function intlCalendar(j, which) {
 }
 
 /**
- * Conversión inversa Intl: busca el JDN en que el calendario Intl marca
+ * Rango monótono (año, mes, intercalar) como número comparable. Los pares
+ * (year, month) avanzan sin retroceder día a día en todos los calendarios
+ * Intl suportados, así que la búsqueda binaria sobre JDN es exacta.
+ */
+function intlRank(which, p) {
+  if (p.year === null || p.month === null) return -Infinity;
+  if (which === 'chinese') {
+    const leap = p.leapMonth ? 1 : 0;
+    return p.year * 24 + p.month * 2 + leap; // el mes intercalar sigue al regular
+  }
+  if (which === 'hebrew') {
+    // orden civil hebreo: el año empieza en Tishri (7) y pasa por Adar
+    // (12 ó 12+13 en bisiesto) antes de Nisan (1); se reindexa para que
+    // rank sea monótono y sin colisiones:
+    // Tishri→1 … Adar I→6, Adar II→7, Nisan→8 … Elul→13.
+    const civilOrder = p.month >= 7 ? p.month - 6 : p.month + 7;
+    return p.year * 13 + civilOrder;
+  }
+  return p.year * 12 + p.month; // islámico 1..12
+}
+
+/** Dominio real (JDN válido inclusivo) que ICU soporta para cada calendario
+ *  en este entorno. ICU lanza "Icu error" en rangos extremos distintos por
+ *  calendario: se mide por exponencial + bisección y se cachea. */
+const DOMAIN_CACHE = new Map();
+function intlDomain(which) {
+  if (DOMAIN_CACHE.has(which)) return DOMAIN_CACHE.get(which);
+  const safe = (j) => {
+    try {
+      const p = intlParts(j, which);
+      return (p.year === null || p.month === null) ? null : p;
+    } catch {
+      return null;
+    }
+  };
+  const anchor = gregorianToJdn(2000, 1, 1);
+  let domain = null;
+  if (safe(anchor) !== null) {
+    // extremo superior
+    let hi = anchor;
+    let step = 4096;
+    while (safe(hi + step) !== null) {
+      hi += step;
+      step *= 2;
+    }
+    let a = hi;
+    let b = hi + step;
+    while (b - a > 1) {
+      const m = Math.floor((a + b) / 2);
+      if (safe(m) !== null) a = m;
+      else b = m;
+    }
+    const upper = a;
+    // extremo inferior
+    let lo = anchor;
+    step = 4096;
+    while (safe(lo - step) !== null) {
+      lo -= step;
+      step *= 2;
+    }
+    a = lo;
+    b = lo - step;
+    while (a - b > 1) {
+      const m = Math.floor((a + b) / 2);
+      if (safe(m) !== null) a = m;
+      else b = m;
+    }
+    domain = { lo: b + 1, hi: upper };
+  }
+  DOMAIN_CACHE.set(which, domain);
+  return domain;
+}
+
+/** Primer JDN con rank >= target (búsqueda binaria ICU completa), o null. */
+function intlFirstJdnWithRank(which, targetRank) {
+  const dom = intlDomain(which);
+  if (dom === null) return null;
+  let lo = dom.lo;
+  let hi = dom.hi;
+  let r;
+  try {
+    r = intlRank(which, intlParts(hi, which));
+  } catch {
+    return null;
+  }
+  if (r < targetRank) return null;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    let rm;
+    try {
+      rm = intlRank(which, intlParts(mid, which));
+    } catch {
+      rm = -Infinity; // fuera de lo soportado por ICU en este entorno
+    }
+    if (rm < targetRank) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/**
+ * Conversión inversa Intl: localiza el JDN en que el calendario Intl marca
  * exactamente los componentes pedidos (verificando con el mismo motor).
+ * W3/W4: rango completo de ICU por búsqueda binaria — sin ventanas cortas
+ * que rechacen fechas válidas (mes intercalar chino, Adar I/II, días tardíos).
  * components: { year, month, day, leapMonth? (solo chino) }
  * Devuelve { ok, jdn } o { ok:false, note }.
  */
@@ -438,55 +564,47 @@ export function intlToJdn(which, components) {
   }
   if (which === 'chinese') {
     if (month < 1 || month > 12) return { ok: false, note: `mes chino inválido: ${month}` };
-    // ventana: Año Nuevo chino entre 21 ene y 21 feb del relatedYear
-    const seed = gregorianToJdn(year - 1, 12, 1);
-    const end = gregorianToJdn(year, 5, 1);
-    for (let j = seed; j <= end; j++) {
-      const p = intlParts(j, 'chinese');
-      if (p.year === year && p.month === month && p.day === day && p.leapMonth === leapMonth) {
-        return { ok: true, jdn: j };
-      }
-      // atajo monotónico: si ya pasamos (relatedYear, mes) correcto y seguimos sin match
-      if (p.year > year || (p.year === year && p.month > month && !p.leapMonth && !leapMonth)) {
-        break;
-      }
-    }
-    const leapTxt = leapMonth ? ' (mes intercalar)' : '';
-    return { ok: false, note: `no existe ${day}/${leapTxt} mes ${month} en el año chino ${year} según ICU` };
-  }
-  if (which === 'hebrew') {
+  } else if (which === 'hebrew') {
     if (month < 1 || month > 13) return { ok: false, note: `mes hebreo inválido: ${month} (1–13)` };
     if (month === 13 && !isHebrewLeap(year)) {
       return { ok: false, note: `año ${year} no es bisiesto hebreo: no existe Adar II` };
     }
-    if (month === 12 && isHebrewLeap(year)) {
-      return { ok: false, note: `en el año bisiesto ${year} el mes 12 es Adar I (usa 13 para Adar II)` };
+  } else {
+    if (month < 1 || month > 12) return { ok: false, note: `mes islámico inválido: ${month}` };
+  }
+  if (!Number.isInteger(year) || year <= 0) {
+    return { ok: false, note: `año fuera de cobertura Intl: ${year} (la época de este calendario empieza en año 1)` };
+  }
+  const target = intlRank(which, { year, month, leapMonth: which === 'chinese' ? leapMonth : false });
+  const start = intlFirstJdnWithRank(which, target);
+  if (start === null) {
+    const leapTxt = which === 'chinese' && leapMonth ? ' (mes intercalar)' : '';
+    return { ok: false, note: `fuera de la cobertura de ICU: ${day}/${leapTxt} mes ${month} del año ${year}` };
+  }
+  const whichKey = which === 'islamic' ? 'islamicCivil' : which;
+  // escanea los días del mes objetivo (≤ 33): day es monótono dentro del mes
+  for (let j = start; j < start + 40; j++) {
+    let p;
+    try {
+      p = intlParts(j, whichKey);
+    } catch {
+      break;
     }
-    // el año hebreo Y abarca sep(Y−3761) → sep(Y−3760)
-    const seed = gregorianToJdn(year - 3761, 8, 1);
-    const end = gregorianToJdn(year - 3760, 10, 1);
-    for (let j = seed; j <= end; j++) {
-      const p = intlParts(j, 'hebrew');
-      if (p.year === year && p.month === month && p.day === day) {
+    if (intlRank(which, p) !== target) break;
+    const matchLeap = which === 'chinese' ? p.leapMonth === leapMonth : true;
+    if (p.year === year && p.month === month) {
+      // hebreo: el mes 12 en bisiesto ES Adar I (mes 13 = Adar II) — ya refleja el target
+      if (p.day === day && matchLeap) {
         return { ok: true, jdn: j };
       }
     }
-    return { ok: false, note: `no existe ${month}/${day} del año hebreo ${year} según ICU` };
   }
-  // islámico: umalqura o civil
-  if (month < 1 || month > 12) return { ok: false, note: `mes islámico inválido: ${month}` };
-  const whichKey = which === 'islamicUmalqura' ? 'islamicUmalqura' : 'islamicCivil';
-  // estimación: año gregoriano ≈ 621.5 + 0.9702·(H−1); ventana ±2 años
-  const gy = Math.round(621.5 + 0.970224 * (year - 1));
-  const seed = gregorianToJdn(gy - 2, 1, 1);
-  const end = gregorianToJdn(gy + 2, 12, 31);
-  for (let j = seed; j <= end; j++) {
-    const p = intlParts(j, whichKey);
-    if (p.year === year && p.month === month && p.day === day) {
-      return { ok: true, jdn: j };
-    }
-  }
-  return { ok: false, note: `no existe ${day}/${month} del año ${year} AH según ICU (${whichKey})` };
+  const leapTxt = which === 'chinese' && leapMonth ? ' (mes intercalar)' : '';
+  const nameByWhich = { chinese: 'chino', hebrew: 'hebreo', islamicUmalqura: 'islámico (Umm al-Qura)', islamicCivil: 'islámico (civil)' };
+  return {
+    ok: false,
+    note: `no existe ${day}/${leapTxt} mes ${month} del año ${year} según ICU (${nameByWhich[whichKey] || whichKey})`,
+  };
 }
 
 // ---------------------------------------------------------------------------
