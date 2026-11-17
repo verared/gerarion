@@ -32,7 +32,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install pytest
-          python -m pip install -e . || true
+          python -m pip install -e '.[slh]' || true
       - name: Suite Python (kernel + conformancia + fuzzing)
         run: PYTHONPATH=src python3 -m pytest tests/ -q
       - name: Suite JavaScript del kernel
