@@ -33,7 +33,7 @@ jobs:
       # afectan al toolchain de CI (pip, setuptools, urllib3…), no al kernel
       # (no publicado en PyPI: skip "Dependency not found" esperado), así que
       # se informa como ::warning sin bloquear; el reporte queda en el log.
-      - name: pip-audit (informativo; hallazgos: toolchain de CI)
+      - name: pip-audit (informativo; los hallazgos son de toolchain de CI)
         run: |
           python -m pip install pip-audit
           python -m pip_audit || echo "::warning::pip-audit reportó hallazgos de toolchain (revisar log; no afectan al kernel)"
