@@ -59,6 +59,43 @@ TAI_MINUS_UTC_TABLE: List[Tuple[int, int]] = [
 TABLE_EPOCHS = [e for e, _ in TAI_MINUS_UTC_TABLE]
 TABLE_OFFSETS = [o for _, o in TAI_MINUS_UTC_TABLE]
 
+# ---------------------------------------------------------------------------
+# Puente TAI − UTC versionado (horizonte CGPM 2027)
+#
+# La tabla es un DATO con vigencia, no una constante eterna: la CGPM aprobó
+# la transición a UTC continuo (sin intercalares) a partir de mayo de 2027;
+# después de valid_until_unix la tabla exige revisión y cualquier lectura
+# se marca como EXTRAPOLACIÓN (nunca como hecho medido).
+# ---------------------------------------------------------------------------
+
+TAI_UTC_TABLE_VERSION = "IERS-C-2026.1"
+#: 2027-05-01T00:00:00Z en segundos Unix: fin de la vigencia verificada
+#: (transición a UTC continuo aprobada por la CGPM para mayo de 2027).
+TAI_UTC_VALID_UNTIL_UNIX = 1_799_808_000
+#: El leap smear NO es una escala física TAI: las escalas smearing (UTC-SLS
+#: y similares) se RECHAZAN en el puente; nunca se interpretan como TAI.
+TAI_UTC_SMEAR_POLICY = "reject"
+
+
+def tai_utc_table_info() -> dict:
+    """Metadatos explícitos de la tabla TAI − UTC embebida."""
+    return {
+        "table_version": TAI_UTC_TABLE_VERSION,
+        "valid_until_unix": TAI_UTC_VALID_UNTIL_UNIX,
+        "smear_policy": TAI_UTC_SMEAR_POLICY,
+    }
+
+
+def tai_minus_utc_checked(unix_seconds: int) -> tuple:
+    """Offset + indicador de extrapolación.
+
+    Devuelve ``(offset, extrapolated)``: ``extrapolated`` es True si el
+    instante consultado es posterior a ``valid_until_unix`` (la tabla no
+    cubre ese futuro verificado: puede cambiar con UTC continuo).
+    """
+    offset = tai_minus_utc(unix_seconds)
+    return offset, unix_seconds > TAI_UTC_VALID_UNTIL_UNIX
+
 
 def tai_minus_utc(unix_seconds: int) -> int:
     """Offset TAI − UTC vigente para un segundo Unix (UTC). O(1) por bisect.

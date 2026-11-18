@@ -414,6 +414,33 @@ export const TAI_MINUS_UTC_TABLE = [
   [1341100800, 35], [1435708800, 36], [1483228800, 37],
 ];
 
+// ---------------------------------------------------------------------------
+// Puente TAI − UTC versionado (horizonte CGPM 2027): la tabla es un DATO
+// con vigencia. Tras valid_until (2027-05-01, transición aprobada por la
+// CGPM a UTC continuo) toda lectura es EXTRAPOLACIÓN, no hecho medido.
+// ---------------------------------------------------------------------------
+
+export const TAI_UTC_TABLE_VERSION = "IERS-C-2026.1";
+export const TAI_UTC_VALID_UNTIL_UNIX = 1799808000;
+export const TAI_UTC_SMEAR_POLICY = "reject";
+
+export function taiUtcTableInfo() {
+  return {
+    tableVersion: TAI_UTC_TABLE_VERSION,
+    validUntilUnix: TAI_UTC_VALID_UNTIL_UNIX,
+    smearPolicy: TAI_UTC_SMEAR_POLICY,
+  };
+}
+
+/** Offset + indicador de extrapolación tras valid_until. */
+export function taiMinusUTCChecked(unixSeconds) {
+  const s = BigInt(unixSeconds);
+  return {
+    offset: taiMinusUTC(s),
+    extrapolated: s > BigInt(TAI_UTC_VALID_UNTIL_UNIX),
+  };
+}
+
 /** Offset TAI − UTC vigente para un segundo Unix UTC (pre-1958: 0 s). */
 export function taiMinusUTC(unixSeconds) {
   let current = 0;

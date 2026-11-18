@@ -123,8 +123,25 @@ def instant_from_rfc3339(stamp: str) -> int:
 # ---------------------------------------------------------------------------
 
 from .calendar import NANOS_MAX as _NANOS_MAX, validate_nanos as _validate_nanos
+from .tai import (
+    TAI_UTC_SMEAR_POLICY,
+    TAI_UTC_TABLE_VERSION,
+    TAI_UTC_VALID_UNTIL_UNIX,
+    tai_minus_utc_checked,
+    tai_utc_table_info,
+)
 
 NANOS_MAX = _NANOS_MAX
+
+# Re-export del puente TAI − UTC versionado (metadatos de vigencia y
+# política de smear; implementación en gerarion.tai).
+__all_puente = [
+    "TAI_UTC_SMEAR_POLICY",
+    "TAI_UTC_TABLE_VERSION",
+    "TAI_UTC_VALID_UNTIL_UNIX",
+    "tai_minus_utc_checked",
+    "tai_utc_table_info",
+]
 
 
 def instant_to_rfc3339_nanos(instant: int, nanos: int = 0) -> str:
