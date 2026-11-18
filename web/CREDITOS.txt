@@ -1,0 +1,97 @@
+GERARION · ATLAS DEL TIEMPO — Créditos y licencias
+===================================================
+
+Núcleo normativo GUS y portal original
+  Copyright 2026 verared contributors. Dual-licensed MIT OR Apache-2.0.
+  Los módulos web/gerarion.mjs, web/calendars.mjs, web/tests.mjs,
+  web/calendars.test.mjs y web/LICENSE son originales del repositorio
+  https://github.com/verared/gerarion y no fueron modificados por este
+  rediseño. web/conformance.mjs, web/profiles-conformance.mjs,
+  web/regression-conformance.mjs y la-suite web/package.json también
+  pertenecen al proyecto original.
+
+Rediseño «Atlas del tiempo»
+  Módulos web/atlas.mjs, web/app.js, web/index.html, web/style.css,
+  web/zonas-tcj.mjs, tools/exportar.mjs y tests/atlas.test.mjs.
+  Copyright 2026 verared contributors. MIT OR Apache-2.0.
+
+Ilustración
+  web/assets/esfera-armilar.webp — lámina de esfera armilar en estilo de
+  grabado de tinta, generada digitalmente para esta edición. Se entrega
+  bajo la misma doble licencia del proyecto (MIT OR Apache-2.0).
+  web/assets/atlas.svg — hoja de símbolos vectoriales original de este
+  rediseño, MIT OR Apache-2.0.
+
+Tipografías
+  Newsreader — Copyright 2020 The Newsreader Project Authors
+  (https://github.com/productiontype/newsreader), SIL Open Font License
+  1.1. Subconjunto latin servido localmente como woff2.
+  DM Sans — Copyright 2014-2021 Colophon Foundry, Jonny Pinhorn y
+  colaboradores (https://fonts.google.com/specimen/DM+Sans/about),
+  SIL Open Font License 1.1. Subconjunto latin servido localmente como
+  woff2. Obtenidos desde el proyecto Fontsource (https://fontsource.org),
+  que redistribuye las fuentes bajo OFL.
+  Los archivos de la familia Atkinson Hyperlegible y su licencia se
+  conservan sin cambios en web/fonts/ (ver OFL.txt).
+
+Datos geográficos
+  web/zonas-tcj.mjs incluye un índice derivado de los archivos zone.tab e
+  iso3166.tab de la base de datos de husos horarios IANA (tzdb),
+  edición 2026f, en dominio público:
+    «This file is in the public domain» (IANA tzdb, README).
+  Los nombres de países se resuelven con Intl.DisplayNames del navegador;
+  los identificadores de zona IANA no se alteran. Las reglas de horario
+  civil (incluidos los cambios estacionales) provienen de la
+  implementación de Intl/ICU instalada en cada navegador; este catálogo
+  no redistribuye ni altera tzdata.
+
+Licencias completas
+-------------------
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Apache License 2.0
+
+Copyright 2026 verared contributors
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may
+not use this file except in compliance with the License. You may obtain
+a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License. El texto íntegro y legalmente vinculante
+de Apache-2.0 se conserva en web/LICENSE.
+
+SIL Open Font License 1.1 (resumen aplicado a Newsreader y DM Sans)
+
+Estas fuentes se entregan bajo la SIL Open Font License, Version 1.1.
+Pueden ser usadas, estudiadas, modificadas y redistribuidas libremente,
+incluido su uso comercial y su embebido en documentos y páginas web,
+siempre que no se vendan por sí solas y que se conserven el aviso de
+copyright y esta licencia. El texto íntegro está disponible en
+https://openfontlicense.org/ y, para Atkinson Hyperlegible, en
+web/fonts/OFL.txt. La redistribución de los subconjuntos incluye esta
+mención de procedencia.

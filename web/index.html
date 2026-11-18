@@ -1,237 +1,154 @@
-<!--
-  SPDX-License-Identifier: MIT OR Apache-2.0
-  SPDX-FileCopyrightText: 2026 verared contributors
--->
 <!doctype html>
 <html lang="es">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Traductor de fechas entre calendarios · Gerarion (GUS 2.1.0)</title>
-<meta name="description" content="Traductor de fechas entre calendarios: convierte fechas Gerarion (GUS 2.1.0), gregorianas, julianas, egipcias, etíopes, bahá'íes, mayas, hebreas, islámicas y chinas. 100% local, cero dependencias, funciona sin conexión." />
-<meta name="theme-color" content="#1d4d1a" />
-<meta property="og:title" content="Traductor de fechas entre calendarios · Gerarion (GUS 2.1.0)" />
-<meta property="og:description" content="Convierte fechas entre Gerarion (GUS 2.1.0), gregoriano, juliano, egipcio, etíope, bahá'í, maya, hebreo, islámico y chino. 100% local, cero dependencias, funciona sin conexión." />
-<meta property="og:type" content="website" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d4d1a'/%3E%3Ctext x='16' y='23' font-size='20' font-family='monospace' fill='%23ffffff' text-anchor='middle'%3EG%3C/text%3E%3C/svg%3E" />
-<link rel="preload" href="fonts/AtkinsonHyperlegible-Regular.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="fonts/AtkinsonHyperlegible-Bold.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <a class="skip-link" href="#traductor">Saltar al traductor de fechas</a>
-
-  <header class="site-header">
-    <div class="brand">
-      <h1>Gerarion</h1>
-      <p class="tagline">Traductor de fechas entre calendarios — <span class="mono">GUS v3.0.0</span></p>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#fbfaf7" />
+    <title>Calendario universal · Gerarion</title>
+    <meta
+      name="description"
+      content="Calendario universal Gerarion y atlas de equivalencias: traductor entre diez calendarios, reloj TCJ, intervalos e hitos. Sin cuentas ni envío de datos."
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="assets/atlas.svg#sun"
+      sizes="any"
+    />
+    <link rel="preload" href="assets/atlas.svg" as="image" type="image/svg+xml" />
+    <link
+      rel="preload"
+      href="fonts/newsreader-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="fonts/dm-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Saltar al contenido principal</a>
+    <div id="scrim" hidden></div>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand-row">
+          <button
+            id="menu-toggle"
+            class="icon-button"
+            aria-label="Abrir menú de navegación"
+            aria-expanded="false"
+            aria-controls="sidebar"
+            data-action="menu"
+          >
+            <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#menu" /></svg>
+          </button>
+          <a class="crumb-root" href="#calendario" data-view="calendario">
+            <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#brand" /></svg>
+            Gerarion
+          </a>
+          <span class="crumb-divider" aria-hidden="true">/</span>
+          <span class="crumb" id="crumb">Calendario</span>
+        </div>
+        <div class="header-tools">
+          <button
+            id="contrast-control"
+            class="icon-button"
+            data-action="contrast"
+            aria-pressed="false"
+            aria-label="Alternar alto contraste"
+            title="Alto contraste"
+          >
+            <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#contrast" /></svg>
+          </button>
+          <button id="zone-trigger" class="tcj-trigger" data-action="zones">
+            <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#globe" /></svg>
+            <span class="mono" id="header-time">--:--:--</span>
+            <span class="zone-label mono" id="header-zone">TCJ+0</span>
+            <span id="header-city">Jerusalén</span>
+            <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#down" /></svg>
+          </button>
+        </div>
+      </header>
+      <nav class="sidebar" id="sidebar" aria-label="Secciones del atlas">
+        <div class="sidebar-head">
+          <span class="mobile-brand">
+            <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#brand" /></svg>
+            Gerarion
+          </span>
+          <button
+            class="icon-button mobile-close"
+            aria-label="Cerrar menú"
+            data-action="menu"
+          >
+            <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#x" /></svg>
+          </button>
+        </div>
+        <p class="eyebrow sidebar-label">Atlas del tiempo</p>
+        <a class="nav-item" href="#calendario" data-view="calendario">
+          <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#calendar" /></svg>
+          Calendario
+        </a>
+        <a class="nav-item" href="#traductor" data-view="traductor">
+          <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#convert" /></svg>
+          Traductor
+        </a>
+        <a class="nav-item" href="#reloj" data-view="reloj">
+          <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#clock" /></svg>
+          Reloj en vivo
+        </a>
+        <a class="nav-item" href="#distancia" data-view="distancia">
+          <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#distance" /></svg>
+          Distancia
+        </a>
+        <a class="nav-item" href="#hitos" data-view="hitos">
+          <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#book" /></svg>
+          Hitos
+        </a>
+        <a class="nav-item" href="#referencia" data-view="referencia">
+          <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#file" /></svg>
+          Referencia
+        </a>
+        <a class="nav-item" href="#verificacion" data-view="verificacion">
+          <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#shield" /></svg>
+          Verificación
+        </a>
+        <div class="sidebar-foot">
+          <p class="eyebrow">Estado del núcleo</p>
+          <p class="engine-line">
+            <i class="status-dot" aria-hidden="true"></i>
+            <span id="engine-status">Cálculo verificado</span>
+          </p>
+          <p class="fineprint">GUS 3.0.0 · TCJ+0</p>
+        </div>
+      </nav>
+      <main class="main" id="workspace">
+        <div id="view" class="page"></div>
+      </main>
     </div>
-    <div class="header-actions">
-      <a class="chip link-chip" href="https://github.com/verared/gerarion" title="Repositorio normativo y Releases">repo</a>
-      <button id="theme-toggle" class="chip" type="button" title="Alternar contraste reforzado" aria-pressed="false">contraste alto</button>
-    </div>
-  </header>
-
-  <nav class="mini-nav" aria-label="Secciones de la página">
-    <a href="#traductor">Traductor</a>
-    <a href="#ahora">Ahora</a>
-    <a href="#mes">Calendario del mes</a>
-    <a href="#distancia">Distancia</a>
-    <a href="#verificacion">Verificación</a>
-  </nav>
-
-  <main id="main">
-    <!-- 1. Traductor de fechas (Piedra Rosetta) -->
-    <section class="card" id="traductor" aria-labelledby="rosetta-title">
-      <h2 id="rosetta-title">Traductor de fechas entre calendarios</h2>
-      <p class="rosetta-subtitle dim">Piedra Rosetta · converger a los 10 sistemas a la vez</p>
-      <p class="dim">
-        Elige el calendario de origen, introduce la fecha y se traduce a los
-        <b>10 sistemas</b> a la vez: el <b>day_index</b> GUS y su <b>JDN</b>
-        son el pivote matemático. Cada tarjeta puede usarse como nuevo origen.
-        Eras GUS: <b>DY</b> (futura) y <b>AY</b> (pasada, años de 5–6 dígitos,
-        con Gran Tempalum simétrico).
+    <div class="toast" id="toast" role="status"></div>
+    <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+    <p class="sr-only" role="status" id="announcement"></p>
+    <footer class="footer">
+      <svg class="icon" aria-hidden="true"><use href="assets/atlas.svg#sun" /></svg>
+      <span>
+        Gerarion · coordenadas de tiempo abiertas · consulta la
+        <a href="https://github.com/verared/gerarion" target="_blank" rel="noopener noreferrer">especificación y el código</a>
+      </span>
+    </footer>
+    <noscript>
+      <p class="noscript">
+        Este atlas calcula todo en tu navegador con JavaScript. Sin él no puede
+        dibujar el calendario; el punto de entrada documental sigue siendo la
+        especificación GUS.
       </p>
-      <form id="form-uni" class="uni-form">
-        <div class="mode-row" id="uni-modes" role="radiogroup" aria-label="Calendario de origen"></div>
-        <div class="uni-input">
-          <label class="dim" for="uni-in" id="uni-label"></label>
-          <input type="text" id="uni-in" spellcheck="false" autocomplete="off" class="mono" />
-          <button type="submit" class="btn-primary">Traducir</button>
-          <button type="button" id="share-link" class="chip" title="Copiar enlace compartible de esta fecha">Copiar enlace</button>
-          <button id="hoy-utc" class="chip" type="button" title="Traducir hoy (fecha y hora UTC)">Hoy UTC</button>
-        </div>
-      </form>
-      <div id="rosetta-status" class="output dim" aria-live="polite"></div>
-      <div id="rosetta-grid" class="cal-grid"></div>
-      <div class="presets-row dim" id="presets"></div>
-      <details class="fold">
-        <summary>Cómo funciona</summary>
-        <p class="dim">
-          Toda conversión pasa por un pivote entero: <em>JDN</em> (número de
-          día juliano, el heredero académico de los cálculos astronómicos) y
-          <em>day_index</em>, el contador de días de Gerarion desde el origen
-          <tt>0000DY-01-01-S</tt>. La relación es exacta:
-          <tt>JDN = 1719313 + day_index</tt>. Cada calendario se traduce
-          hacia/desde ese número con aritmética entera (los nativos Intl
-          además se verifican en sentido inverso durante la conversión), así
-          que ninguna fecha pasa por fechas flotantes y las conversiones son
-          reversibles sin error de redondeo. La hora del día se conserva como
-          dato adjunto al sello, en UTC.
-        </p>
-      </details>
-    </section>
-
-    <!-- 2. Conversiones rápidas (plegadas) -->
-    <details class="fold card" id="conversiones">
-      <summary>Conversiones rápidas</summary>
-      <section class="card inner" aria-labelledby="greg-title">
-        <h2 id="greg-title">Gregoriano → Gerarion</h2>
-        <form id="form-greg" class="inline-form">
-          <label class="visually-hidden" for="greg-date">Fecha gregoriana</label>
-          <input type="date" id="greg-date" min="0001-01-01" required />
-          <button type="submit" class="btn-primary">Convertir</button>
-        </form>
-        <div id="output-greg" class="output"></div>
-      </section>
-      <section class="card inner" aria-labelledby="gero-title">
-        <h2 id="gero-title">Gerarion → todo</h2>
-        <form id="form-gero" class="inline-form">
-          <label class="visually-hidden" for="gero-ts">Marca canónica GUS</label>
-          <input
-            type="text"
-            id="gero-ts"
-            placeholder="2031DY-03-08-T-09:30:00-SC-TCJ+0"
-            spellcheck="false"
-            class="mono"
-          />
-          <button type="submit" class="btn-primary">Convertir</button>
-        </form>
-        <div id="output-gero" class="output"></div>
-        <p class="dim hint">
-          Letras de día: S L M A T V B (Soludyia, Loondyia, Mardyia, Aisterdyia,
-          Trustdyia, Viendyia, Sabatyeh). Eras DY/AY · mes 00 = Tempalum.
-        </p>
-      </section>
-    </details>
-
-    <!-- 3. Ahora en Gerarion (reloj compacto) -->
-    <section class="card clock-card" id="ahora" aria-labelledby="clock-title">
-      <div class="card-head">
-        <h2 id="clock-title">Ahora en Gerarion</h2>
-        <div class="clock-controls">
-          <label class="visually-hidden" for="clock-tz">Zona de referencia</label>
-          <select id="clock-tz" class="chip" title="Zona de referencia">
-            <option value="utc">TCJ+0 (Jerusalén · TAI + 8,400 s)</option>
-            <option value="local">TCJ local</option>
-          </select>
-          <button id="now-copy" class="chip" type="button" title="Copiar la marca completa">copiar</button>
-        </div>
-      </div>
-      <div id="now-gero" class="big mono">—</div>
-      <div id="now-details" class="dim" aria-live="off"></div>
-      <div class="cycle-box">
-        <span id="now-cycle" class="cycle">—</span>
-        <span class="cycle-legend">SC 06:00–17:59 · LC 18:00–05:59 (hora declarada del observador; TCJ+0 = Jerusalén = TAI + 8,400 s)</span>
-      </div>
-      <details class="fold" id="tecnicos">
-        <summary>Detalles técnicos</summary>
-        <div class="metrics">
-          <span class="metric">
-            <span class="metric-name" id="lbl-dayindex">day_index</span>
-            <b aria-labelledby="lbl-dayindex" id="now-dayindex" class="mono">—</b>
-          </span>
-          <span class="metric">
-            <span class="metric-name" id="lbl-jdn">JDN</span>
-            <b aria-labelledby="lbl-jdn" id="now-jdn" class="mono">—</b>
-          </span>
-          <span class="metric">
-            <span class="metric-name" id="lbl-instant">instant</span>
-            <b aria-labelledby="lbl-instant" id="now-instant" class="mono">—</b>
-          </span>
-        </div>
-      </details>
-    </section>
-
-    <!-- 4. Calendario mensual navegable -->
-    <section class="card" id="mes" aria-labelledby="month-title">
-      <div class="card-head">
-        <h2 id="month-title">Calendario del mes</h2>
-      </div>
-      <div class="month-nav">
-        <button id="month-prev" class="chip" type="button" title="Mes anterior">← anterior</button>
-        <button id="month-next" class="chip" type="button" title="Mes siguiente">siguiente →</button>
-        <button id="month-hoy" class="chip" type="button" title="Ir a hoy (fecha UTC)">hoy UTC</button>
-        <span id="month-status" class="dim" aria-live="polite"></span>
-      </div>
-      <div id="month-grid" class="month-grid" aria-label="Días del mes Gerarion"></div>
-    </section>
-
-    <!-- 5. Distancia entre fechas -->
-    <section class="card" id="distancia" aria-labelledby="int-title">
-      <h2 id="int-title">Distancia entre fechas</h2>
-      <p class="dim">
-        Dos fechas en cualquier formato soportado; calcula la distancia exacta
-        cruzando libremente entre era <b>AY</b> y era <b>DY</b>.
-      </p>
-      <form id="form-int" class="inline-form">
-        <label class="visually-hidden" for="int-a">Fecha inicial</label>
-        <input type="text" id="int-a" class="mono" placeholder="0001AY-00-11-B" spellcheck="false" />
-        <span class="arrow" aria-hidden="true">→</span>
-        <label class="visually-hidden" for="int-b">Fecha final</label>
-        <input type="text" id="int-b" class="mono" placeholder="2031DY-01-01-S" spellcheck="false" />
-        <button type="submit" class="btn-primary">Calcular</button>
-      </form>
-      <div id="output-int" class="output" aria-live="polite"></div>
-    </section>
-
-    <!-- 6. Autoverificación normativa -->
-    <section class="card" id="verificacion" aria-labelledby="selftest-title">
-      <h2 id="selftest-title">Verificación en el navegador</h2>
-      <p class="dim">
-        Tu navegador ejecuta el mismo vector normativo que la suite oficial
-        (<tt>gus-normative-003</tt>). Si el portal y la spec alguna vez
-        divergieran, la página misma lo delata.
-      </p>
-      <details class="fold">
-        <summary>Mostrar vectores ejecutados</summary>
-        <pre id="selftest" class="mono selftest" tabindex="0">ejecutando vectores…</pre>
-      </details>
-    </section>
-  </main>
-
-  <footer>
-    <p class="dim">
-      Matemática 100 % local: cero backend, cero cookies, cero telemetría, cero
-      dependencias; una vez cargada, la página funciona sin conexión.
-      Escala de tiempo (GUS 3.0.0): instant continuo sobre TAI (tabla IERS,
-      sin segundos intercalares internos) con TCJ = TAI + 8,400 s como
-      coordenada global (Jerusalén, 35.2137°E).
-      Espec: <a href="https://github.com/verared/gerarion/blob/main/docs/spec/gus-3.0.0.md">gus-3.0.0.md</a> —
-      Releases con <tt>SHA256SUMS.txt</tt>:
-      <a href="https://github.com/verared/gerarion/releases">github.com/verared/gerarion/releases</a>.
-    </p>
-    <details class="fold">
-      <summary>Límites de precisión de los calendarios</summary>
-      <p class="dim">
-        Gerarion, gregoriano, juliano, egipcio, etíope y maya: exactos
-        (aritmética entera sobre JDN). Hebreo, islámico y chino: vía
-        <tt>Intl</tt> del navegador, extrapolación matemática de ICU fuera de
-        sus tablas históricas (chino fiable ≈ 1900–2100; Umm al-Qura ≈
-        1900–2074; islámico civil tabular, exacto en todo el rango de
-        <tt>Date</tt> ≈ ±273.790 años). Bahá'í: tabla oficial UHJ de Naw-Rúz
-        172–221 BE; fuera de ella, convención 21 de marzo (aproximada, sesgo
-        ≤ 1 día). Si una fecha está fuera de rango, su tarjeta lo indica sin
-        afectar a las demás.
-      </p>
-    </details>
-  </footer>
-
-  <noscript>
-    <p class="noscript">Esta página necesita JavaScript para traducir fechas: todo el cálculo corre en tu navegador, sin conexión.</p>
-  </noscript>
-
-  <script type="module" src="app.js"></script>
-</body>
+    </noscript>
+  </body>
 </html>

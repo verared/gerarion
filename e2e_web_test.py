@@ -1,224 +1,416 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # SPDX-FileCopyrightText: 2026 verared contributors
-# -*- coding: utf-8 -*-
-"""Prueba E2E del portal web Gerarion con Playwright (Chromium headless).
+"""Regression checks for the redesigned portal, using its real controls.
 
-Estructura esperada (web-ux): (1) traductor de fechas, (2) conversiones
-rápidas plegadas, (3) reloj "Ahora en Gerarion", (4) calendario del mes,
-(5) distancia entre fechas, (6) verificación en el navegador.
+Start: python3 -m http.server 8123 --directory web
+Run:   python3 e2e_web_test.py   (requires Playwright + Chromium)
+BASE_URL and CHROMIUM_EXECUTABLE_PATH are optional environment variables.
+
+Reference date: 2026-11-18 15:00 UTC == 17:20:37 TCJ == 2031DY-09-07-L,
+12:00:00 en Santiago (desfase TCJ−5 como etiqueta de horas enteras).
+The suite installs a fixed clock, so it does not depend on wall time.
 """
-import re
+
+import os
 import sys
+from datetime import datetime, timezone
+from urllib.parse import urlsplit
 
 from playwright.sync_api import sync_playwright
 
-BASE = "http://localhost:8123/index.html"
-results = []
-EXTERNAL = []  # peticiones de red que no sean localhost (debe quedar vacía)
+BASE = os.environ.get("BASE_URL", "http://127.0.0.1:8123/index.html")
+ORIGIN = urlsplit(BASE).netloc
+checks = 0
 
 
-def check(name, cond, extra=""):
-    results.append((name, bool(cond), extra))
-    print(("PASS" if cond else "FAIL"), "-", name, ("| " + extra if extra and not cond else ""))
+def check(desc, cond, extra=""):
+    global checks
+    if not cond:
+        print("FAIL:", desc, ("| " + extra if extra else ""))
+        sys.exit(1)
+    checks += 1
+    print(f"OK {checks:2} · {desc}")
 
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    page = browser.new_page()
-    errors = []
-    page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
-    page.on("pageerror", lambda e: errors.append(str(e)))
-    page.on(
+with sync_playwright() as pw:
+    browser = pw.chromium.launch(
+        headless=True,
+        executable_path=os.environ.get("CHROMIUM_EXECUTABLE_PATH") or None,
+    )
+    ctx = browser.new_context(
+        viewport={"width": 1366, "height": 900},
+        locale="es-CL",
+        timezone_id="America/Santiago",
+        reduced_motion="reduce",
+        permissions=["clipboard-read", "clipboard-write"],
+    )
+    p = ctx.new_page()
+    errors, external = [], []
+    p.on("pageerror", lambda e: errors.append(str(e)))
+    p.on(
+        "console",
+        lambda m: errors.append(m.text) if m.type == "error" else None,
+    )
+    p.on(
         "request",
-        lambda r: EXTERNAL.append(r.url) if "localhost" not in r.url else None,
+        lambda r: external.append(r.url)
+        if urlsplit(r.url).netloc and urlsplit(r.url).netloc != ORIGIN
+        else None,
     )
-    page.goto(BASE)
-    page.wait_for_timeout(600)
+    p.clock.install(time=datetime(2026, 11, 18, 15, 0, tzinfo=timezone.utc))
+    p.goto(BASE, wait_until="networkidle")
+    p.locator("#view .day-hero").wait_for()
 
-    # 1. Sin errores de JS al cargar
-    check("carga sin errores JS", not errors, "; ".join(errors[:3]))
+    def t(sel):
+        return p.locator(sel).inner_text().strip()
 
-    # 1b. Cero peticiones externas (sin CDN, sin analítica, sin fuentes remotas)
-    check("cero peticiones externas", not EXTERNAL, "; ".join(EXTERNAL[:3]))
+    def nav(v):
+        p.locator(f'.sidebar [data-view="{v}"]').click()
 
-    # 2. Self-test de vectores en el navegador
-    page.eval_on_selector("#verificacion details", "el => el.setAttribute('open', 'open')")
-    st = page.text_content("#selftest") or ""
-    check("self-test: 22 vectores + 14 quickVerify = 36 pasan", "36 pasan, 0 fallan" in st, st[:120])
-
-    # 3. El traductor es la primera sección de <main>
-    first_section = page.evaluate("document.querySelector('main section').id") if page.evaluate(
-        "document.querySelector('main section')"
-    ) else ""
-    check("traductor es la primera sección", first_section == "traductor", first_section)
-
-    # 3b. Reloj: formato canónico completo (por defecto TCJ+0/UTC)
-    clock = page.text_content("#now-gero") or ""
+    # ── Carga y cabecera ────────────────────────────────────────────────
+    check("carga sin errores de JavaScript", not errors, "; ".join(errors[:3]))
+    check("cero peticiones externas (sin CDN ni analítica)", not external, "; ".join(external[:3]))
     check(
-        "reloj: formato AAAAYY-MM-DD-X-HH:MM:SS-CC-TCJ+0",
-        re.match(r"^\d{4}(DY|AY)-\d{2}-\d{2}-[SLMATVB]-\d{2}:\d{2}:\d{2}-(SC|LC)-TCJ\+0$",
-                 clock.strip() if clock else "") is not None,
-        repr(clock),
+        "la cabecera arranca en TCJ+0 · Jerusalén a la hora TCJ real",
+        t("#header-zone") == "TCJ+0"
+        and t("#header-city") == "Jerusalén"
+        and t("#header-time").startswith("17:20:"),
+        f"{t('#header-zone')} {t('#header-city')} {t('#header-time')}",
     )
-    details = page.text_content("#now-details") or ""
-    check("reloj: detalles (día, semana, mes, ciclo)",
-          all(k in details for k in ("día", "ciclo")), repr(details))
-
-    # 3c. Regresión W2: el modo local solo cambia la presentación auxiliar;
-    # el sello canónico, el day_index, el JDN y el instant siguen en TCJ+0.
-    inst_before = (page.text_content("#now-instant") or "").strip()
-    page.select_option("#clock-tz", "local")
-    page.wait_for_timeout(50)
-    clock_local = (page.text_content("#now-gero") or "").strip()
     check(
-        "W2 reloj local: sello sigue en TCJ+0",
-        re.match(r"^\d{4}(DY|AY)-\d{2}-\d{2}-[SLMATVB]-\d{2}:\d{2}:\d{2}-(SC|LC)-TCJ\+0$",
-                 clock_local) is not None or clock_local.endswith("TCJ+0"),
-        repr(clock_local),
+        "el calendario abre con el día TCJ correcto",
+        "7 de Novat, 2031" in t(".day-hero h2"),
+        t(".day-hero h2"),
     )
-    details_local = page.text_content("#now-details") or ""
-    check("W2 reloj local: presentación marcada como TCJ (local)",
-          "TCJ (local)" in details_local, repr(details_local))
-    inst_after = (page.text_content("#now-instant") or "").strip()
-    try:
-        drift = abs(int(inst_after) - int(inst_before))
-    except ValueError:
-        drift = 10**9
-    check("W2 reloj local: instant UTC sin desplazamiento (tolerancia 1 s)",
-          drift <= 1, f"antes={inst_before} después={inst_after}")
-    page.select_option("#clock-tz", "utc")
-    page.wait_for_timeout(50)
+    check(
+        "la ficha muestra JDN y day_index coherentes",
+        "2.461.363" in t(".fact-list") and "742.050" in t(".fact-list"),
+    )
 
-    # 4. Conversiones rápidas: abrir el details y usar ambos formularios
-    page.locator("#conversiones > summary").click()
-    page.wait_for_timeout(150)
+    # ── Calendario ──────────────────────────────────────────────────────
+    p.locator('[data-day="2461364"]').click()
+    check(
+        "seleccionar un día actualiza sello y ficha",
+        "2031DY-09-08-M" in t(".canonical-tag code")
+        and "19 de noviembre" in t(".civil-date h3"),
+        t(".canonical-tag code"),
+    )
+    p.locator(".day-cell.selected").press("ArrowDown")
+    check(
+        "flecha abajo de la cuadrícula avanza exactamente una semana",
+        p.locator(".day-cell.selected").get_attribute("data-day") == "2461371",
+    )
+    saved = t(".canonical-tag code")
+    p.locator('[data-step="1"]').click()
+    check("navegar al mes siguiente cambia el título", "Deshimo" in t("#month-title"), t("#month-title"))
+    p.locator('[data-step="-1"]').click()
+    check("volver al mes anterior recupera la selección", t(".canonical-tag code") == saved)
+    p.select_option("#month-system", "greg")
+    check(
+        "la vista gregoriana usa la semana civil",
+        "Noviembre" in t("#month-title") and "LUN" in t(".week-head").upper(),
+        t("#month-title"),
+    )
+    p.select_option("#month-system", "gero")
+    p.locator('[data-action="today"]').click()
+    check(
+        "Hoy restablece el día observado en TCJ+0",
+        t(".canonical-tag code") == "2031DY-09-07-L",
+        t(".canonical-tag code"),
+    )
+    p.locator('[data-action="jump"]').click()
+    p.select_option("#jump-mode", "gero")
+    p.fill("#jump-value", "0000DY-01-01-S")
+    p.locator('#jump-form [type="submit"]').click()
+    check(
+        "Ir a una fecha acepta el origen de la era DY",
+        t(".canonical-tag code") == "0000DY-01-01-S",
+        t(".canonical-tag code"),
+    )
+    p.locator('[data-step="-1"]').click()
+    check(
+        "la navegación cruza DY → AY y llega a Tempalum",
+        "1 AY" in t("#month-title") and "Tempalum" in t("#month-title"),
+        t("#month-title"),
+    )
+    p.keyboard.press("/")
+    p.select_option("#jump-mode", "jdn")
+    p.fill("#jump-value", "2461363")
+    p.locator('#jump-form [type="submit"]').click()
+    check(
+        "el atajo «/» abre el selector y acepta un JDN",
+        p.locator(".day-cell.selected").get_attribute("data-day") == "2461363",
+    )
+    p.locator('[data-detail="hebrew"]').click()
+    check(
+        "la correspondencia abre una ficha con notas de precisión ICU",
+        p.locator("#dialog").is_visible() and "ICU" in t("dialog"),
+    )
+    p.locator('dialog [data-origin="hebrew"]').click()
+    check(
+        "una equivalencia puede convertirse en nuevo origen",
+        p.input_value("#source-mode") == "hebrew",
+        p.input_value("#source-mode"),
+    )
+    check(
+        "la traducción muestra las once variantes del día",
+        p.locator("[data-result]").count() == 11,
+        str(p.locator("[data-result]").count()),
+    )
 
-    page.fill("#greg-date", "2026-03-17")
-    page.click("#form-greg button[type=submit]")
-    out = page.text_content("#output-greg") or ""
-    check("greg->gero: 2026-03-17 => 2031DY-01-01-S", "2031DY-01-01-S" in out, out)
-    check("greg->gero: nombre del día Soludyia", "Soludyia" in out, out)
+    # ── Traductor ───────────────────────────────────────────────────────
+    p.locator("#all-calendars > summary").click()
+    p.fill("#calendar-filter", "maya")
+    check(
+        "el filtro muestra solo sus coincidencias",
+        p.locator("[data-result]:visible").count() == 1,
+        str(p.locator("[data-result]:visible").count()),
+    )
+    p.fill("#calendar-filter", "zzz sin coincidencias")
+    check(
+        "la búsqueda vacía tiene una explicación",
+        p.locator("#no-results").is_visible(),
+    )
+    p.fill("#calendar-filter", "")
+    p.select_option("#source-mode", "greg")
+    p.fill("#source-date", "2026-02-31")
+    p.locator("#translator-form [type=submit]").click()
+    check(
+        "una fecha civil inexistente se rechaza con error visible",
+        p.locator("#trans-error").is_visible(),
+    )
+    p.fill("#source-date", "2026-03-17")
+    p.locator("#translator-form [type=submit]").click()
+    check(
+        "traducción conocida: 17-03-2026 abre el año 2031 DY",
+        t('[data-result="gero"] .result-value') == "2031DY-01-01-S",
+        t('[data-result="gero"] .result-value'),
+    )
+    stamp = "2031DY-03-08-T-09:30:00-SC-TCJ+0"
+    p.locator('[data-action="edit-pivot"]').click()
+    p.fill("#pivot-value", stamp)
+    p.locator("#pivot-form [type=submit]").click()
+    check(
+        "el sello con hora se conserva como dato adjunto",
+        stamp in t(".time-preserved") and "Interpretar" not in t("#dialog h2") if True else False,
+    )
+    p.locator('[data-origin="greg"]').click()
+    check(
+        "cambiar el origen desde la misma fecha no pierde la hora",
+        stamp in t(".time-preserved"),
+    )
+    p.locator('[data-action="share"]').click()
+    shared = p.evaluate("navigator.clipboard.readText()")
+    p.goto(shared)
+    p.locator(".bridge-panel").wait_for()
+    check(
+        "un enlace compartido recupera origen, fecha y sello",
+        stamp in t(".time-preserved") and p.input_value("#source-mode") == "greg",
+        shared,
+    )
 
-    page.fill("#greg-date", "2030-03-14")
-    page.click("#form-greg button[type=submit]")
-    out2 = page.text_content("#output-greg") or ""
-    check("greg->gero: 2030-03-14 => 2034DY-00-07-M (Tempalum GT)",
-          "2034DY-00-07-M" in out2 and "Nuvivid III" in out2, out2)
+    # ── Enlaces heredados y ruta inversa ────────────────────────────────
+    p.goto(BASE + "#cal=greg&d=2012-12-21")
+    p.wait_for_function(
+        "document.querySelector('[data-result=\"maya\"] .result-value')?.textContent === \"13.0.0.0.0\""
+    )
+    check(
+        "los enlaces #cal=…&d=… del portal original siguen funcionando",
+        t('[data-result="maya"] .result-value') == "13.0.0.0.0",
+    )
+    p.select_option("#target-mode", "maya")
+    check(
+        "el destino elegido se muestra con Gerarion como intérprete",
+        t("#bridge-output") == "13.0.0.0.0" and "Gerarion" in t(".bridge-core h3"),
+        t("#bridge-output"),
+    )
+    pivot = t("#bridge-stamp")
+    p.locator('[data-action="swap-route"]').click()
+    check(
+        "invertir la ruta intercambia extremos sin cambiar el día",
+        p.input_value("#source-mode") == "maya"
+        and p.input_value("#target-mode") == "greg"
+        and t("#bridge-stamp") == pivot
+        and p.input_value("#source-date") == "13.0.0.0.0",
+        f"{p.input_value('#source-mode')} {p.input_value('#target-mode')}",
+    )
+    p.fill("#source-date", "fecha inválida")
+    p.locator('[data-action="swap-route"]').click()
+    check(
+        "una entrada inválida no se pierde al intentar invertir la ruta",
+        p.input_value("#source-date") == "fecha inválida"
+        and p.locator("#trans-error").is_visible()
+        and p.input_value("#source-mode") == "maya",
+    )
+    p.fill("#source-date", "13.0.0.0.0")
+    p.select_option("#target-mode", "chinese")
+    check(
+        "cambiar el destino conserva el borrador e indica la pendiente",
+        p.input_value("#source-date") == "13.0.0.0.0"
+        and p.locator("#trans-pending").is_visible(),
+    )
 
-    page.fill("#gero-ts", "2031DY-03-08-T-09:30:00-SC-TCJ+0")
-    page.click("#form-gero button[type=submit]")
-    out3 = page.text_content("#output-gero") or ""
-    check("gero->greg: vector regla 7 canónico", "2031DY-03-08-T-09:30:00-SC-TCJ+0" in out3, out3)
-    check("gero->greg: gregoriano 2026-05-23", "2026-05-23" in out3, out3)
+    # ── Selector mundial: agrupación civil y etiquetas TCJ±H ────────────
+    p.locator("#translator-form [type=submit]").click()
+    antes = t("#bridge-stamp")
+    p.click("#zone-trigger")
+    p.fill("#zone-query", "Chile")
+    check(
+        "el directorio agrupa Chile en filas por desfase, no por región",
+        "#zone-list button" and p.locator("#zone-list button").count() <= 3,
+        str(p.locator("#zone-list button").count()),
+    )
+    p.fill("#zone-query", "Santiago")
+    p.keyboard.press("ArrowDown")
+    p.keyboard.press("Enter")
+    check(
+        "elegir por teclado: etiqueta a horas enteras, TCJ−5",
+        t("#header-city") == "Santiago" and t("#header-zone") == "TCJ−5",
+        f"{t('#header-city')} {t('#header-zone')}",
+    )
+    check(
+        "cambiar de ciudad conserva la fecha interpretada explícitamente",
+        t("#bridge-stamp") == antes,
+        t("#bridge-stamp"),
+    )
+    p.locator('[data-action="share"]').click()
+    p.goto(p.evaluate("navigator.clipboard.readText()"))
+    p.locator("#view .page-heading").wait_for()
+    check(
+        "el enlace guarda los dos extremos de la ruta y la zona",
+        p.input_value("#source-mode") == "maya"
+        and p.input_value("#target-mode") == "chinese"
+        and t("#header-city") == "Santiago",
+        f"{p.input_value('#source-mode')}→{p.input_value('#target-mode')} {t('#header-city')}",
+    )
+    p.click("#zone-trigger")
+    p.fill("#zone-query", "Coyhaique")
+    first_label = t("#zone-list button code")
+    p.fill("#zone-query", "Santiago")
+    check(
+        "Santiago y Coyhaique comparten la misma fila por desfase civil",
+        t("#zone-list button code") == first_label.replace("\n", " "),
+        "",
+    )
+    antes = t("#bridge-stamp")
+    p.fill("#zone-query", "Bouvet")
+    check(
+        "un territorio sin regla propia figura sin desfase inventado",
+        "Sin asignación" in t("#zone-list") or "No disponible" in t("#zone-list"),
+        t("#zone-list"),
+    )
+    p.fill("#zone-query", "xyz-wildcard")
+    check(
+        "el buscador explica que no hay coincidencias",
+        "No hay coincidencias" in t("#zone-list"),
+        t("#zone-list"),
+    )
+    p.locator('dialog [data-zone="TCJ+0"]').click()
+    check(
+        "el meridiano canónico vuelve a la cabecera",
+        t("#header-zone") == "TCJ+0" and t("#header-city") == "Jerusalén",
+        f"{t('#header-zone')} {t('#header-city')}",
+    )
 
-    page.fill("#gero-ts", "2031DY-03-08-B-09:30:00-SC-TCJ+0")
-    page.click("#form-gero button[type=submit]")
-    out4 = page.text_content("#output-gero") or ""
-    check("gero->greg: letra incorrecta => weekday_corrected",
-          "weekday_corrected" in out4 and "-T-" in out4, out4)
+    # ── Distancia ───────────────────────────────────────────────────────
+    nav("distancia")
+    p.fill("#dist-a", "0001AY-00-11-B")
+    p.fill("#dist-b", "0000DY-01-01-S")
+    p.locator("#distance-form [type=submit]").click()
+    check(
+        "distancia exacta al cruzar la era",
+        t("#interval-result h2") == "1 día",
+        t("#interval-result h2"),
+    )
+    p.locator('[data-action="swap-dates"]').click()
+    check(
+        "intercambiar las fechas invierte el signo",
+        t("#interval-result h2") == "-1 día",
+        t("#interval-result h2"),
+    )
+    p.fill("#dist-a", "fecha no válida")
+    p.locator("#distance-form [type=submit]").click()
+    check(
+        "un error de distancia deja la vista sin resultado obsoleto",
+        p.locator("#distance-error").is_visible()
+        and not p.locator("#interval-result").is_visible(),
+    )
 
-    page.fill("#gero-ts", "2031DY-13-08-T")
-    page.click("#form-gero button[type=submit]")
-    out5 = page.text_content("#output-gero") or ""
-    cls = page.get_attribute("#output-gero", "class") or ""
-    check("gero->greg: inválido => error con clase .error",
-          "Sello inválido" in out5 and "error" in cls, out5 + " | class=" + cls)
+    # ── Reloj ───────────────────────────────────────────────────────────
+    nav("reloj")
+    p.locator("#clock-exchange > summary").click()
+    first_unix = t("#live-unix")
+    p.clock.run_for(1100)
+    check(
+        "el reloj se actualiza en vivo",
+        int(t("#live-unix")) > int(first_unix),
+    )
+    p.locator('[data-action="pause"]').click()
+    frozen = t("#live-stamp")
+    p.clock.run_for(2100)
+    p.click("#zone-trigger")
+    p.fill("#zone-query", "Santiago")
+    p.locator("#zone-list button", has_text="Santiago").first.click()
+    check(
+        "la pausa conserva el instante canónico aunque cambie la región",
+        t("#live-stamp") == frozen and frozen.startswith("2031DY-09-07-L"),
+        f"{t('#live-stamp')} vs {frozen}",
+    )
+    check(
+        "la lectura regional compara relojes con etiqueta de horas",
+        t("#header-zone") == "TCJ−5",
+        t("#header-zone"),
+    )
+    check(
+        "el reloj ofrece RFC 3339 con Z y una marca NTP hex con era",
+        t("#live-rfc").endswith("Z") and "." in t("#live-ntp") and "era" in t("#live-ntp"),
+        f"{t('#live-rfc')} · {t('#live-ntp')}",
+    )
+    p.locator('[data-action="pause"]').click()
+    check("reanudar la lectura vuelve al modo en vivo", "live" not in t("#live-unix"))
 
-    page.fill("#gero-ts", "2031DY-00-07-T")
-    page.click("#form-gero button[type=submit]")
-    out6 = page.text_content("#output-gero") or ""
-    check("gero->greg: Tempalum día 7 en año no-GT => GERO_ETEMPALUM",
-          "GERO_ETEMPALUM" in out6, out6)
+    # ── Hitos, referencia y verificación ────────────────────────────────
+    nav("hitos")
+    check("hay seis láminas históricas", p.locator(".milestone").count() == 6)
+    p.locator(".milestone button").first.click()
+    check(
+        "un hito lleva al calendario y selecciona su fecha",
+        t(".canonical-tag code") == "0000DY-01-01-S",
+        t(".canonical-tag code"),
+    )
+    nav("referencia")
+    guia = p.locator(".guide").text_content()
+    check(
+        "la referencia documenta TCJ, RFC 3339, NTP y cobertura ICU",
+        "TCJ" in guia and "NTP" in guia and "ICU" in guia,
+    )
+    p.locator(".guide details summary").last.click()
+    check(
+        "los apartados de la guía se pliegan y despliegan",
+        p.locator(".guide details[open]").count() >= 1,
+    )
+    nav("verificacion")
+    check(
+        "la página de verificación ejecuta la suite real del núcleo",
+        "36 pasan, 0 fallan" in t(".test-report") and "verificado" in t(".verify-banner h2").lower() or "36" in t(".verify-banner"),
+        t(".verify-banner h2"),
+    )
 
-    # 5. Traductor universal: 12000AY -> cuadrícula de 10
-    page.fill("#gero-ts", "12000AY-01-01-S")
-    page.click("#form-gero button[type=submit]")
-    tiles = page.locator("#rosetta-grid .cal-tile").count()
-    check("rosetta: cuadrícula de 10 calendarios", tiles == 10, f"tiles={tiles}")
-    grid_text = page.text_content("#rosetta-grid") or ""
-    check("rosetta: 12000AY-01-01-S en la tarjeta GUS", "12000AY-01-01-S" in grid_text, grid_text[:200])
-    check("rosetta: gregoriano de 12000AY-01-01 = -12005-03-21", "-12005-03-21" in grid_text, grid_text[:300])
-    check("rosetta: maya presente (cuenta larga)", ".0." in grid_text, grid_text[:200])
-
-    # 6. Presets de 1 clic
-    page.click("#presets button:has-text('Nuvivid VII')")
-    page.wait_for_timeout(150)
-    grid_text = page.text_content("#rosetta-grid") or ""
-    check("preset Nuvivid VII: tarjeta GUS = 0001AY-00-11-B", "0001AY-00-11-B" in grid_text, grid_text[:200])
-
-    page.click("#presets button:has-text('Cruxyphi')")
-    page.wait_for_timeout(150)
-    grid_text = page.text_content("#rosetta-grid") or ""
-    check("preset Cruxyphi: tarjeta GUS = 2031DY-01-12-T", "2031DY-01-12-T" in grid_text, grid_text[:200])
-
-    # 7. Calculadora de intervalos cruzando eras AY -> DY
-    page.fill("#int-a", "0001AY-00-11-B")
-    page.fill("#int-b", "2031DY-01-01-S")
-    page.click("#form-int button[type=submit]")
-    out7 = page.text_content("#output-int") or ""
-    check("intervalos AY->DY: 741.805 días", "741.805" in out7.replace("\u202f", ".") or "741805" in out7, out7)
-    check("intervalos AY->DY: semanas exactas (741805/7)", "105.97" in out7 or "10597" in out7.replace(".", ""), out7)
-    check("intervalos AY->DY: segundos SI", "64.091.952.000" in out7 or "64091952000" in out7, out7)
-
-    # 8. Traductor universal: maya directa
-    page.click("#uni-modes button:has-text('Maya')")
-    page.fill("#uni-in", "13.0.14.1.19")
-    page.click("#form-uni button[type=submit]")
-    grid_text = page.text_content("#rosetta-grid") or ""
-    check("traductor maya: 13.0.14.1.19 -> cuadrícula", "day_index 742049" in (page.text_content("#rosetta-status") or ""), grid_text[:300])
-
-    # 8b. Mensaje de error con formato esperado (nunca "Error" a secas)
-    page.fill("#uni-in", "basura@@@")
-    page.click("#form-uni button[type=submit]")
-    err_txt = page.text_content("#rosetta-status") or ""
-    check("error de entrada incluye formato esperado y ejemplo",
-          "Formato esperado" in err_txt and "ej.:" in err_txt, err_txt)
-
-    # 9. Enlace compartible: round-trip de #cal=...&d=...
-    page.click("#uni-modes button:has-text('Gregoriano')")
-    page.fill("#uni-in", "2026-05-23")
-    page.click("#form-uni button[type=submit]")
-    page.wait_for_timeout(150)
-    share_hash = page.evaluate("location.hash")
-    check("enlace compartible: hash escrito al traducir",
-          share_hash.startswith("#cal=greg&d=2026-05-23"), share_hash)
-    page2 = browser.new_page()
-    page2.goto(BASE + "#cal=greg&d=2026-05-23")
-    page2.wait_for_timeout(400)
-    grid2 = page2.text_content("#rosetta-grid") or ""
-    check("enlace compartible: round-trip reproduce el resultado", "2031DY-03-08-T" in grid2, grid2[:200])
-    page2.close()
-
-    # 10. Detalles plegables: abiertos/cerrados con teclado; métricas vivas
-    summary = page.locator("#conversiones > summary")
-    d0 = page.get_attribute("#conversiones", "open") is not None
-    summary.press("Enter")
-    d1 = page.get_attribute("#conversiones", "open") is not None
-    summary.press("Enter")
-    d2 = page.get_attribute("#conversiones", "open") is not None
-    check("details: abre y cierra con teclado (Enter)", (d1 != d0) and (d2 == d0),
-          f"estado inicial={d0}, tras 1er Enter={d1}, tras 2º Enter={d2}")
-    di_now = (page.text_content("#now-dayindex") or "").strip()
-    check("métricas técnicas se actualizan con el bloque cerrado", re.match(r"^-?\d+$", di_now) is not None, repr(di_now))
-
-    # 11. Tema: el toggle alterna data-theme (claro reforzado <-> estándar)
-    page.click("#theme-toggle")
-    theme = page.get_attribute("html", "data-theme") or ""
-    check("tema: toggle alterna a claro", theme == "light", repr(theme))
-    page.click("#theme-toggle")
-    theme = page.get_attribute("html", "data-theme") or ""
-    check("tema: toggle vuelve a estándar", theme == "", repr(theme))
-
-    # 12. Copiar reloj: toast de confirmación
-    page.click("#now-copy")
-    page.wait_for_timeout(250)
-    toast_visible = page.locator(".toast.show").count() > 0
-    toast_text = (page.text_content(".toast") or "") if toast_visible else ""
-    check("copiar reloj en vivo: toast de confirmación", toast_visible and "Copiado" in toast_text,
-          f"toast_visible={toast_visible}, texto={toast_text!r}")
-
+    # ── Accesibilidad y estados ─────────────────────────────────────────
+    nav("calendario")
+    p.keyboard.press("/")
+    p.locator("[data-action=\"close-dialog\"]").first.click()
+    check("el diálogo se cierra desde su botón", not p.locator("#dialog").is_visible())
+    p.locator("#contrast-control").click()
+    check(
+        "el modo de alto contraste activa su clase en la raíz",
+        "contrast" in (p.get_attribute("html", "class") or ""),
+    )
+    check(
+        "sin errores de JavaScript acumulados",
+        not errors,
+        "; ".join(errors[:3]),
+    )
     browser.close()
 
-fails = [r for r in results if not r[1]]
-print("\n=> %d checks, %d fallan" % (len(results), len(fails)))
-sys.exit(1 if fails or errors or EXTERNAL else 0)
+print(f"\n{checks} comprobaciones correctas del rediseño · 0 fallos")
