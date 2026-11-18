@@ -195,6 +195,43 @@ CERRADO en GUS 3.0.0**).
   |UT1−UTC| de 3.600 s (bipm.org, DOI 10.59161/CGPM2026RES5E). La base
   TAI de GUS alinea el kernel con esa resolución.
 
+## ISO 8601 vs RFC 3339 vs GUS (comparativa breve)
+
+| Criterio | ISO 8601 | RFC 3339 | GUS v3.0.0 |
+|---|---|---|---|
+| Designador de zona | opcional (casi siempre omitido) | obligatorio (`Z` / `±HH:MM`) | obligatorio con hora (`TCJ±O`), entra en el cálculo del instante |
+| Ambigüedad DST | sí, en valores con zona | sí, en valores `±HH:MM` | ninguna: offset fijo respecto de TCJ, una representación por instante |
+| Forma compacta | laxa (suele omitir la zona) | prohibida | `2031DY-03-08-T-093000-SC-TCJ0` (29 caracteres, designador intacto) |
+| Escala física | gregoriano civil (intercalares + DST) | UTC real (intercalares) | TAI + 8,400 s, `int64` continuo y monotónico, sin intercalares internos |
+| Verificación estructural O(1) | ninguna | ninguna | letra de semana (X) + ciclo SC/LC verificables sin red |
+| Cadena ↔ entero | vía `datetime` (zonas, DST) | vía `datetime` (zonas, DST) | proyección entera exacta y reversible en dominio (`instant = día·86400 + hms − offset`) |
+
+Comparativa detallada, afirmación por afirmación contra el código real
+(incluyendo lo que GUS v3.0 **aún no** resuelve — fracciones de segundo
+en el texto, zonas horarias nombradas, integridad criptográfica que vive
+en la GST): **ES**
+[`docs/comparison/iso-8601-vs-rfc3339-vs-gus.md`](docs/comparison/iso-8601-vs-rfc3339-vs-gus.md)
+· **EN**
+[`docs/en/comparison/iso-8601-vs-rfc3339-vs-gus.md`](docs/en/comparison/iso-8601-vs-rfc3339-vs-gus.md).
+
+## ISO 8601 vs RFC 3339 vs GUS v3.0.0 — comparativa breve
+
+| Criterio | ISO 8601 | RFC 3339 | GUS v3.0.0 |
+|---|---|---|---|
+| Designador de zona | opcional, casi siempre omitido | obligatorio (`Z`/`±HH:MM`) | **obligatorio con hora** (`TCJ±O`), entra en el cálculo del instante |
+| Ambigüedad DST | sí, en valores con zona | sí, en valores `±HH:MM` | **ninguna** — una vista canónica por instante |
+| Forma compacta | laxa (suele omitir la zona) | prohibida | `2031DY-03-08-T-093000-SC-TCJ0` (29 caracteres, designador intacto) |
+| Escala física | gregoriano civil (intercalares + DST) | UTC real (intercalares) | **TAI + 8,400 s (TCJ)**, `int64` continuo y monotónico |
+| Verificación estructural O(1) | ninguna | ninguna | letra de semana + ciclo SC/LC, sin red e instantánea |
+| Cadena ↔ entero | vía `datetime` (zonas, DST) | vía `datetime` (zonas, DST) | **proyección entera exacta**, reversible en dominio |
+
+Comparativa completa, afirmación por afirmación y verificada contra el
+repo (con la lista honesta de lo que GUS v3.0 **aún no** resuelve —
+fracciones de segundo en el texto, zonas horarias nombradas, integridad
+criptográfica que vive en la GST):
+[`docs/comparison/iso-8601-vs-rfc3339-vs-gus.md`](docs/comparison/iso-8601-vs-rfc3339-vs-gus.md) (ES) ·
+[`docs/en/comparison/iso-8601-vs-rfc3339-vs-gus.md`](docs/en/comparison/iso-8601-vs-rfc3339-vs-gus.md) (EN).
+
 ## Publicación
 
 - **GitHub Releases**: <https://github.com/verared/gerarion/releases> —

@@ -291,6 +291,41 @@ historical documentation of the Gerarion Calendar lives in
 [`docs/papers/`](docs/papers/) as an informative, non-normative layer (see
 [Credits and cultural context](#credits-and-cultural-context)).
 
+## ISO 8601 vs RFC 3339 vs GUS (brief comparison)
+
+| Criterion | ISO 8601 | RFC 3339 | GUS v3.0.0 |
+|---|---|---|---|
+| Zone designator | optional (usually omitted) | mandatory (`Z` / `±HH:MM`) | mandatory with time (`TCJ±O`), enters the instant computation |
+| DST ambiguity | yes, in zoned values | yes, in `±HH:MM` values | none: the offset is fixed relative to TCJ, one representation per instant |
+| Compact form | loose (often zoneless) | forbidden | `2031DY-03-08-T-093000-SC-TCJ0` (29 chars, designator intact) |
+| Physical scale | civil Gregorian (leap seconds) | real UTC (leap seconds) | TAI + 8,400 s, continuous monotonic `int64`, no internal leap seconds |
+| Structural O(1) checks | none | none | weekday letter (X) + SC/LC cycle verify offline without network |
+| String ↔ integer | via `datetime` (zones, DST) | via `datetime` (zones, DST) | exact integer projection, reversible in-domain (`instant = day·86400 + hms − offset`) |
+
+Detailed, claim-by-claim verified comparison (including what GUS v3.0
+does **not** solve yet — fractional seconds in text, named zones,
+cryptographic integrity living in the GST layer): **ES**
+[`docs/comparison/iso-8601-vs-rfc3339-vs-gus.md`](docs/comparison/iso-8601-vs-rfc3339-vs-gus.md)
+· **EN**
+[`docs/en/comparison/iso-8601-vs-rfc3339-vs-gus.md`](docs/en/comparison/iso-8601-vs-rfc3339-vs-gus.md).
+
+## ISO 8601 vs RFC 3339 vs GUS v3.0.0 — brief comparison
+
+| Criterion | ISO 8601 | RFC 3339 | GUS v3.0.0 |
+|---|---|---|---|
+| Zone designator | optional, usually omitted | mandatory (`Z`/`±HH:MM`) | **mandatory with time** (`TCJ±O`), enters the instant computation |
+| DST ambiguity | yes, in zoned values | yes, in `±HH:MM` values | **none** — one canonical view per instant |
+| Compact form | loose (often zoneless) | forbidden | `2031DY-03-08-T-093000-SC-TCJ0` (29 chars, designator intact) |
+| Physical scale | civil Gregorian (leap seconds) | real UTC (leap seconds) | **TAI + 8,400 s (TCJ)**, continuous monotonic `int64` |
+| Structural O(1) checks | none | none | weekday letter + SC/LC cycle, offline and instant |
+| String ↔ integer | via `datetime` (zones, DST) | via `datetime` (zones, DST) | **exact integer projection**, reversible in-domain |
+
+Full claim-by-claim comparison (verified against the repo, with the
+honest list of what GUS v3.0 still does **not** solve — fractional
+seconds in the text, named zones, cryptographic integrity in the GST
+layer): [`docs/comparison/iso-8601-vs-rfc3339-vs-gus.md`](docs/comparison/iso-8601-vs-rfc3339-vs-gus.md)
+(ES) · [`docs/en/comparison/iso-8601-vs-rfc3339-vs-gus.md`](docs/en/comparison/iso-8601-vs-rfc3339-vs-gus.md) (EN).
+
 ## Publication
 
 - **GitHub Releases**: <https://github.com/verared/gerarion/releases> —
