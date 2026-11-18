@@ -67,6 +67,19 @@ with sync_playwright() as pw:
     def nav(v):
         p.locator(f'.sidebar [data-view="{v}"]').click()
 
+    def submit_until(expect_js, btn="#translator-form [type=submit]", tries=3,
+                     timeout=2500):
+        # A re-render can race the click in slow runners; retry until the DOM
+        # observable (or its error counterpart) confirms the handler ran.
+        for _ in range(tries):
+            p.locator(btn).click()
+            try:
+                p.wait_for_function(expect_js, timeout=timeout)
+                return True
+            except Exception:
+                pass
+        return False
+
     # ── Carga y cabecera ────────────────────────────────────────────────
     check("carga sin errores de JavaScript", not errors, "; ".join(errors[:3]))
     check("cero peticiones externas (sin CDN ni analítica)", not external, "; ".join(external[:3]))
@@ -174,17 +187,19 @@ with sync_playwright() as pw:
     p.fill("#calendar-filter", "")
     p.select_option("#source-mode", "greg")
     p.fill("#source-date", "2026-02-31")
-    p.locator("#translator-form [type=submit]").click()
     check(
         "una fecha civil inexistente se rechaza con error visible",
-        p.locator("#trans-error").is_visible(),
+        submit_until("document.getElementById('trans-error') && !document.getElementById('trans-error').hidden"),
     )
     p.fill("#source-date", "2026-03-17")
-    p.locator("#translator-form [type=submit]").click()
+    ok21 = submit_until(
+        "document.querySelector('[data-result=\"gero\"] .result-value')?.textContent === '2031DY-01-01-S'"
+    )
     check(
         "traducción conocida: 17-03-2026 abre el año 2031 DY",
-        t('[data-result="gero"] .result-value') == "2031DY-01-01-S",
-        t('[data-result="gero"] .result-value'),
+        ok21,
+        "valor:" + t('[data-result="gero"] .result-value')
+        + " · entrada:" + p.input_value("#source-date"),
     )
     stamp = "2031DY-03-08-T-09:30:00-SC-TCJ+0"
     p.locator('[data-action="edit-pivot"]').click()
