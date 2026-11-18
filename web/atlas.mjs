@@ -313,16 +313,23 @@ export function parseSource(id, input) {
     }
     const res = INPUT_MODES[id].toJdn(t);
     j = res.jdn;
-    const inverse = {
-      greg: (k) => {
-        const [year, month, day] = jdnToGregorian(k);
-        return { year, month, day };
-      },
-      julian: jdnToJulian,
-      egyptian: jdnToEgyptian,
-      ethiopic: jdnToEthiopic,
-      bahai: jdnToBahai,
-    }[id];
+    // Static dispatch: the identifier comes from user input, so inverse
+    // lookups must not depend on a dynamic property access.
+    const inverse =
+      id === "greg"
+        ? (k) => {
+            const [year, month, day] = jdnToGregorian(k);
+            return { year, month, day };
+          }
+        : id === "julian"
+          ? jdnToJulian
+          : id === "egyptian"
+            ? jdnToEgyptian
+            : id === "ethiopic"
+              ? jdnToEthiopic
+              : id === "bahai"
+                ? jdnToBahai
+                : null;
     if (inverse) {
       const d = inverse(j);
       if (d.year !== nums[0] || d.month !== nums[1] || d.day !== nums[2])

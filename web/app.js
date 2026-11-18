@@ -595,15 +595,31 @@ function render() {
     if (on) el.setAttribute("aria-current", "page");
     else el.removeAttribute("aria-current");
   });
-  root.innerHTML = {
-    calendario: calendarPage,
-    traductor: translatorPage,
-    reloj: clockPage,
-    distancia: distancePage,
-    hitos: milestonesPage,
-    referencia: referencePage,
-    verificacion: verifyPage,
-  }[v]();
+  // Static dispatch: the view arrives from the URL hash, so rendering must
+  // go through fixed branches, never a dynamic lookup.
+  switch (v) {
+    case "calendario":
+      root.innerHTML = calendarPage();
+      break;
+    case "traductor":
+      root.innerHTML = translatorPage();
+      break;
+    case "reloj":
+      root.innerHTML = clockPage();
+      break;
+    case "distancia":
+      root.innerHTML = distancePage();
+      break;
+    case "hitos":
+      root.innerHTML = milestonesPage();
+      break;
+    case "referencia":
+      root.innerHTML = referencePage();
+      break;
+    case "verificacion":
+      root.innerHTML = verifyPage();
+      break;
+  }
   localForms(root);
   if (v === "traductor") filterResults();
   if (v === "reloj") updateClock();
