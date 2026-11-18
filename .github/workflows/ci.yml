@@ -17,9 +17,14 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install pytest
-      - run: python -m pip install -e .[slh]
-      - run: python -m pytest tests/ -q
+      - run: python -m pip install -e .[dev,slh,pqc]
+      # En frío (sin red/carne de ancla), la lectura de reloj del SO queda
+      # UNVERIFIED: es un estado esperado del ciclo §6.3, no un fallo.
+      - run: python -m pytest tests/ -q -rs
+      - name: Suites de endurecimiento aisladas (JCS/GST v2 y reloj §6.3)
+        run: |
+          python -m pytest tests/test_jcs_gstv2.py -v
+          python -m pytest tests/test_clock_state.py -v
       - name: Conformance JS (normative vectors)
         run: |
           node web/tests.mjs
