@@ -25,9 +25,11 @@ without an explicit threat model, any claim of "unforgeable" is marketing.
 
 ## 3. Guarantees and their premises
 
-### G1 — A signed GST is unalterable
+### G1 — Any alteration of a signed GST is detected
 
-Alter one bit of `ts`, `ins`, `sig` or `pub` and verification fails.
+Alter one bit of `ts`, `ins`, `sig` or `pub` and verification fails: the
+guarantee is deterministic tamper detection, not physical impossibility
+(an absolute claim is not a verifiable guarantee).
 **Premise:** SHA-256 is collision- and preimage-resistant. The cost of
 forgery: 2^256 of serial work (or 2^128 in the quantum Grover case).
 Both exceed, by orders of magnitude, any defensible temporal value.
@@ -79,9 +81,12 @@ Actual state in 2.5.0b1 and candidate path to RC/1.0:
   SLH-DSA (FIPS 205) optional adapter (`gerarion[slh]`); ML-DSA (FIPS 204)
   optional adapter (`gerarion[pqc]`, `cryptography>=47`). The hash-only
   reference signature remains deprecated and blocked by default.
-- **Phase 1 (goal):** dual or hybrid signing (classical + ML-DSA) in the
-  same GST document, delegable to the `alg` field; **not implemented yet**
-  in this version.
+- **Phase 1 (IMPLEMENTED in 3.0.0, GST v2 scheme):** simultaneous hybrid
+  signing (Ed25519 + ML-DSA) over the same JCS-canonical bytes
+  (RFC 8785), with the algorithm descriptor inside the signed payload:
+  removing or downgrading the post-quantum branch also invalidates the
+  classical one (structural anti-downgrade). Hybrid verification is
+  all-or-nothing.
 - **Phase 2 (goal):** high-level verifiers require the post-quantum
   component; a classical-only signature is reported as degraded.
 - **Phase 3 (goal):** new anchoring exclusively post-quantum; Ed25519
@@ -102,7 +107,7 @@ not a kernel change; the normative calendar vectors do not change.
 | Notarial key compromise | Already-published `day_root` values cannot be retracted; damage is limited to future signatures; signed rotation (spec §7.1) |
 | Quantum attack on the signature | G3: hash-only degrades no further than Grover |
 | Blocking or censorship of a notary | The system requires N notaries; timestamps survive individual loss |
-| Long-range (insider signs "30 years back") | Impossible as a fact: inclusion requires the `day_root` of that day, which already exists and is published. It can only produce *assertions* |
+| Long-range (insider signs "30 years back") | Not provable as a fact: inclusion requires the `day_root` of that day, which already exists and is published. It can only produce *detectable assertions* |
 | Conversion bug | Normative vector suite in CI; the spec and the code cannot diverge silently |
 
 ## 5. What this system does NOT guarantee (limits, in honesty)
@@ -116,7 +121,12 @@ not a kernel change; the normative calendar vectors do not change.
    changed retroactively without leaving an observable discontinuity.
 3. **It does not define which civil time to display to humans.**
    Presentation, time zone and language are application layers.
-4. **The reference implementation is NOT production code.** It is
+4. **GUS does not replace OS, hardware or network controls.** Operating
+   system security controls, hardware isolation and network mitigations
+   are OUT OF SCOPE for GUS: this system complements them, never
+   replaces them. TSLR and GCERTS are EXPERIMENTAL profiles kept separate
+   from the core.
+5. **The reference implementation is NOT production code.** It is
    executable, exact and verified for *vectors*; deployment requires
    audited libraries (FIPS 204, FIPS 205, RFC 8554). The reference's
    `slh-dsa` adapter is an open-source library with **no verified FIPS

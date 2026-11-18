@@ -320,13 +320,19 @@ in Tokyo at 02:00 local sees `LC`, exactly like one in Jerusalem at
 
 ### 9.6 TSLR forensic profile (optional, Layer 3)
 
+> **EXPERIMENTAL STATUS.** TSLR (Layer 3) and GCERTS (Cap 13.4) are
+> EXPERIMENTAL profiles, separate from the normative kernel: they are not
+> part of the calendar or canonical-timestamp conformance guarantee. GUS
+> does not replace operating-system security controls, hardware isolation,
+> or network mitigations; it complements them, never replaces them.
+
 Optional astronomical verification for Level 3 evidence:
 
 - Solar position (altitude/azimuth) computed with ephemerides (DE440)
   and pinned by the mandatory `ephemeris_hash`: a future ephemeris
   update never retroactively invalidates a previous signature.
-- **3-of-4 Master Nodes quorum** (Jerusalem 31.7683°N/35.2137°E, Geneva
-  46.2044°N/6.1432°E, Santiago 33.4489°S/70.6693°W, Sydney
+- **3-of-4 Master Nodes quorum** (Jerusalem 31.7683°N/35.2137°E, Sèvres
+  (BIPM) 48.8292°N/2.2203°E, Santiago 33.4489°S/70.6693°W, Sydney
   33.8688°S/151.2093°E): no single verification point of failure.
 - **Polar protocol** (latitude |phi| > 66.5°): TSLR altitude/azimuth
   computation is degenerate for polar nights or days; in that case the

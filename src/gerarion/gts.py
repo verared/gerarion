@@ -469,8 +469,11 @@ def verify_v2(envelope: dict, guard: "ReplayGuard" = None, **_) -> dict:
     )
     if instant != payload["ins"]:
         errors.append("instante divergente del formato canónico")
-    if getattr(parsed, "nanos", 0) != payload["nanos"]:
-        errors.append("nanos divergente de la marca declarada")
+    # La marca debe estar en forma canónica (sin fracción): la precisión
+    # sub-segundo viaja SOLAMENTE en el campo separado `nanos`, protegido
+    # por la firma (el formato canónico nunca emite la fracción).
+    if fmt.to_canonical(parsed) != payload["ts"]:
+        errors.append("la marca no está en forma canónica")
     if errors:
         return {"ok": False, "errors": errors, "state": "REJECTED"}
 

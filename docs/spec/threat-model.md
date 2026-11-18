@@ -26,9 +26,12 @@ mercadeo.
 
 ## 3. Garantías y sus premisas
 
-### G1 — Una GST firmada es inalterable
+### G1 — Toda alteración de una GST firmada es detectable
 
-Altera un bit de `ts`, `ins`, `sig` o `pub` y la verificación falla.
+Altera un bit de `ts`, `ins`, `sig` o `pub` y la verificación falla: la
+garantía es de DETECCIÓN DETERMINISTA de manipulación, no de
+"imposibilidad física" (esa formulación absoluta no es una garantía
+verificable).
 **Premisa:** SHA-256 es resistente a colisión y preimagen. El coste de
 falsificar: 2^256 de trabajo serial (o 2^128 en el caso Grover cuántico).
 Ambos superan por órdenes de magnitud cualquier valor temporal defendible.
@@ -78,9 +81,11 @@ Estado real en 2.5.0b1 y ruta candidata a RC/1.0:
   (FIPS 205) adaptador opcional (`gerarion[slh]`); ML-DSA (FIPS 204)
   adaptador opcional (`gerarion[pqc]`, `cryptography>=47`). La firma
   hash-only de referencia sigue deprecada y bloqueada por defecto.
-- **Fase 1 (objetivo):** firma dual u híbrida (clásica + ML-DSA) en el mismo
-  documento GST, delegable al campo `alg`; **no está implementada todavía**
-  en esta versión.
+- **Fase 1 (IMPLEMENTADA en 3.0.0, esquema GST v2):** firma híbrida
+  simultánea (Ed25519 + ML-DSA) sobre los mismos bytes canónicos JCS
+  (RFC 8785), con el descriptor de algoritmos dentro del payload firmado:
+  quitar o degradar la rama post-cuántica invalida también la clásica
+  (anti-downgrade estructural). La verificación híbrida es todo-o-nada.
 - **Fase 2 (objetivo):** los verificadores de alto nivel exigen el
   componente post-cuántico; una firma solo-clásica se reporta como degradada.
 - **Fase 3 (objetivo):** nuevo anclaje exclusivamente post-cuántico;
@@ -101,7 +106,7 @@ G4), no del kernel; los vectores normativos del calendario no cambian.
 | Compromiso de clave notarial | Los `day_root` ya publicados no se pueden retractar; el daño queda limitado a firmas futuras; rotación firmada (spec §7.1) |
 | Ataque cuántico a la firma | G3: hash-only no degrada más allá de Grover |
 | Bloqueo o censura de un notario | El sistema requiere N notarios; las marcas sobreviven a la pérdida individual |
-| Long-range (insider firma "30 años atrás") | Imposible como hecho: la inclusión exige el `day_root` de ese día, ya existente y publicado. Solo puede producir *afirmaciones* |
+| Long-range (insider firma "30 años atrás") | No acreditable como hecho: la inclusión exige el `day_root` de ese día, ya existente y publicado. Solo puede producir *afirmaciones* detectables |
 | Bug de conversión | Suite de vectores normativos en CI; la spec y el código no pueden divergir silenciosamente |
 
 ## 5. Lo que este sistema NO garantiza (límites, en honestidad)
@@ -115,7 +120,12 @@ G4), no del kernel; los vectores normativos del calendario no cambian.
    cambiar retroactivamente sin dejar discontinuidad observable.
 3. **No define qué hora civil mostrar a humanos.** Presentación, zona horaria
    e idioma son capas de aplicación.
-4. **La implementación de referencia NO es código de producción.** Es
+4. **GUS no sustituye los controles del sistema ni de la red.** Los
+   controles de seguridad del sistema operativo, el aislamiento de hardware
+   y las mitigaciones de red quedan FUERA del alcance de GUS: este sistema
+   los complementa, nunca los reemplaza. TSLR y GCERTS son perfiles
+   EXPERIMENTALES separados del núcleo.
+5. **La implementación de referencia NO es código de producción.** Es
    ejecutable, exacta y verificada para *vectores*; el despliegue exige
    bibliotecas auditadas (FIPS 204, FIPS 205, RFC 8554). El adaptador
    `slh-dsa` de la referencia es biblioteca de **código abierto sin
