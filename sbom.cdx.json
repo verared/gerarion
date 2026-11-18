@@ -4,11 +4,11 @@
   "version": 1,
   "metadata": {
     "component": {
-      "bom-ref": "pkg:generic/gerarion@2.4.0",
+      "bom-ref": "pkg:generic/gerarion@2.5.0b1",
       "type": "library",
       "name": "gerarion",
-      "version": "2.4.0",
-      "description": "Gerarion Universal Standard (GUS): calendario regular y marca temporal verificable",
+      "version": "2.5.0b1",
+      "description": "Gerarion Universal Standard (GUS 2.1.0): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables; funciones de seguridad en revisión",
       "licenses": [
         {
           "expression": "MIT"
@@ -31,11 +31,11 @@
   },
   "components": [
     {
-      "bom-ref": "pkg:pypi/gerarion@2.4.0",
+      "bom-ref": "pkg:pypi/gerarion@2.5.0b1",
       "type": "library",
       "name": "gerarion",
-      "version": "2.4.0",
-      "purl": "pkg:pypi/gerarion@2.4.0",
+      "version": "2.5.0b1",
+      "purl": "pkg:pypi/gerarion@2.5.0b1",
       "description": "Kernel Python: GTS, GST, notario diario Merkle, adaptadores criptograficos",
       "licenses": [
         {
@@ -47,11 +47,11 @@
       ]
     },
     {
-      "bom-ref": "pkg:npm/gerarion-kernel@2.4.0",
+      "bom-ref": "pkg:npm/gerarion-kernel@2.5.0b1",
       "type": "library",
       "name": "gerarion-kernel",
-      "version": "2.4.0",
-      "purl": "pkg:npm/gerarion-kernel@2.4.0",
+      "version": "2.5.0b1",
+      "purl": "pkg:npm/gerarion-kernel@2.5.0b1",
       "description": "Kernel JavaScript ESM (web/gerarion.mjs): cero dependencias, mismo vector set",
       "licenses": [
         {
@@ -63,10 +63,10 @@
       ]
     },
     {
-      "bom-ref": "pkg:generic/gerarion-c@2.4.0",
+      "bom-ref": "pkg:generic/gerarion-c@2.5.0b1",
       "type": "library",
       "name": "gerarion-c",
-      "version": "2.4.0",
+      "version": "2.5.0b1",
       "description": "Segunda implementacion independiente en C (impl-c/): cero dependencias, cero red",
       "licenses": [
         {
@@ -94,17 +94,17 @@
   ],
   "dependencies": [
     {
-      "ref": "pkg:pypi/gerarion@2.4.0",
+      "ref": "pkg:pypi/gerarion@2.5.0b1",
       "dependsOn": [
         "pkg:pypi/slh-dsa@0.2.5"
       ]
     },
     {
-      "ref": "pkg:npm/gerarion-kernel@2.4.0",
+      "ref": "pkg:npm/gerarion-kernel@2.5.0b1",
       "dependsOn": []
     },
     {
-      "ref": "pkg:generic/gerarion-c@2.4.0",
+      "ref": "pkg:generic/gerarion-c@2.5.0b1",
       "dependsOn": []
     }
   ]

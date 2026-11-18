@@ -1,5 +1,75 @@
 # Changelog — GUS
 
+## 2.5.0b1 — BETA inicial (formats + release; 2026-11-17)
+
+Equivalencia de versiones: `2.5.0b1` (PEP 440; pyproject, CITATION, sbom) =
+`2.5.0-beta.1` (semver; `web/package.json`). La spec mantiene **2.1.0**.
+Etiqueta de ciclo: `alfa-final` pasa a **BETA**.
+
+### Formatos y perfiles
+
+- **F1 (GUS-3339):** los parsers de Python y JS rechazan —sin normalizar—
+  campos horarios fuera de rango (hora > 23, minuto > 59, segundo > 59),
+  fechas inexistentes, años fuera de 0000–9999, offsets ≠ Z y fracciones.
+  Vector negativo NUEVO compartido `vectors/gus-3339-negative-001.json`
+  (17 casos) consumido por pytest, `web/profiles-conformance.mjs` y
+  `impl-c/conformance.c`; C ya validaba por partes. El vector normativo
+  `gus-3339-001.json` no se ha tocado.
+- **F2 (era AY):** vector de regresión NUEVO compartido
+  `vectors/gus-regression-001.json` (8 casos AY, incluidos
+  `0001AY-00-11-B` y vecinos) consumido por el núcleo (Python/JS/C), el
+  nuevo runner `web/regression-conformance.mjs` y `tools/verify_gus.py`
+  (que ya no rechaza AY con GERO_ETEMPALUM: corregido en 2.4.0/PR #6).
+
+### Documentación
+
+- **D1:** sección única «Escala de tiempo» / "Time scale" (README EN+ES):
+  día GUS a medianoche UTC, entero tipo Unix/POSIX sin tabla TAI−UTC,
+  ejemplo medido con el código (2016-12-31T23:59:59Z →
+  2017-01-01T00:00:00Z: entero +1 s, transcurrieron 2 s SI). Contexto
+  verificado con fuente primaria: NIST (TAI−UTC = 37 s) y Resolución 5 de
+  la 28.ª CGPM (2026): UTC continuo desde 2027-05-20, |UT1−UTC| ≤ 3.600 s.
+  **D-001 (medianoche UTC vs TAI) queda como DECISIÓN DEL AUTOR.**
+- **D2:** `docs/GLOSSARY.md` (ES+EN), definición única por término
+  (GUS, GST, GTS, GUS-3339, GUS-3161, GUS-Roughtime, GUS-for-notation,
+  Tempalum, Gran Tempalum, TCJ, day_index, JDN, instant, SC/LC);
+  enlazado desde ambos README. El módulo `gts.py` conserva su nombre
+  (razón histórica documentada en el glosario); renombrar sería
+  DECISIÓN DEL AUTOR.
+- **F3:** `docs/TODO-pendientes.md` TODO-004 (offsets con minutos en
+  `TCJ±O`, p. ej. +05:45): el formato NO cambia en esta beta (cambiarlo
+  exige decidir la forma canónica); DECISIÓN DEL AUTOR con dos opciones.
+- **Lenguaje:** «estándar» → «especificación abierta» / «proyecto de
+  estándar» en README EN+ES (no hay adopción por un organismo).
+- Comparativo actualizado con fuentes verificadas: calendario egipcio
+  civil (12×30+5; WebExhibits) y Symmetry454 (años 364/371, semana
+  intercalar; Threeten-Extra), con el coste declarado: 3 meses = 90 días
+  ≠ 13 semanas.
+
+### Seguridad (sin detalles de explotación)
+
+- Endurecimiento beta de 2.4.x/PR #6 incluido: verificación de anclas
+  contra notario de política, clave de confianza externa exigida, quórum
+  por identidades únicas, persistencia de pendientes, firma de referencia
+  deshabilitada por defecto. **Además:** tabla «Qué está listo y qué no»
+  en ambos README y ajuste de metadatos de release
+  ("calendario computacional y proyecto de interoperabilidad temporal y
+  evidencias verificables; funciones de seguridad en revisión"), sin
+  afirmaciones de garantía absoluta.
+
+### CI y cadena de suministro
+
+- CodeQL (Python + JavaScript) anclado por SHA real;
+  `dependabot.yml` (github-actions, npm, pip); `pip-audit` en CI.
+- Estado: `permissions: contents: read` como base en todos los workflows,
+  con los mínimos extra por job (pages, release).
+- `docs/CONFORMANCE.md` (cómo una tercera parte reimplementa el núcleo),
+  invitación a implementaciones independientes en `CONTRIBUTING.md`,
+  `docs/ROADMAP.md` (beta/RC/1.0, sin fechas).
+- Build en seco verificado (sdist/wheel `twine check` PASSED; `npm pack`
+  5 archivos, 11,2 kB). Sin tag ni release en esta rama: los decide el
+  autor.
+
 ## Sin publicar (web-ux) — UX del portal
 
 - **Portal reordenado:** el traductor de fechas pasa a ser la primera

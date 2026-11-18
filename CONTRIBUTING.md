@@ -19,6 +19,16 @@ no entra.
 - Calculador web (web/).
 - Traducciones de la spec + i18n del formato Universal.
 
+## Implementaciones independientes
+
+Público explícito: **te invitamos a reimplementar el núcleo en otro
+lenguaje** y demostrar conformancia ejecutando `vectors/` (ver
+[docs/CONFORMANCE.md](docs/CONFORMANCE.md): formato, runners y categorías
+obligatorias). Un archivo `vectors/` inmutable es todo lo que necesitas;
+no leas el código de referencia (hazlo «gratis» solo después de tu propia
+implementación verde). Abre tu PR con la salida de tus runners pegada en
+la descripción y estilo de commit limpio (sin correos personales).
+
 ## Estilo
 - Python >= 3.9, stdlib only en src/.
 - Docstrings explicando *por qué*, comentarios explicando *qué*.

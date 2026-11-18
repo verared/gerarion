@@ -347,7 +347,7 @@ def instant_from_parts(day_index: int, hour: int = 0, minute: int = 0, second: i
     Escala sin segundos intercalares (análoga a TAI): el conteo es lineal.
     """
     if not (0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59):
-        raise GeroEinval("Hora/minuto/segundo fuera de rango")
+        raise GeroEinval("GERO_EINVAL: hora/minuto/segundo fuera de rango (00-23:59:59)")
     return day_index * SECS_PER_DAY + hour * 3600 + minute * 60 + second
 
 

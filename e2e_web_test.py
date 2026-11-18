@@ -62,6 +62,31 @@ with sync_playwright() as p:
     check("reloj: detalles (día, semana, mes, ciclo)",
           all(k in details for k in ("día", "ciclo")), repr(details))
 
+    # 3c. Regresión W2: el modo local solo cambia la presentación auxiliar;
+    # el sello canónico, el day_index, el JDN y el instant siguen en TCJ+0.
+    inst_before = (page.text_content("#now-instant") or "").strip()
+    page.select_option("#clock-tz", "local")
+    page.wait_for_timeout(50)
+    clock_local = (page.text_content("#now-gero") or "").strip()
+    check(
+        "W2 reloj local: sello sigue en TCJ+0",
+        re.match(r"^\d{4}(DY|AY)-\d{2}-\d{2}-[SLMATVB]-\d{2}:\d{2}:\d{2}-(SC|LC)-TCJ\+0$",
+                 clock_local) is not None or clock_local.endswith("TCJ+0"),
+        repr(clock_local),
+    )
+    details_local = page.text_content("#now-details") or ""
+    check("W2 reloj local: presentación marcada como TCJ (local)",
+          "TCJ (local)" in details_local, repr(details_local))
+    inst_after = (page.text_content("#now-instant") or "").strip()
+    try:
+        drift = abs(int(inst_after) - int(inst_before))
+    except ValueError:
+        drift = 10**9
+    check("W2 reloj local: instant UTC sin desplazamiento (tolerancia 1 s)",
+          drift <= 1, f"antes={inst_before} después={inst_after}")
+    page.select_option("#clock-tz", "utc")
+    page.wait_for_timeout(50)
+
     # 4. Conversiones rápidas: abrir el details y usar ambos formularios
     page.locator("#conversiones > summary").click()
     page.wait_for_timeout(150)

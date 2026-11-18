@@ -484,9 +484,65 @@ static void check_instant(JNode *v)
     }
 }
 
+/* F1: casos negativos compartidos (gus-3339-negative-001.json).
+ * impl-c no implementa el parser de strings GUS-3339; su superficie
+ * equivalente es gus_instant_from_parts, que debe RECHAZAR todo campo
+ * horario fuera de rango (nunca normalizar). */
+static void check_negatives(JNode *v)
+{
+    const char *cat = "gus3339_negativos";
+    JNode *rows = jo(v, "instant_parts");
+    for (int i = 0; i < rows->count; i++) {
+        JNode *row = rows->items[i];
+        long long instant;
+        GusError err = gus_instant_from_parts(jn(row, "day_index"),
+            (int)jn(row, "hour"), (int)jn(row, "minute"),
+            (int)jn(row, "second"), &instant);
+        if (err == GUS_OK) {
+            fail(cat, js(row, "why"));  /* aceptó una entrada inválida */
+        }
+    }
+}
+
+/* F2: regresión AY (gus-regression-001.json) — el GT es simétrico en DY/AY. */
+static void check_ay_regression(JNode *v)
+{
+    const char *cat = "ay_regression";
+    JNode *rows = jo(v, "calendar_ay");
+    for (int i = 0; i < rows->count; i++) {
+        JNode *row = rows->items[i];
+        GusParsed p;
+        GusError err = gus_parse(js(row, "canonical"), false, &p);
+        if (err != GUS_OK) { fail(cat, js(row, "canonical")); continue; }
+        if (p.date.day_index != jn(row, "day_index")) {
+            fail3(cat, js(row, "canonical"), p.date.day_index, jn(row, "day_index"));
+            continue;
+        }
+        GusDate d;
+        if (gus_to_gerarion(jn(row, "day_index"), &d) != GUS_OK) {
+            fail(cat, "to_gerarion falló");
+            continue;
+        }
+        char canon[48]; /* gus_canonical exige al menos 48 bytes */
+        if (gus_canonical(&p, canon, sizeof(canon)) != GUS_OK) {
+            fail(cat, "canon overflow");
+            continue;
+        }
+        if (strcmp(canon, js(row, "canonical")) != 0) {
+            fail3(cat, "canon", d.day_index, jn(row, "day_index"));
+        }
+        const bool gt_expected = jo(row, "gran_tempalum")->boolean != 0;
+        if (gus_is_gran_tempalum(d.year) != gt_expected) {
+            fail(cat, "gran_tempalum divergente");
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     const char *path = argc > 1 ? argv[1] : "../vectors/gus-normative-002.json";
+    const char *negPath = argc > 2 ? argv[2] : NULL;
+    const char *ayPath = argc > 3 ? argv[3] : NULL;
     JNode *v = jload(path);
     if (!v) return 2;
     printf("gus-normative conformance (C): %s\n", path);
@@ -497,8 +553,25 @@ int main(int argc, char **argv)
     check_roundtrip(v);
     check_format(v);
     check_instant(v);
+    int cats = 7;
+    if (negPath) {
+        JNode *neg = jload(negPath);
+        if (!neg) return 2;
+        printf("gus-3339-negative conformance (C): %s\n", negPath);
+        g_checks++;
+        check_negatives(neg);
+        cats = 8;
+    }
+    if (ayPath) {
+        JNode *ay = jload(ayPath);
+        if (!ay) return 2;
+        printf("gus-regression AY conformance (C): %s\n", ayPath);
+        g_checks++;
+        check_ay_regression(ay);
+        cats = 9;
+    }
     if (g_failures == 0) {
-        printf("CONFORME (núcleo GUS en C): %d categorías, 0 fallos\n", 7);
+        printf("CONFORME (núcleo GUS en C): %d categorías, 0 fallos\n", cats);
         return 0;
     }
     printf("NO CONFORME: %d fallos\n", g_failures);

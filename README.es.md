@@ -13,9 +13,10 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 > y/o TSA externa (RFC 3161). Ver [SECURITY.md](SECURITY.md) y
 > [docs/threat-model.md](docs/threat-model.md).
 
-> **Spec GUS v2.1.0:** el Gran Tempalum es simétrico e infinito en ambas
-> eras (DY/AY) (`docs/TODO-pendientes.md` TODO-001 cerrado; queda abierto
-> D-001, medianoche UTC vs TAI, como DECISIÓN DEL AUTOR para 2.x).
+> **Spec GUS v2.1.0 (ESTADO: BETA):** el Gran Tempalum es simétrico e
+> infinito en ambas eras (DY/AY) (`docs/TODO-pendientes.md` TODO-001
+> cerrado; queda abierto D-001 como DECISIÓN DEL AUTOR para 2.x — ver
+> [Escala de tiempo](#escala-de-tiempo)).
 
 **Tiempo regular, universal y verificable.**
 
@@ -32,14 +33,15 @@ sin cookies, sin cuentas; funciona sin conexión una vez cargada.
 Para opciones de instalación (Python, JS, C11) por GitHub Releases, mira la
 sección de distribución del README en inglés `README.md`.
 
-Un estándar de tiempo que integra tres capas bajo una misma especificación
+Una especificación abierta y proyecto de estándar de tiempo que integra tres capas bajo una misma especificación verificable
 máquina-verificable:
 
 1. **Calendario regular:** 12 meses de 30 días exactos + Tempalum de cierre
    (4/11 días). Toda fecha fija cae siempre en el mismo día de la semana.
-2. **Escala continua:** instantes lineales sobre TAI, sin segundos
-   intercalares. Comparaciones, rangos y totales triviales en cualquier
-   lenguaje.
+2. **Escala continua:** instantes lineales sobre etiquetas de día con
+   medianoche UTC, sin aplicar tabla de segundos intercalares (ver
+   [Escala de tiempo](#escala-de-tiempo)). Comparaciones, rangos y
+   totales triviales en cualquier lenguaje.
 3. **Marca temporal verificable (GST):** firma post-cuántica + notario
    Merkle diario encadenado. El nivel de seguridad efectivo es ~2^128
    frente a un atacante cuántico (Grover); el coste crudo de preimagen de
@@ -93,14 +95,15 @@ crítica de que 364 y 371 son múltiplos de 7: nunca hay días fuera del
 ciclo semanal (ver [Trabajos relacionados](#trabajos-relacionados)).
 
 Nombres como **Keuphero** (mes 1), **Tempalum** (mes de cierre), las letras
-de día y las eras DY/AY son *etiquetas opacas* del estándar: ninguna regla
+de día y las eras DY/AY son *etiquetas opacas* de la especificación: ninguna regla
 normativa depende de su significado. Su etimología, filosofía y notas de
 origen tienen un origen cultural documentado fuera de este repositorio
 (no publicado).
 
-> ⓘ **Resumen.** GUS es un estándar de tiempo: un calendario regular 12×30
+> ⓘ **Resumen.** GUS es una especificación abierta y proyecto de estándar de tiempo: un calendario regular 12×30
 > con un «Tempalum» de cierre (años de 53 semanas incluidos, a propósito),
-> una escala continua de tiempo sin segundos intercalares sobre TAI, y
+> una escala continua de tiempo sin segundos intercalares (ver
+> [Escala de tiempo](#escala-de-tiempo)), y
 > marcas temporales verificables post-cuánticas (GST) con un notario
 > diario Merkle encadenado. El README completo en inglés es
 > [`README.md`](README.md); la spec normativa en inglés vive en
@@ -154,6 +157,39 @@ divergencia entre la versión inglesa
 y la española, prevalece la inglesa (EN > ES).** La documentación histórica
 complementaria del Calendario Gerarion vive en [`docs/papers/`](docs/papers/)
 como capa informativa, no normativa (ver [Créditos y contexto cultural](#créditos-y-contexto-cultural)).
+
+## Escala de tiempo
+
+Declaración única y autoritativa de lo que hace el código; reemplaza toda
+redacción anterior que mencionara TAI (la spec §9 es el hogar normativo de
+este texto; TODO-001 cerrado, D-001 sigue abierto como propuesta 2.x —
+DECISIÓN DEL AUTOR).
+
+- **El día GUS empieza a medianoche UTC.** El día `[n, n+1)` es el rango
+  de segundos GUS `[n·86400, (n+1)·86400)`; no es medianoche-TAI ni
+  medianoche civil local.
+- **El entero no aplica una tabla TAI−UTC.** El mapeo es tipo
+  Unix/POSIX: cada etiqueta `AAAA-MM-DDTHH:MM:SSZ` se convierte a un
+  entero por aritmética pura. La escala es *lineal en etiquetas* y la
+  línea de etiquetas no cuenta los segundos intercalares históricos.
+- **Cruzar un segundo intercalar histórico no preserva la duración
+  física.** Medido con la implementación de referencia:
+  `2016-12-31T23:59:59Z → 2017-01-01T00:00:00Z` hace subir el entero GUS
+  **1 s**, mientras que transcurrieron **2 segundos SI** (la etiqueta UTC
+  2016-12-31T23:59:60Z existió). Las diferencias de enteros GUS de este
+  perfil son por tanto *duraciones de etiqueta*, no siempre duraciones
+  físicas exactas a través de intercalados históricos. Si tu caso necesita
+  duración física en esas fechas, convierte con una tabla de segundos
+  intercalares (IERS) o usa una TSA que selle sobre una escala continua.
+- **Contexto (fuentes verificadas):** NIST documenta TAI − UTC = 37 s
+  (nist.gov, leap seconds). La Resolución 5 de la CGPM (2026) decidió que
+  el UTC continuo entra en vigor el 20 de mayo de 2027 con un máximo
+  |UT1−UTC| de 3.600 s (bipm.org, DOI 10.59161/CGPM2026RES5E). Ninguno de
+  los dos hechos cambia el mapeo anterior: los intercalados históricos
+  siguen ahí y la fuente del reloj sigue siendo responsabilidad del
+  operador.
+- **La extensión pre-1958** es una convención proléptica declarada; no
+  pretende reproducir ninguna materialización histórica de TAI (spec §9).
 
 ## Publicación
 
@@ -268,6 +304,19 @@ diseño, no como parche:
 
 Declarado con la misma fuerza que las garantías:
 
+## Qué está listo y qué no (BETA)
+
+| Capa | Estado | Una frase honesta |
+|---|---|---|
+| Kernel calendárico (12×30+Tempalum, GT simétrico) | **estable** | Aritmética entera determinista, verificada por 22 vectores normativos × 3 implementaciones + fuzz diferencial de 1500 casos. |
+| Conversión multicalendario web | **estable** | 100 % cliente, 0 peticiones de red, ida y vuelta densa 1900–2100 hebreo/chino con 0 fallos (UTC fijado; límites históricos documentados por tarjeta). |
+| GUS-3339 (subconjunto RFC 3339) | **estable (estrecho)** | Parser estricto con vector negativo compartido; no es un parser RFC 3339 general, a propósito. |
+| GUS-3161 (TSA) | **beta** | Adaptador de referencia probado en local con TSA sintética; depende de la confianza del operador en su TSA. |
+| GUS-Roughtime | **beta** | Verificación de recibos con nonce ligado; Ed25519 es clásico (no poscuántico); no es el protocolo de red Roughtime completo. |
+| Firma hash-only de referencia (WOTS16-MERKLE-REF) | **no usar en producción** | Problemas de reuso histórico corregidos deshabilitándola por defecto (`GUS_ALLOW_INSECURE_REF`); solo uso educativo. |
+| Adaptador SLH-DSA (FIPS 205, dependencia opcional) | **beta** | Funciona con slh-dsa 0.2.5; la biblioteca no está auditada ni validada FIPS aquí. |
+| Notario (Merkle diario + quórum + raíz de confianza) | **no usar en producción** | Endurecimiento beta hecho (S2–S6); falta revisión criptográfica externa antes de cualquier uso en producción. |
+
 1. **No garantiza que la hora firmada sea *verdadera*.** Una GST prueba
    que una marca existía y se comprometió **no más tarde** del ancla
    notarial que la referencia (cota superior). Quien posee la clave puede
@@ -287,12 +336,14 @@ Declarado con la misma fuerza que las garantías:
    sigue necesitando tzdata. Los relojes físicos siguen necesitando una
    fuente (GNSS/NTP). GUS hace que el *valor* sea verificable; no sustituye
    la sincronización física.
-5. **La escala TAI no es "100 % matemática".** Lo puramente matemático es
-   el calendario: una función total del índice de día. TAI depende de
-   relojes atómicos físicos que mantiene el BIPM, y la divergencia con el
-   día solar (UT1) sigue creciendo — es exactamente el precio de eliminar
-   los segundos intercalares. La garantía de GUS sobre el tiempo es
-   *consistencia verificable*, no verdad astronómica.
+5. **Las escalas de referencia no son "100 % matemáticas".** Lo
+   puramente matemático es el calendario: una función total del índice
+   de día. Las escalas de referencia reales que mantiene el BIPM
+   dependen de relojes atómicos físicos, y la divergencia con el día
+   solar (UT1) sigue creciendo. La garantía de GUS sobre el tiempo es
+   *consistencia verificable*, no verdad astronómica — ver
+   [Escala de tiempo](#escala-de-tiempo) para lo que cuenta exactamente
+   el entero.
 6. **No exige adopción universal para ser útil.** El notario funciona con
    cualquier calendario (un `day_root` es solo una cadena firmada);
    GUS lo ofrece *integrado* con un calendario regular y vectores, pero
@@ -363,16 +414,25 @@ formal en [GOVERNANCE.md](GOVERNANCE.md)). Detalle completo en el
 y conviene decirlo.**
 
 - **12×30 + días de cierre:** el calendario civil egipcio antiguo
-  (12×30+5), el republicano francés (12×30 + 5/6 días complementarios),
-  el copto, el etíope y el bahá'í (19×19 + intercalares). Es el
-  antecedente estructural más cercano al bloque GUS.
-- **Semana invariante con semana intercalar:** Symmetry454, Hanke-Henry
-  y Pax. El Tempalum de GUS es, conceptualmente, una *semana intercalar*
-  (leap week) y debe leerse como tal.
+  (12×30+5 — WebExhibits, *Ancient calendars*:
+  webexhibits.org/calendars/calendar-ancient.html: «a solar year of
+  365 days (12 months × 30 + 5 extra)»), el republicano francés
+  (12×30 + 5/6 días complementarios), el copto, el etíope y el bahá'í
+  (19×19 + intercalares). Es el antecedente estructural más cercano al
+  bloque GUS.
+- **Semana invariante con semana intercalar:** Symmetry454 (meses de
+  28/35 días, trimestres de 13 semanas, años comunes de 364 días y una
+  semana intercalar que alarga los años largos a 371 — javadoc de
+  Threeten-Extra, threeten.org), Hanke-Henry y Pax. El Tempalum de GUS
+  es, conceptualmente, una *semana intercalar* (leap week) y debe
+  leerse como tal.
+- **Coste conocido, compartido con esos diseños:** tres meses regulares
+  suman **90 días, no 13 semanas**, y no todos los meses empiezan en el
+  mismo día del ciclo.
 - **Calendarios puramente aritméticos:** el hebreo (computable por
   aritmética desde el siglo IV), el hijri tabular, el persa de 33 años.
 - **Conteo continuo de días:** Julian Day Number, la cuenta larga maya,
-  Unix time, TAI.
+  Unix time.
 - **Marca temporal encadenada:** Haber y Stornetta (1991) — de ahí Surety,
   publicando hashes semanales en el New York Times desde 1995 — más RFC
   3161, OpenTimestamps, Certificate Transparency y Roughtime.
@@ -411,7 +471,8 @@ intercambio correcto. No resuelve aritmética de calendario (meses
 irregulares), ni la estabilidad de la escala ( leap seconds que
 la CGPM aún no ha abolido de facto, smears por operador), ni la
 verificabilidad (un `2026-05-23T09:30:00Z` es solo un número; nada lo
-certifica). GUS usa una escala TAI continua y añade la capa de
+certifica). GUS usa una escala lineal continua sobre etiquetas de
+medianoche UTC (ver [Escala de tiempo](#escala-de-tiempo)) y añade la capa de
 verificación; el offset TCJ±O mantiene compatibilidad de presentación
 con la lectura civil.
 
@@ -436,7 +497,7 @@ interoperabilidad en todo el dominio. El año 2031DY del ejemplo — anclado al
 por la recurrencia solar; la garantía normativa es la cota de oscilación
 (|Δ| < 7 días), que sale de que 1 Keuphero debe seguir cayendo en Soludyia:
 cualquier corrección se aplica en pasos de 7 días (la constante de año medio
-del estándar lo garantiza), por eso la cota vale como propiedad del modelo
+de la especificación lo garantiza), por eso la cota vale como propiedad del modelo
 pero NO cubre la deriva física real del año tropical a escala de milenios;
 y la ventana de fechas es **observada, no estructural** (el
 inicio de año cae entre el 10 y el 21 de marzo en 11.000 años simulados, y
@@ -454,6 +515,7 @@ criptográficas. La capa GST/notario es opt-in.
 docs/
 ├── spec/gus-2.1.0.md          Especificación normativa (v2.1.0; EN normativo en docs/en/)
 ├── spec/threat-model.md     Modelo de amenazas y garantías
+├── GLOSSARY.md              Glosario de definición única, ES y EN
 ├── informe-adopcion-gus.md  Informe técnico: por qué adoptar GUS en cómputo
 ├── errata-v1.2.md           Los 6 defectos del borrador histórico v1.2, verificables en tests
 ├── en/                      5 documentos normativos en inglés (precedencia EN>ES)
@@ -471,7 +533,7 @@ preparado en xml2rfc v3 con registros IANA propuestos, a la espera de
 presentación formal. El draft markdown histórico v1 está OBSOLETO
 (archivado fuera de este repositorio, no publicado).
 
-La gobernanza formal del estándar (quién aprueba cambios de kernel,
+La gobernanza formal del proyecto (quién aprueba cambios de kernel,
 Looking Period de 90 días, certificación de forks, política de claves,
 conflictos de interés) está en [GOVERNANCE.md](GOVERNANCE.md).
 
@@ -479,12 +541,12 @@ conflictos de interés) está en [GOVERNANCE.md](GOVERNANCE.md).
 
 El Calendario Gerarion, la lengua Nuvid y la investigación original fueron
 creados por **Gerardo Loyola** ([github.com/geroiloyola](https://github.com/geroiloyola)),
-cuyo trabajo es la base de todo este proyecto. El estándar GUS lo mantiene el
+cuyo trabajo es la base de todo este proyecto. La especificación GUS la mantiene el
 proyecto **verared** (futura fundación) ([github.com/verared](https://github.com/verared)),
-responsable del estándar a largo plazo (github.com/verared/gerarion).
+responsable de la especificación a largo plazo (github.com/verared/gerarion).
 
 Ese origen histórico, cultural y religioso **no es normativa de GUS**: el
-estándar solo usa el formato canónico de la spec y los vectores. La
+este perfil usa solo el formato canónico de la spec y los vectores. La
 documentación complementaria se conserva, como investigación no normativa, en
 [`docs/papers/`](docs/papers/); las discrepancias conocidas entre ese material
 y este kernel están registradas en [`docs/errata-v1.2.md`](docs/errata-v1.2.md).
@@ -507,14 +569,15 @@ y este kernel están registradas en [`docs/errata-v1.2.md`](docs/errata-v1.2.md)
 - [x] Inglés normativo (`docs/en/`, 5 documentos, precedencia EN>ES)
 - [x] Perfiles de interop (GUS-3339, GUS-3161, GUS-Roughtime) con pruebas
       e2e locales y verificador monolítico stdlib puro
-      (`tools/verify_gus.py`); decisión D-001 (frontera UTC/TAI) en
-      borrador público, en revisión de 90 días
+      (`tools/verify_gus.py`); la pregunta abierta D-001 (ver
+      [Escala de tiempo](#escala-de-tiempo)) en borrador público, en
+      revisión de 90 días
 - [x] Documento de adopción mínima GUS-for-notation (solo notación)
 - [x] Primer push a GitHub + publicación vía GitHub Releases (distribución independiente, sin registries externos)
 - [ ] Primer ancla OpenTimestamps operacional
 - [ ] Verificador de testigos contra la red Roughtime real (TODO-002)
 
-**Versión actual: alfa** — el estándar es reproducible desde el repo
+**Versión actual: beta** — la especificación es reproducible desde el repo
 (vectores, tres implementaciones, conformancia), pero no hay todavía
 despliegue externo ni tercero independiente que lo implemente.
 
@@ -529,6 +592,6 @@ ninguno de sus fragmentos. Ver [NOTICE](NOTICE) y [sbom.cdx.json](sbom.cdx.json)
 
 | Artefacto | Versión | Qué numera |
 |---|---|---|
-| Especificación normativa (`docs/spec/gus-2.1.0.md`) | **2.1.0** | El estándar en sí; solo cambia con cambios normativos aprobados (ventana de revisión de 90 días) |
+| Especificación normativa (`docs/spec/gus-2.1.0.md`) | **2.1.0** | La especificación en sí; solo cambia con cambios normativos aprobados (ventana de revisión de 90 días) |
 | Draft IETF (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | El documento de envío (individual submission) que describe la spec; puede avanzar sin que la spec cambie |
 | Paquetes (`pyproject.toml`, `web/package.json`) | **2.4.0** | Los artefactos de software: kernel Python/JS/C, tests, docs y erratas aplicadas. Puede cambiar entre releases de la spec |
