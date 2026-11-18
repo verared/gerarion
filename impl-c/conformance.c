@@ -352,7 +352,8 @@ static void check_calendar(JNode *v)
         long long gy = jn(row, "greg_year");
         int gm = (int)jn(row, "greg_month");
         int gd = (int)jn(row, "greg_day");
-        long long di = gus_day_index_from_gregorian(gy, gm, gd);
+        long long di = 0;
+        gus_day_index_from_gregorian(gy, gm, gd, &di);
         if (di != jn(row, "day_index")) {
             char msg[64];
             snprintf(msg, sizeof(msg), "%s", js(row, "greg"));
@@ -400,13 +401,15 @@ static void check_roundtrip(JNode *v)
         long long di = jn(row, "day_index");
         long long gy;
         int gm, gd;
-        gus_gregorian_from_day_index(di, &gy, &gm, &gd);
+        gus_gregorian_from_day_index(di, &gy, &gm, &gd); /* di de vector: siempre in-range */
         if (gy != jn(row, "greg_year") || gm != jn(row, "greg_month") || gd != jn(row, "greg_day")) {
             char msg[80];
             snprintf(msg, sizeof(msg), "day %lld: greg %lld-%d-%d != %s", di, gy, gm, gd, js(row, "greg"));
             fail(cat, msg);
         }
-        if (gus_day_index_from_gregorian(gy, gm, gd) != di) fail(cat, "roundtrip inverso");
+        long long di2 = 0;
+        gus_day_index_from_gregorian(gy, gm, gd, &di2);
+        if (di2 != di) fail(cat, "roundtrip inverso");
     }
 }
 

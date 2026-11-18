@@ -53,8 +53,32 @@ typedef enum {
     GUS_OK = 0,
     GUS_EINVAL = 1,     /* campo fuera de rango o sintaxis inválida */
     GUS_ETEMPALUM = 2,  /* día de Tempalum inexistente para el tipo de año */
-    GUS_EWEEK = 3       /* letra de día inconsistente en modo estricto */
+    GUS_EWEEK = 3,      /* letra de día inconsistente en modo estricto */
+    GUS_ERANGE = 4      /* fuera de los límites seguros int64 (sin UB) */
 } GusError;
+
+/* ---
+ * Límites de seguridad aritmética (GUS 3.0.0, Apéndice Matemático §E).
+ *
+ * `instant` es un int64 de SEGUNDOS (la fracción viaja en uint32 aparte, sin
+ * fusionarse jamás en un solo entero). Toda entrada más allá de estos
+ * límites devuelve GUS_ERANGE ANTES de calcular, de modo que no exista
+ * ninguna trayectoria con signed-integer-overflow (UB en C11):
+ *
+ *   instant  (s):    ±9.22e18 s        ≈ ±2.92e11 años
+ *   day_index (d):   ±9.17e18 d        ≈ ±2.51e16 años (calendario)
+ *   jdn gregoriano:  ±2.31e18 d        ≈ ±6.32e13 años (via ida Gregoriano)
+ *
+ * Referencias cruzadas: Python (int arbitrario; int64 en wire format) y
+ * JavaScript (Number exacto hasta 2^53-1; BigInt para instant completo).
+ * --- */
+#define GUS_INT64_MAX 9223372036854775807LL
+#define GUS_INT64_MIN (-9223372036854775807LL - 1)
+#define GUS_MAX_YEAR_SAFE (GUS_INT64_MAX / 366LL)
+#define GUS_MAX_INSTANT_DAYS_SAFE (GUS_INT64_MAX / GUS_SECS_PER_DAY)
+#define GUS_MAX_DAY_INDEX_SAFE (GUS_MAX_YEAR_SAFE * GUS_YEAR_COMMON_DAYS)
+#define GUS_MAX_GREG_DAY_SAFE \
+    ((GUS_INT64_MAX / 4LL) - 68569LL - GUS_ORIGIN_JDN)
 
 #define GUS_ERR_NAME_MAX 16 /* "GERO_ETEMPALUM" + NUL */
 
@@ -96,8 +120,12 @@ long long gus_year_start_day_index(long long year);
 long long gus_jdn(long long year, int month, int day); /* proleptico, años astronómicos */
 void gus_jdn_to_gregorian(long long jdn, long long *year, int *month, int *day);
 
-long long gus_day_index_from_gregorian(long long year, int month, int day);
-void gus_gregorian_from_day_index(long long day_index, long long *year, int *month, int *day);
+/* Ambas devuelven GUS_ERANGE si el argumento sale de los límites seguros
+ * int64 (GUS_MAX_YEAR_SAFE / GUS_MAX_GREG_DAY_SAFE); sin desbordamientos. */
+GusError gus_day_index_from_gregorian(long long year, int month, int day,
+                                      long long *out);
+GusError gus_gregorian_from_day_index(long long day_index, long long *year,
+                                      int *month, int *day);
 
 /* Conversión índice de día <-> fecha; GusError para fechas imposibles */
 GusError gus_to_gerarion(long long day_index, GusDate *out);

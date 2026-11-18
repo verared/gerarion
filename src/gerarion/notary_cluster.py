@@ -28,7 +28,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from .notary import DayNotary, verify_inclusion
 
@@ -127,17 +127,25 @@ class NotaryCluster:
     # -- verificación de consumidor ---------------------------------------
     @staticmethod
     def quorum(
-        publications: List[ReplicaPublication], threshold: int
+        publications: List[ReplicaPublication],
+        threshold: int,
+        known_replicas: Optional[Set[str]] = None,
     ) -> Tuple[bool, Optional[str], List[str]]:
         """Devuelve (quorum alcanzado, raíz dominante, réplicas divergentes).
 
         Cada IDENTIDAD (réplica por nombre) cuenta UNA sola vez por raíz:
         duplicar la lista de publicaciones de una misma réplica no infla el
-        quórum (S5). La correspondencia nombre→clave pública se fija fuera
-        (trust root / política del despliegue).
+        quórum (S5). La correspondencia nombre→clave pública se fija en el
+        trust root del despliegue; con `known_replicas`, toda publicación
+        de una identidad ajena se EXCLUYE del cómputo (y se reporta):
+        una firma de un nodo no autorizado jamás alcanza quórum.
         """
         if not publications:
             return False, None, []
+        if known_replicas is not None:
+            publications = [p for p in publications if p.replica in known_replicas]
+            if not publications:
+                return False, None, []
         counts: Dict[str, set] = {}
         for pub in publications:
             counts.setdefault(pub.day_root, set()).add(pub.replica)
@@ -147,24 +155,37 @@ class NotaryCluster:
         )
         return len(best_names) >= threshold, best_root, divergent
 
-    def verify_day(self, publications: List[ReplicaPublication], threshold: Optional[int] = None) -> dict:
+    def verify_day(
+        self,
+        publications: List[ReplicaPublication],
+        threshold: Optional[int] = None,
+        known_replicas: Optional[Set[str]] = None,
+    ) -> dict:
         """Verificación completa de un día: quorum + derivación correcta de cada raíz.
 
         Solo computan para el quorum las publicaciones cuya `day_root` derivan
         correctamente de su `(tree_root, prev_root)`: una raíz que no deriva
-        no puede sostener quorum aunque se replique.
+        no puede sostener quorum aunque se replique. Con `known_replicas`,
+        las identidades ajenas quedan fuera del quorum (anti-nodo-intruso).
         """
         threshold = threshold or self.threshold
         valid = [
             p for p in publications if derive_day_root(p.day, p.tree_root, p.prev_root) == p.day_root
         ]
-        ok, root, divergent = self.quorum(valid, threshold)
+        ok, root, divergent = self.quorum(valid, threshold, known_replicas)
         malformed = [p.replica for p in publications if p not in valid]
+        unknown = (
+            sorted({p.replica for p in publications
+                    if known_replicas is not None and p.replica not in known_replicas})
+            if known_replicas is not None
+            else []
+        )
         return {
             "ok": ok,
             "quorum_root": root,
             "divergent": sorted(set(divergent) | set(malformed)),
             "bad_derivation": malformed,
+            "unknown_replicas": unknown,
         }
 
     # -- anclaje de marcas -------------------------------------------------
@@ -213,8 +234,16 @@ class NotaryCluster:
         }
 
 
-def verify_bundle(bundle: List[dict], threshold: int) -> dict:
-    """Verificación standalone de un bundle publicado (consumidores externos)."""
+def verify_bundle(
+    bundle: List[dict],
+    threshold: int,
+    known_replicas: Optional[Set[str]] = None,
+) -> dict:
+    """Verificación standalone de un bundle publicado (consumidores externos).
+
+    Con `known_replicas`, las identidades ajenas al trust root no computan
+    para el quorum y se reportan en `unknown_replicas`.
+    """
     pubs = [
         ReplicaPublication(
             replica=p["replica"],
@@ -226,11 +255,18 @@ def verify_bundle(bundle: List[dict], threshold: int) -> dict:
         for p in bundle
     ]
     valid = [p for p in pubs if derive_day_root(p.day, p.tree_root, p.prev_root) == p.day_root]
-    ok, root, divergent = NotaryCluster.quorum(valid, threshold)
+    ok, root, divergent = NotaryCluster.quorum(valid, threshold, known_replicas)
     malformed = [p.replica for p in pubs if p not in valid]
+    unknown = (
+        sorted({p["replica"] for p in bundle
+                if known_replicas is not None and p["replica"] not in known_replicas})
+        if known_replicas is not None
+        else []
+    )
     return {
         "ok": ok,
         "quorum_root": root,
         "divergent": sorted(set(divergent) | set(malformed)),
         "bad_derivation": malformed,
+        "unknown_replicas": unknown,
     }

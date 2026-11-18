@@ -31,6 +31,7 @@ static const char *err_name(GusError e)
     case GUS_EINVAL: return "GERO_EINVAL";
     case GUS_ETEMPALUM: return "GERO_ETEMPALUM";
     case GUS_EWEEK: return "GERO_EWEEK";
+    case GUS_ERANGE: return "GERO_ERANGE";
     }
     return "GERO_EINVAL";
 }
@@ -47,15 +48,16 @@ static void handle(const char *line)
     while (*rest == ' ') rest++;
     const char *sp = strchr(rest, ' ');
     size_t cmd_len = sp ? (size_t)(sp - rest) : strlen(rest);
-    if (cmd_len > 2) return; /* comando desconocido => sin salida */
+    if (cmd_len > 3) return; /* comando desconocido => sin salida */
     memcpy(cmd, rest, cmd_len);
     rest = sp ? sp + 1 : "";
     while (*rest == ' ') rest++;
 
-    if (strcmp(cmd, "tg") == 0) {
+    if (strcmp(cmd, "tg") == 0 || strcmp(cmd, "tgq") == 0 || strcmp(cmd, "tgs") == 0) {
         long long di = strtoll(rest, NULL, 10);
         GusDate d;
-        if (gus_to_gerarion(di, &d) != GUS_OK) { print_err(GUS_EINVAL); return; }
+        GusError err_tg = gus_to_gerarion(di, &d);
+        if (err_tg != GUS_OK) { print_err(err_tg); return; }
         char canon[48];
         GusParsed p = { 0 };
         p.date = d;
@@ -63,7 +65,7 @@ static void handle(const char *line)
         printf("{\"ok\":true,\"di\":%lld,\"year\":%lld,\"era\":\"%s\",\"month\":%d,\"day\":%d,\"abbr\":\"%c\",\"canon\":\"%s\"}\n",
             di, d.year < 0 ? -d.year : d.year, d.year >= 0 ? "DY" : "AY",
             d.month, d.day, d.abbr, canon);
-    } else if (strcmp(cmd, "fg") == 0) {
+    } else if (strcmp(cmd, "fg") == 0 || strcmp(cmd, "fgq") == 0 || strcmp(cmd, "fgs") == 0) {
         long long y = strtoll(rest, NULL, 10);
         const char *q = strstr(rest, " ");
         if (!q) { print_err(GUS_EINVAL); return; }
@@ -79,11 +81,11 @@ static void handle(const char *line)
         pp.date = d;
         gus_canonical(&pp, canon, sizeof(canon));
         printf("{\"ok\":true,\"day_index\":%lld,\"canon\":\"%s\"}\n", d.day_index, canon);
-    } else if (strcmp(cmd, "gr") == 0) {
+    } else if (strcmp(cmd, "gr") == 0 || strcmp(cmd, "grq") == 0 || strcmp(cmd, "grs") == 0) {
         long long di = strtoll(rest, NULL, 10);
         long long gy;
         int gm, gd;
-        gus_gregorian_from_day_index(di, &gy, &gm, &gd);
+        if (gus_gregorian_from_day_index(di, &gy, &gm, &gd) != GUS_OK) { print_err(GUS_ERANGE); return; }
         printf("{\"ok\":true,\"di\":%lld,\"greg\":\"%lld-%d-%d\",\"greg_year\":%lld,\"greg_month\":%d,\"greg_day\":%d}\n",
                di, gy, gm, gd, gy, gm, gd);
     } else if (strcmp(cmd, "pt") == 0) {
@@ -98,7 +100,7 @@ static void handle(const char *line)
         if (p.era_assumed) { printf("%s\"era_assumed_DY\"", printed ? "," : ""); printed++; }
         if (p.weekday_corrected) { printf("%s\"weekday_corrected\"", printed ? "," : ""); }
         printf("]}\n");
-    } else if (strcmp(cmd, "in") == 0) {
+    } else if (strcmp(cmd, "in") == 0 || strcmp(cmd, "inb") == 0 || strcmp(cmd, "inq") == 0) {
         long long di = strtoll(rest, NULL, 10);
         const char *q = strstr(rest, " ");
         if (!q) { print_err(GUS_EINVAL); return; }

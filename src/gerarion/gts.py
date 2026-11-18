@@ -277,6 +277,13 @@ class ReplayGuard:
 
     Persistencia opcional en archivo JSON con escritura atómica
     (temporal + os.replace + fsync); sin ruta, solo en memoria.
+
+    FAIL-CLOSED: un archivo de estado corrupto, truncado o de estructura
+    ajena ENVENENA la guardia (`_poisoned`): `check_and_record` rechaza
+    todo a partir de entonces en lugar de operar como si no hubiera
+    historial (eso reiniciaría `seq` desde 0 y habilitaría replay y
+    rollback). El operador debe descartar el estado y reemitir con un
+    `kid` nuevo.
     """
 
     def __init__(self, path=None):
@@ -284,18 +291,50 @@ class ReplayGuard:
         self._seen: set = set()
         self._last_seq: dict = {}
         self._last_ins: dict = {}
+        self._poisoned = False
         if path:
             try:
                 with open(path, "r", encoding="utf-8") as fh:
                     data = json.load(fh)
-                self._seen = {(k, n) for k, n in data.get("seen", [])}
-                self._last_seq = dict(data.get("last_seq", {}))
-                self._last_ins = dict(data.get("last_ins", {}))
+                if not isinstance(data, dict):
+                    raise ValueError("estado: raiz no es un objeto")
+                seen = data.get("seen", [])
+                last_seq = data.get("last_seq", {})
+                last_ins = data.get("last_ins", {})
+                if (
+                    not isinstance(seen, list)
+                    or not isinstance(last_seq, dict)
+                    or not isinstance(last_ins, dict)
+                    or not all(
+                        isinstance(x, (list, tuple))
+                        and len(x) == 2
+                        and all(isinstance(t, str) for t in x)
+                        for x in seen
+                    )
+                ):
+                    raise ValueError("estado: estructura ajena")
+                if not all(
+                    isinstance(v, int) and not isinstance(v, bool)
+                    for v in list(last_seq.values()) + list(last_ins.values())
+                ):
+                    raise ValueError("estado: valores no enteros")
+                self._seen = {(k, n) for k, n in seen}
+                self._last_seq = dict(last_seq)
+                self._last_ins = dict(last_ins)
             except FileNotFoundError:
-                pass
+                pass  # sin historial previo: arranque limpio legitimo
+            except ValueError:
+                # JSON corrupto, truncado o de estructura ajena: fail-closed.
+                self._seen, self._last_seq, self._last_ins = set(), {}, {}
+                self._poisoned = True
 
     def check_and_record(self, kid: str, nonce: str, seq: int, ins: int) -> tuple:
         """Devuelve (ok, motivo). Si ok, el estado queda actualizado."""
+        if self._poisoned:
+            return False, "estado persistido corrupto: guardia en fail-closed"
+        if isinstance(seq, bool) or not isinstance(seq, int) or \
+                isinstance(ins, bool) or not isinstance(ins, int):
+            return False, "seq/ins deben ser enteros"
         key = (kid, nonce)
         if key in self._seen:
             return False, "replay: nonce ya registrado para esta clave"

@@ -220,6 +220,28 @@ function respond(line) {
       const ins = g.instantFromParts(di, h, m, s);
       return { ok: true, instant: ins.toString() };
     }
+    // Ops del modo de estrés (tools/fuzz_diff.py --cases): límites de rango.
+    // "inb": di parseado con BigInt (sin pérdida en 2^53); resultados iguales a "in".
+    if (cmd === "inb") {
+      const di = BigInt(tokens[0]), h = parseInt(tokens[1], 10), m = parseInt(tokens[2], 10), s = parseInt(tokens[3], 10);
+      const ins = g.instantFromParts(di, h, m, s);
+      return { ok: true, instant: ins.toString() };
+    }
+    if (cmd === "tgq") {
+      const di = Number(BigInt(tokens[0]));
+      const d = g.toGerarion(di);
+      return { ok: true, di, year: Math.abs(d.year), era: d.year >= 0 ? "DY" : "AY", month: d.month, day: d.day, abbr: d.abbr, canon: g.canonicalOf(d) };
+    }
+    if (cmd === "fgq") {
+      const y = Number(BigInt(tokens[0])), m = parseInt(tokens[1], 10), dd = parseInt(tokens[2], 10);
+      const d = g.fromGerarion(y, m, dd);
+      return { ok: true, day_index: d.dayIndex, canon: g.canonicalOf(d) };
+    }
+    if (cmd === "grq") {
+      const di = Number(BigInt(tokens[0]));
+      const [y, m, dd] = g.gregorianFromDayIndex(di);
+      return { ok: true, di, greg: `${y}-${m}-${dd}`, greg_year: y, greg_month: m, greg_day: dd };
+    }
     return { ok: false, error: "comando_desconocido" };
   } catch (e) {
     return { ok: false, error: errorKind(e) };

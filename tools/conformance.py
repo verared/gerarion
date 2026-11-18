@@ -198,7 +198,11 @@ def check_notary(v: dict) -> None:
     bundle = v["notary"]["bundle"]
     result = ncl.verify_bundle(bundle["publications"], bundle["threshold"])
     expected = bundle["expected"]
-    assert result == expected, result
+    # Igualdad por SUBCONJUNTO: el vector normativo fija las claves
+    # originales y las claves nuevas del verificador (p.ej.
+    # `unknown_replicas`, v3.0.0-auditoría) son aditivas y no alteran las
+    # esperadas. Ningún valor esperado puede divergir.
+    assert all(result.get(k) == v for k, v in expected.items()), result
 
 
 # ---------------------------------------------------------------------------

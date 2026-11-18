@@ -100,14 +100,23 @@ void gus_jdn_to_gregorian(long long j, long long *year, int *month, int *day)
     *year = yy; *month = (int)mm; *day = (int)dd;
 }
 
-long long gus_day_index_from_gregorian(long long year, int month, int day)
+GusError gus_day_index_from_gregorian(long long year, int month, int day,
+                                       long long *out)
 {
-    return gus_jdn(year, month, day) - GUS_ORIGIN_JDN;
+    if (out == NULL) return GUS_EINVAL;
+    if (year > GUS_MAX_YEAR_SAFE || year < -GUS_MAX_YEAR_SAFE)
+        return GUS_ERANGE;
+    *out = gus_jdn(year, month, day) - GUS_ORIGIN_JDN;
+    return GUS_OK;
 }
 
-void gus_gregorian_from_day_index(long long day_index, long long *year, int *month, int *day)
+GusError gus_gregorian_from_day_index(long long day_index, long long *year, int *month, int *day)
 {
+    /* 4*a en gus_jdn_to_gregorian desbordaría para |a| > INT64_MAX/4. */
+    if (day_index > GUS_MAX_GREG_DAY_SAFE || day_index < -GUS_MAX_GREG_DAY_SAFE)
+        return GUS_ERANGE;
     gus_jdn_to_gregorian(GUS_ORIGIN_JDN + day_index, year, month, day);
+    return GUS_OK;
 }
 
 static int weekday_index_of(long long day_index)
@@ -143,6 +152,11 @@ static long long estimate_year(long long day_index)
 
 GusError gus_to_gerarion(long long day_index, GusDate *out)
 {
+    /* Blindaje int64: más allá de GUS_MAX_DAY_INDEX_SAFE la estimación del
+     * año excedería GUS_MAX_YEAR_SAFE y gus_year_start_day_index podría
+     * desbordar (UB). GERO_ERANGE limpio, sin UB (Apéndice Matemático §E). */
+    if (day_index > GUS_MAX_DAY_INDEX_SAFE || day_index < -GUS_MAX_DAY_INDEX_SAFE)
+        return GUS_ERANGE;
     /* Inversa simétrica (spec §3): estimación con la longitud media exacta
      * de año y corrección monotónica con year_start_day_index O(1); usa la
      * duración real de cada año (364 o 371) en ambas eras. */
@@ -172,6 +186,8 @@ GusError gus_to_gerarion(long long day_index, GusDate *out)
 
 GusError gus_from_gerarion(long long year, int month, int day, GusDate *out)
 {
+    if (year > GUS_MAX_YEAR_SAFE || year < -GUS_MAX_YEAR_SAFE)
+        return GUS_ERANGE;  /* ysi(year) desbordaría int64: error limpio */
     long long max_day;
     if (month == 0) {
         max_day = gus_tempalum_days(year);
@@ -305,8 +321,14 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
         }
     }
     {
+        /* Recorte de extremos ANTES de normalizar: idéntico a raw.strip()
+         * de la referencia Python (los espacios INTERIORES siguen
+         * convirtiéndose '-' y pueden formar '--' inválida). */
+        size_t start = 0, end = strlen(raw);
+        while (start < end && (raw[start] == ' ' || raw[start] == '\t')) start++;
+        while (end > start && (raw[end - 1] == ' ' || raw[end - 1] == '\t')) end--;
         size_t o = 0;
-        for (size_t i = 0; raw[i] != '\0'; i++) {
+        for (size_t i = start; i < end; i++) {
             if (frac_from >= 0 && (long long)i >= frac_from &&
                 (long long)i < frac_to)
                 continue; /* franja '.fff' eliminada del texto normalizado */
@@ -354,20 +376,11 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
 
     if (*cur != '\0' && *cur != '-') return GUS_EINVAL;
 
-    /* Validación del calendario (mismo orden que la referencia Python) */
-    GusDate date;
-    GusError err = gus_from_gerarion(year, (int)month, (int)day, &date);
-    if (err != GUS_OK) return err;
-
-    int weekday_index = weekday_index_of(date.day_index);
-    static const char letters[7] = { 'S', 'L', 'M', 'A', 'T', 'V', 'B' };
-    bool weekday_corrected = (declared != letters[weekday_index]);
-    if (weekday_corrected && strict) return GUS_EWEEK;
-
     int hour = 0, minute = 0, second = 0;
     bool has_time = false, cycle_corrected = false;
     char cycle[3] = { 0, 0, 0 };
     long long tmp_h = 0, tmp_m = 0, tmp_s = 0, tmp_off = 0;
+    long long off_h = 0, off_m = 0; /* visibles tras la validación calendario */
     bool compact_time = false;
 
     if (*cur == '-') {
@@ -405,7 +418,6 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
         }
         if (strncmp(cur, "-TCJ", 4) != 0) return GUS_EINVAL;
         cur += 4;
-        long long off_h = 0, off_m = 0;
         if (*cur == '0' && !(cur[1] >= '0' && cur[1] <= '9')) {
             cur += 1; /* TCJ0 literal: cero */
         } else {
@@ -434,22 +446,42 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
                 off_m = (cur[2] - '0') * 10 + (cur[3] - '0');
                 cur += 4;
             }
-            if (off_h > 23 || off_m > 59) return GUS_EINVAL;
             tmp_off = sign * (off_h * 3600 + off_m * 60);
         }
 
-        if (tmp_h > 23 || tmp_m > 59 || tmp_s > 59) return GUS_EINVAL;
+        has_time = true;
+        hour = (int)tmp_h; minute = (int)tmp_m; second = (int)tmp_s;
+    }
+    if (*cur != '\0') return GUS_EINVAL;
+
+    /* Órden de validación idéntico a la referencia Python: PRIMERO la
+     * sintaxis completa de la marca (todo el patrón, incluida la hora y el
+     * offset), LUEGO el calendario (GERO_ETEMPALUM), LUEGO la semana
+     * (GERO_EWEEK en estricto). Validar el calendario antes de agotar la
+     * sintaxis cambia el código de error de las marcas doblemente inválidas
+     * y rompe la paridad del rechazo entre implementaciones. */
+    GusDate date;
+    GusError derr = gus_from_gerarion(year, (int)month, (int)day, &date);
+    if (derr != GUS_OK) return derr;
+
+    int weekday_index = weekday_index_of(date.day_index);
+    static const char letters[7] = { 'S', 'L', 'M', 'A', 'T', 'V', 'B' };
+    bool weekday_corrected = (declared != letters[weekday_index]);
+    if (weekday_corrected && strict) return GUS_EWEEK;
+
+    /* Rangos de hora/offset y corrección de ciclo: DESPUÉS del calendario
+     * (precedencia idéntica a la referencia Python). */
+    if (has_time) {
+        if (hour > 23 || minute > 59 || second > 59) return GUS_EINVAL;
+        if (off_h > 23 || off_m > 59) return GUS_EINVAL;
         char expected[3];
-        GusError cerr = gus_cycle_of((int)tmp_h, expected);
+        GusError cerr = gus_cycle_of(hour, expected);
         if (cerr != GUS_OK) return cerr;
         if (strcmp(cycle, expected) != 0) {
             cycle_corrected = true;
             cycle[0] = expected[0]; cycle[1] = expected[1];
         }
-        has_time = true;
-        hour = (int)tmp_h; minute = (int)tmp_m; second = (int)tmp_s;
     }
-    if (*cur != '\0') return GUS_EINVAL;
 
     out->date = date;
     out->hour = hour; out->minute = minute; out->second = second;
@@ -484,8 +516,19 @@ GusError gus_instant_from_parts(long long day_index, int hour, int minute,
     if (offset_seconds % 60 != 0 || offset_seconds < -86400 || offset_seconds > 86400) {
         return GUS_EINVAL;
     }
-    *instant = day_index * GUS_SECS_PER_DAY + (long long)hour * 3600
-               + (long long)minute * 60 + (long long)second - (long long)offset_seconds;
+    /* Precisión total sin UB: el producto day_index*86400 es seguro para
+     * |day_index| <= INT64_MAX/86400; la aritmética restante se acota en
+     * un solo paso: result = base + k con k = tod - offset ∈ [-86400, 172799]. */
+    if (day_index > GUS_MAX_INSTANT_DAYS_SAFE || day_index < -GUS_MAX_INSTANT_DAYS_SAFE)
+        return GUS_ERANGE;
+    long long base = day_index * GUS_SECS_PER_DAY;
+    long long k = (long long)hour * 3600 + (long long)minute * 60
+                  + (long long)second - offset_seconds;
+    if (k >= 0 && base > GUS_INT64_MAX - k)
+        return GUS_ERANGE;
+    if (k < 0 && base < GUS_INT64_MIN - k)
+        return GUS_ERANGE;
+    *instant = base + k;
     return GUS_OK;
 }
 
@@ -495,6 +538,11 @@ GusError gus_parts_from_instant(long long instant, int offset_seconds,
     if (offset_seconds % 60 != 0 || offset_seconds < -86400 || offset_seconds > 86400) {
         return GUS_EINVAL;
     }
+    /* instant + offset_seconds tampoco debe desbordar. */
+    if (offset_seconds > 0 && instant > GUS_INT64_MAX - offset_seconds)
+        return GUS_ERANGE;
+    if (offset_seconds < 0 && instant < GUS_INT64_MIN - offset_seconds)
+        return GUS_ERANGE;
     return gus_instant_parts(instant + (long long)offset_seconds, date,
                              hour, minute, second);
 }

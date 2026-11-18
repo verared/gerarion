@@ -7,6 +7,21 @@
  * el rango lo exige (instantes): el resto cabe en Number con garantía de
  * exactitud entera (días e índices < 2^53).
  *
+ * LÍMITES DE PLATAFORMA (GUS 3.0.0, Apéndice Matemático §E de la spec):
+ *
+ *   - `instant` (segundos): SIEMPRE BigInt — exacto en todo el rango
+ *     int64 ±2^63 ≈ ±2.92e11 años (y más allá, hasta lo que permita la
+ *     memoria; el contrato normativo es el rango int64).
+ *   - Calendario / `day_index` / JDN: aritmética en Number. Exacta solo
+ *     mientras cada valor intermedio quepa en Number.MAX_SAFE_INTEGER
+ *     (2^53-1 = 9_007_199_254_740_991). Eso garantiza |day_index| ≤
+ *     2^53-1 días ≈ ±2.465e13 años. Más allá los resultados PIERDEN
+ *     dígitos bajos (la conversión BigInteger requeriría doble aritmética
+ *     en todo el módulo y no forma parte del contrato 3.0.0).
+ *   - Referencia C11: gus.h blinda con GERO_ERANGE los límites int64
+ *     (±2.92e11 años para instant, ±2.52e16 para el calendario); Python
+ *     (int arbitrario) es exacto y es la referencia.
+ *
  * Misma matriz de vectores normativos que la suite de Python.
  */
 
@@ -98,6 +113,10 @@ export function dayIndexFromGregorian(year, month, day) {
 }
 
 export function gregorianFromDayIndex(dayIndex) {
+  // Mismo domínio exacto que toGerarion (jdnToGregorian multiplica por 4).
+  if (!Number.isSafeInteger(dayIndex)) {
+    throw new GeroError(`GERO_EINVAL: day_index ${dayIndex} fuera del rango exacto de Number (±2^53-1)`);
+  }
   return jdnToGregorian(ORIGIN_JDN + dayIndex);
 }
 
@@ -120,6 +139,14 @@ export function toGerarion(dayIndex) {
   // exacta de año (364 + 7*S/U días) y corrección monotónica con
   // yearStartDayIndex O(1); usa la duración real de cada año (364 o 371)
   // en ambas eras.
+  //
+  // Domínio exacto (GUS 3.0.0, Apéndice Matemático §E): la aritmética es
+  // Number; con |dayIndex| >= 2^53 la imprecisión rompe la convergencia
+  // de los bucles de corrección (bucle indefinido / dígitos bajos
+  // perdidos). Se rechaza con GERO_EINVAL — nunca se trata de "aproximar".
+  if (!Number.isSafeInteger(dayIndex)) {
+    throw new GeroError(`GERO_EINVAL: day_index ${dayIndex} fuera del rango exacto de Number (±2^53-1)`);
+  }
   let year, rest;
   if (dayIndex === 0) {
     year = 0; rest = 0;
@@ -143,6 +170,13 @@ export function toGerarion(dayIndex) {
 }
 
 export function fromGerarion(year, month, day) {
+  // Domínio exacto: |year*371 + 7| debe caber en Number.MAX_SAFE_INTEGER;
+  // con años mayores la estimación pierde dígitos bajos. Límite
+  // conservador: floor((2^53-1)/380) años (yb la longitud máxima 371 más
+  // margen para el Tempalum y las sumas intermedias).
+  if (!Number.isSafeInteger(year) || Math.abs(year) > Math.floor((Number.MAX_SAFE_INTEGER - 7) / 380)) {
+    throw new GeroError(`GERO_EINVAL: año ${year} fuera del rango exacto de Number (±2.37e13)`);
+  }
   if (month === 0) {
     const max = tempalumDays(year);
     if (day < 1 || day > max) {
@@ -168,9 +202,12 @@ const TS_RE =
 const TS_COMPACT_RE =
   /^(\d{1,6})(DY|AY)?[-.](\d{1,2})[-.](\d{1,2})[-.]([SLMATVB])(?:[-](\d{2})(\d{2})(\d{2})[-](SC|LC)[-]TCJ(?:0(?![0-9])|([+-])(\d{1,4})))?$/;
 
-/** Normaliza: mayúsculas, separadores homogéneos (reglas 1, 6). */
+/** Normaliza: mayúsculas, separadores homogéneos (reglas 1, 6).
+ * Reemplazo POR CARÁCTER (igual que la referencia Python): los espacios
+ * múltiples producen '--' y quedan como sintaxis inválida (GERO_EINVAL);
+ * colapsarlos cambiaría el veredicto sobre marcas doblemente malformadas. */
 export function normalize(raw) {
-  return raw.trim().toUpperCase().replace(/\s+/g, "-").replace(/\./g, "-");
+  return raw.trim().toUpperCase().replace(/\s/g, "-").replace(/\./g, "-");
 }
 
 // ---------------------------------------------------------------------------
