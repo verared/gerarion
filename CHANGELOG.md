@@ -1,5 +1,36 @@
 # Changelog — GUS
 
+## 3.0.1 — Parche de seguridad de la auditoría adversarial (2026-11-18)
+
+Publica los hallazgos `A-1..A-6` resueltos en el informe
+`docs/audit/AUDIT-REPORT-v3.0.0.md`. Sin cambios de formato ni de
+aritmética normativa (los vectores `gus-normative-003.json` no cambian).
+
+### Corregido
+
+- **A-1 (Alto)** — JS: `toGerarion` entraba en bucle no terminante con
+  `day_index >= 2^53` (imprecisión de `Number`). Ahora `toGerarion`,
+  `fromGerarion` y `gregorianFromDayIndex` rechazan con `GERO_EINVAL` lo
+  que exceda el dominio exacto de `Number` y documentan el umbral
+  (`Number.MAX_SAFE_INTEGER`) frente a `BigInt`.
+- **A-2 (Alto)** — `ReplayGuard`: un archivo de estado corrupto, truncado
+  o de estructura ajena activa fail-closed (`_poisoned`); antes se
+  reanudaba como historial vacío y habilitaba replay/rollback.
+- **A-3 (Medio)** — Quórum del notario: `known_replicas` opcional excluye
+  y reporta identidades ajenas al trust root
+  (`unknown_replicas`); antes computaban para el quórum.
+- **A-4 (Medio)** — Paridad de rechazo: precedencia normada
+  sintaxis → calendario → semana → rangos, idéntica en C/Python/JS para
+  marcas doblemente inválidas.
+- **A-5 (Medio)** — `normalize` de JS ya no colapsa espacios múltiples;
+  C recorta extremos como `raw.strip()` de la referencia.
+- **A-6 (Bajo)** — C11: `GUS_ERANGE` + macros `GUS_MAX_*` blindan
+  `instant` (±2,92e11 años), el calendario (±2,51e16) y la vía
+  gregoriana (±6,31e15); sin trayectorias de signed overflow (UB).
+- Auditado además bajo `make -C impl-c audit` (ASan+UBSan, -Werror:
+  0 errores/UB/warnings), fuzzing diferencial de 1.000.000 de casos
+  (0 divergencias) y suite adversarial de 18 ataques (todos rechazados).
+
 ## 3.0.0 — Versión estable del endurecimiento (2026-11-18)
 
 Equivalencia de versiones: `3.0.0` (PEP 440 y semver) unifica

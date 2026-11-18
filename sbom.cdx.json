@@ -4,11 +4,11 @@
  "version": 1,
  "metadata": {
   "component": {
-   "bom-ref": "pkg:github/verared/gerarion@v3.0.0",
+   "bom-ref": "pkg:github/verared/gerarion@v3.0.1",
    "type": "library",
    "name": "gerarion",
-   "version": "3.0.0",
-   "description": "Gerarion Universal Standard (GUS 3.0.0): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables; funciones de seguridad en revisión",
+   "version": "3.0.1",
+   "description": "Gerarion Universal Standard (GUS 3.0.1): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables; funciones de seguridad en revisión",
    "licenses": [
     {
      "expression": "MIT OR Apache-2.0"
@@ -17,7 +17,7 @@
      "expression": "CC-BY-4.0"
     }
    ],
-   "purl": "pkg:github/verared/gerarion@v3.0.0"
+   "purl": "pkg:github/verared/gerarion@v3.0.1"
   },
   "properties": [
    {
@@ -41,11 +41,11 @@
  },
  "components": [
   {
-   "bom-ref": "pkg:pypi/gerarion@3.0.0",
+   "bom-ref": "pkg:pypi/gerarion@3.0.1",
    "type": "library",
    "name": "gerarion",
-   "version": "3.0.0",
-   "purl": "pkg:github/verared/gerarion@v3.0.0",
+   "version": "3.0.1",
+   "purl": "pkg:github/verared/gerarion@v3.0.1",
    "description": "Kernel Python: GTS, GST, notario diario Merkle, adaptadores criptograficos",
    "licenses": [
     {
@@ -57,11 +57,11 @@
    ]
   },
   {
-   "bom-ref": "pkg:npm/gerarion-kernel@3.0.0",
+   "bom-ref": "pkg:npm/gerarion-kernel@3.0.1",
    "type": "library",
    "name": "gerarion-kernel",
-   "version": "3.0.0",
-   "purl": "pkg:npm/gerarion-kernel@3.0.0",
+   "version": "3.0.1",
+   "purl": "pkg:npm/gerarion-kernel@3.0.1",
    "description": "Kernel JavaScript ESM (web/gerarion.mjs): cero dependencias, mismo vector set",
    "licenses": [
     {
@@ -71,10 +71,10 @@
    "note": "distribuido como tarball en GitHub Releases (sin registro npm)"
   },
   {
-   "bom-ref": "pkg:generic/gerarion-c@3.0.0",
+   "bom-ref": "pkg:generic/gerarion-c@3.0.1",
    "type": "library",
    "name": "gerarion-c",
-   "version": "3.0.0",
+   "version": "3.0.1",
    "description": "Segunda implementacion independiente en C (impl-c/): cero dependencias, cero red",
    "licenses": [
     {
@@ -175,18 +175,18 @@
  ],
  "dependencies": [
   {
-   "ref": "pkg:pypi/gerarion@3.0.0",
+   "ref": "pkg:pypi/gerarion@3.0.1",
    "dependsOn": [
     "pkg:pypi/slh-dsa@0.2.5",
     "pkg:pypi/cryptography@>=47"
    ]
   },
   {
-   "ref": "pkg:npm/gerarion-kernel@3.0.0",
+   "ref": "pkg:npm/gerarion-kernel@3.0.1",
    "dependsOn": []
   },
   {
-   "ref": "pkg:generic/gerarion-c@3.0.0",
+   "ref": "pkg:generic/gerarion-c@3.0.1",
    "dependsOn": []
   }
  ],
