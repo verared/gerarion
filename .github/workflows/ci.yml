@@ -50,6 +50,17 @@ jobs:
         # Manual runs use --n 1500 (CI keeps 500 for a ~15 min job budget);
         # the CI run is statistical coverage, the vector set is the hard proof.
 
+  reuse:
+    # Conformidad REUSE 3.3 al 100 %: cada archivo con SPDX y copyright.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install reuse
+      - run: python -m reuse lint
+
   web-e2e:
     # E2E del portal web (Playwright + Chromium): sin errores JS, cero
     # peticiones externas, round-trip de enlaces compartibles, teclado.
