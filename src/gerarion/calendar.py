@@ -343,14 +343,40 @@ def cycle_of(hour: int) -> str:
     return "SC" if 6 <= hour < 18 else "LC"
 
 
-def instant_from_parts(day_index: int, hour: int = 0, minute: int = 0, second: int = 0) -> int:
-    """Instante continuo: segundos desde el origen (día 0, 00:00:00).
+def instant_from_parts(
+    day_index: int, hour: int = 0, minute: int = 0, second: int = 0,
+    offset_seconds: int = 0,
+) -> int:
+    """Instante continuo TCJ (GUS 3.0.0, Cap 13.1): segundos desde el origen.
 
-    Escala sin segundos intercalares (análoga a TAI): el conteo es lineal.
+    instant = day_index * 86400 + h*3600 + m*60 + s - offset_seconds
+
+    La hora HH:MM:SS es la hora civil del OBSERVADOR; ``offset_seconds``
+    (TCJ±O en segundos, signo del campo) sitúa al observador respecto del
+    marco TCJ (= TAI + 8 400 s). Con offset 0 la marca es TCJ+0 y la
+    hora es la del meridiano de referencia. Rango del offset: ±24 h en
+    múltiplos de 60 s. La escala no tiene segundos intercalares internos.
     """
     if not (0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59):
         raise GeroEinval("GERO_EINVAL: hora/minuto/segundo fuera de rango (00-23:59:59)")
-    return day_index * SECS_PER_DAY + hour * 3600 + minute * 60 + second
+    if not isinstance(offset_seconds, int) or offset_seconds % 60 or not (-86400 <= offset_seconds <= 86400):
+        raise GeroEinval("GERO_EINVAL: TCJ±O fuera de rango o con segundos (mul. de 60, ±24 h)")
+    return (
+        day_index * SECS_PER_DAY + hour * 3600 + minute * 60 + second
+        - offset_seconds
+    )
+
+
+def parts_from_instant(instant: int, offset_seconds: int = 0) -> Tuple[GerarionDate, int, int, int]:
+    """Descompone un instante como lo vería el observador de TCJ±O.
+
+    Suma ``offset_seconds`` (la hora civil del observador es su propia
+    referencia) y descompone en (fecha, hora, minuto, segundo) de SU día;
+    cada observador conserva su hora civil y su ciclo SC/LC.
+    """
+    if not isinstance(offset_seconds, int) or offset_seconds % 60 or not (-86400 <= offset_seconds <= 86400):
+        raise GeroEinval("GERO_EINVAL: TCJ±O fuera de rango o con segundos (mul. de 60, ±24 h)")
+    return instant_parts(instant + offset_seconds)
 
 
 def instant_parts(instant: int) -> Tuple[GerarionDate, int, int, int]:

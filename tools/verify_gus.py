@@ -16,7 +16,7 @@ GST con:
 
 Salida: "OK ..." y exit 0 si TODO verifica; errores GERO_* y exit != 0 si
 cualquier cosa falla. Conformancia: una implementación es conforme si y
-solo si pasa el vector set (vectors/gus-normative-002.json); este
+solo si pasa el vector set (vectors/gus-normative-003.json); este
 verificador comparte esa semántica, no la produce.
 
 ADVERTENCIA: la firma hash-only WOTS16-MERKLE-REF es la de referencia del

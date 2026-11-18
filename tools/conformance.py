@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # SPDX-FileCopyrightText: 2026 verared contributors
-"""Runner de conformancia GUS contra vectors/gus-normative-002.json.
+"""Runner de conformancia GUS contra vectors/gus-normative-003.json.
 
 Verifica que la implementación de referencia en src/gerarion sigue pasando
 los vectores normativos, categoría por categoría. Es la implementación de la
@@ -32,7 +32,7 @@ from gerarion import notary as nty  # noqa: E402
 from gerarion import notary_cluster as ncl  # noqa: E402
 
 DEFAULT_VECTORS = os.path.join(
-    os.path.dirname(__file__), "..", "vectors", "gus-normative-002.json"
+    os.path.dirname(__file__), "..", "vectors", "gus-normative-003.json"
 )
 
 CORE = ("constants", "gran_tempalum", "calendar", "year_starts",
@@ -135,9 +135,13 @@ def check_format(v: dict) -> None:
 
 def check_instant(v: dict) -> None:
     for row in v["instant"]:
+        if "ts" not in row:
+            continue  # fila de invariantes (equivalent_views)
         parsed = fmt.parse(row["ts"])
         gdate = cal.from_gerarion(parsed.year, parsed.month, parsed.day)
-        instant = cal.instant_from_parts(gdate.day_index, parsed.hour, parsed.minute, parsed.second)
+        instant = cal.instant_from_parts(
+            gdate.day_index, parsed.hour, parsed.minute, parsed.second,
+            offset_seconds=row.get("offset_seconds", 0))
         assert instant == row["instant"], row
         assert gdate.day_index == row["day"], row
 

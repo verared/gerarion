@@ -1,5 +1,70 @@
 # Changelog — GUS
 
+## 3.0.0-alpha.1 — GUS 3.0.0 (base TAI + TCJ = TAI + 8,400 s; CIERRA D-001 y TODO-004)
+
+Equivalencia de versiones: `3.0.0a1` (PEP 440; pyproject, CITATION, sbom) =
+`3.0.0-alpha.1` (semver; `web/package.json`). La spec sube de **2.1.0** a
+**3.0.0** (`docs/spec/gus-3.0.0.md` + espejo EN). Cambio MAYOR de kernel:
+todos los instantes de los vectores cambian.
+
+### Base temporal (kernel, Cap 7 / Cap 13 del documento canónico)
+
+- **TAI como Capa 0** (CIERRA **D-001**): `instant` son segundos continuos
+  y monotónicos sin segundos intercalares internos; nuevo módulo
+  `src/gerarion/tai.py` con la tabla histórica IERS TAI−UTC completa
+  (29 entradas, 1958 = 10 s … 2017 = 37 s; pre-1958 convención proléptica
+  0 s), `tai_minus_utc`, `instant_from_unix` y `unix_from_instant`
+  (inversa exacta por segmentos). Espejo en `web/gerarion.mjs` e
+  `impl-c/gus.c` (`gus_tai_table`/`gus_tai_minus_utc`).
+- **TCJ = TAI + 8,400 s** (Tiempo de Coordinación de Jerusalén, meridiano
+  35.2137°E; 31.7683°N, 754 m): sustituye a la medianoche UTC de la 2.1
+  como coordenada global. Offset matemático sin SPOF; convención
+  documentada con sistemas legacy (TCJ−UTC ≈ 2 h 20 min 37 s en 2026).
+- **El campo `TCJ±O` entra en el cálculo** (CIERRA **TODO-004**):
+  `instant_from_parts(..., offset_seconds)` y
+  `parts_from_instant(instant, offset_seconds)` en los tres lenguajes;
+  offsets con minutos (`TCJ-2:20`/`TCJ-220`, rango ±24 h en múltiplos de
+  60 s). `2031DY-03-08-T-09:30:00-SC-TCJ+0` ≡
+  `2031DY-03-08-T-07:10:00-SC-TCJ-2:20` (mismo instante).
+- **Formato COMPACTO de 29 caracteres** (Cap 13.1):
+  `2031DY-03-08-T-093000-SC-TCJ0`; entrada en los tres lenguajes y
+  `to_compact`/`compactOf` de salida auxiliar. La forma canónica de
+  salida sigue siendo SIEMPRE la extendida.
+- **SC/LC siempre sobre la hora civil declarada del observador** (Cap
+  13.3), nunca forzado a `TCJ+0`.
+- **Cruzar un intercalar histórico ahora conserva la duración física**
+  (diferencia de enteros = 2 s en 2016-12-31; antes 1 s): propiedad
+  estructural nueva garantizada por la tabla.
+- Espejo EN del compilado despecs: `docs/en/gus-3.0.0.md`.
+
+### Vectores y conformancia
+
+- `gus-normative-002.json` y `gus-3339-001.json` **archivados** en
+  `vectors/archive/`; nuevos `vectors/gus-normative-003.json` y
+  `vectors/gus-3339-002.json` (TCJ = TAI + 8,400 s, offsets con minutos,
+  compacto, `equivalent_views`, intercalar Δ = 2 s). Consumidores
+  actualizados: `tools/conformance.py`, `tests/test_conformance.py`,
+  `tests/test_profiles.py`, `impl-c/conformance.c` + Makefile,
+  `web/conformance.mjs` y `web/profiles-conformance.mjs`.
+
+### Portal web
+
+- Reloj en vivo con la hora TCJ real (TCJ = UTC + 8,437 s), equivalencia
+  TAI/UTC y etiqueta civil `TCJ±H:MM` del observador; opción
+  «TCJ+0 (Jerusalén · TAI + 8,400 s)»; leyenda del ciclo actualizada.
+
+### Documentación y decisiones
+
+- D-001 marcada **CERRADA/ADOPTADA** (ES/EN); TODO-004 **CERRADO**.
+- Glosario ES/EN: TCJ = "Tiempo de Coordinación de Jerusalén"
+  (antes, errata: "Tiempo Civil de Jaén"); escalas e instant actualizados.
+- README/README.es: sección «Escala de tiempo» reescrita para 3.0.0.
+- GOVERNANCE (ES/EN), docs/CONFORMANCE.md, vectors/README.md,
+  CITATION.cff, sbom.cdx.json, pyproject.toml y web/package.json
+  versionados a 3.0.0(-alpha.1 / a1). Advertencia de mantenimiento: el
+  software sigue en fase alfa/beta — **no apto para producción**
+  (ver SECURITY.md).
+
 ## Sin publicar (rama beta/cap13-improvements)
 
 Mejoras derivadas del contraste «Cap 13 — Identificadores y Seguridad v1.2»

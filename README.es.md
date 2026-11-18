@@ -13,9 +13,10 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 > y/o TSA externa (RFC 3161). Ver [SECURITY.md](SECURITY.md) y
 > [docs/threat-model.md](docs/spec/threat-model.md).
 
-> **Spec GUS v2.1.0 (ESTADO: BETA):** el Gran Tempalum es simétrico e
-> infinito en ambas eras (DY/AY) (`docs/TODO-pendientes.md` TODO-001
-> cerrado; queda abierto D-001 como DECISIÓN DEL AUTOR para 2.x — ver
+> **Spec GUS v3.0.0 (ESTADO: ALPHA):** el Gran Tempalum es simétrico e
+> infinito en ambas eras (DY/AY) y la base temporal es **TAI + tabla
+> IERS con TCJ = TAI + 8,400 s** (`docs/TODO-pendientes.md` TODO-001 y
+> TODO-004 cerrados; D-001 CERRADA/ADOPTADA en 3.0.0 — ver
 > [Escala de tiempo](#escala-de-tiempo)).
 
 **Tiempo regular, universal y verificable.**
@@ -24,7 +25,7 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 
 El **traductor de fechas** corre íntegramente en el navegador en
 <https://verared.github.io/gerarion/>: introduce una fecha en cualquiera de
-los diez calendarios soportados (Gerarion GUS 2.1.0 —incluidos años AY de
+los diez calendarios soportados (Gerarion GUS 3.0.0 —incluidos años AY de
 5–6 dígitos—, gregoriano/juliano prolépticos, egipcio, etíope, bahá'í,
 cuenta larga maya, hebreo, islámico y chino) y obtén todas las equivalencias
 de golpe, con enlaces compartibles por fecha (`#cal=…&d=…`), reloj GUS en
@@ -149,7 +150,7 @@ dependencia de todo el proyecto.
 
 ## Idioma normativo
 
-La versión inglesa de `docs/spec/gus-2.1.0.md`, `docs/spec/threat-model.md`,
+La versión inglesa de `docs/spec/gus-3.0.0.md`, `docs/spec/threat-model.md`,
 `docs/errata-v1.2.md` y el informe de adopción vive en
 [`docs/en/`](docs/en/), junto con [`README.md`](README.md) (principal, en
 inglés), del que este documento es espejo completo en español. **En caso de
@@ -160,36 +161,39 @@ como capa informativa, no normativa (ver [Créditos y contexto cultural](#crédi
 
 ## Escala de tiempo
 
-Declaración única y autoritativa de lo que hace el código; reemplaza toda
-redacción anterior que mencionara TAI (la spec §9 es el hogar normativo de
-este texto; TODO-001 cerrado, D-001 sigue abierto como propuesta 2.x —
-DECISIÓN DEL AUTOR).
+Declaración única y autoritativa de lo que hace el código (la spec §9 es
+el hogar normativo de este texto; **D-001 CERRADA/ADOPTADA y TODO-004
+CERRADO en GUS 3.0.0**).
 
-- **El día GUS empieza a medianoche UTC.** El día `[n, n+1)` es el rango
-  de segundos GUS `[n·86400, (n+1)·86400)`; no es medianoche-TAI ni
-  medianoche civil local.
-- **El entero no aplica una tabla TAI−UTC.** El mapeo es tipo
-  Unix/POSIX: cada etiqueta `AAAA-MM-DDTHH:MM:SSZ` se convierte a un
-  entero por aritmética pura. La escala es *lineal en etiquetas* y la
-  línea de etiquetas no cuenta los segundos intercalares históricos.
-- **Cruzar un segundo intercalar histórico no preserva la duración
+- **El instante se define sobre TAI (Capa 0).** `instant` son segundos
+  continuos y monotónicos sin segundos intercalares internos:
+  `instant = day_index·86400 + h·3600 + m·60 + s − offset_seconds`, con
+  origen `0000DY-01-01-S-00:00:00-LC-TCJ+0 = 0`.
+- **La coordenada global es TCJ = TAI + 8,400 s (Capa 1),** el Tiempo de
+  Coordinación de Jerusalén (meridiano 35.2137°E; 31.7683°N, 754 m). Es
+  un offset matemático, no un servidor: sin punto único de falla.
+- **El puente Unix/UTC aplica la tabla histórica IERS TAI−UTC completa**
+  (29 entradas, 1958-01-01 = 10 s … 2017-01-01 = 37 s embebida como
+  constante en Python, JS y C): `unix → TAI (+37 s en 2026) → TCJ
+  (+8,400 s) → instant`. La inversa es exacta por segmentos y el
+  round-trip se verifica en la suite.
+- **Cruzar un segundo intercalar histórico ahora conserva la duración
   física.** Medido con la implementación de referencia:
   `2016-12-31T23:59:59Z → 2017-01-01T00:00:00Z` hace subir el entero GUS
-  **1 s**, mientras que transcurrieron **2 segundos SI** (la etiqueta UTC
-  2016-12-31T23:59:60Z existió). Las diferencias de enteros GUS de este
-  perfil son por tanto *duraciones de etiqueta*, no siempre duraciones
-  físicas exactas a través de intercalados históricos. Si tu caso necesita
-  duración física en esas fechas, convierte con una tabla de segundos
-  intercalares (IERS) o usa una TSA que selle sobre una escala continua.
+  **2 s**, exactamente los 2 segundos SI transcurridos (la etiqueta UTC
+  2016-12-31T23:59:60Z existió).
+- **La hora HH:MM:SS de una marca es la hora civil del observador** y el
+  campo `TCJ±O` (horas o horas:minutos, p. ej. `TCJ-2:20`) entra en el
+  cálculo del instante; el ciclo SC/LC se evalúa sobre esa hora
+  declarada, nunca sobre `TCJ+0`.
+- **La extensión pre-1958** es una convención proléptica declarada
+  (offset 0 s); no pretende reproducir ninguna materialización histórica
+  de TAI (spec §9.3).
 - **Contexto (fuentes verificadas):** NIST documenta TAI − UTC = 37 s
   (nist.gov, leap seconds). La Resolución 5 de la CGPM (2026) decidió que
   el UTC continuo entra en vigor el 20 de mayo de 2027 con un máximo
-  |UT1−UTC| de 3.600 s (bipm.org, DOI 10.59161/CGPM2026RES5E). Ninguno de
-  los dos hechos cambia el mapeo anterior: los intercalados históricos
-  siguen ahí y la fuente del reloj sigue siendo responsabilidad del
-  operador.
-- **La extensión pre-1958** es una convención proléptica declarada; no
-  pretende reproducir ninguna materialización histórica de TAI (spec §9).
+  |UT1−UTC| de 3.600 s (bipm.org, DOI 10.59161/CGPM2026RES5E). La base
+  TAI de GUS alinea el kernel con esa resolución.
 
 ## Publicación
 
@@ -202,7 +206,7 @@ DECISIÓN DEL AUTOR).
   suite Python + JS + conformancia JS y C antes de publicar).
 - **SBOM**: [`sbom.cdx.json`](sbom.cdx.json) (CycloneDX 1.5).
 - **Vectores normativos**:
-  [`vectors/gus-normative-002.json`](vectors/gus-normative-002.json) — la
+  [`vectors/gus-normative-003.json`](vectors/gus-normative-003.json) — la
   conformancia de toda implementación (Python, JS, C y terceros) se
   declara contra este archivo. Cláusula completa en
   [`vectors/README.md`](vectors/README.md).
@@ -513,7 +517,7 @@ criptográficas. La capa GST/notario es opt-in.
 
 ```
 docs/
-├── spec/gus-2.1.0.md          Especificación normativa (v2.1.0; EN normativo en docs/en/)
+├── spec/gus-3.0.0.md          Especificación normativa (v3.0.0; EN normativo en docs/en/)
 ├── spec/threat-model.md     Modelo de amenazas y garantías
 ├── GLOSSARY.md              Glosario de definición única, ES y EN
 ├── informe-adopcion-gus.md  Informe técnico: por qué adoptar GUS en cómputo
@@ -555,7 +559,7 @@ y este kernel están registradas en [`docs/errata-v1.2.md`](docs/errata-v1.2.md)
 
 - [x] Núcleo de calendario exacto (enteros, sin floats) — 91 tests Python
       (incl. 6 fuzzing + 2 conformancia) + 22 vectores JS en verde
-- [x] Conformancia contra `vectors/gus-normative-002.json`: Python, JS y
+- [x] Conformancia contra `vectors/gus-normative-003.json`: Python, JS y
       C, 7/7 categorías núcleo cada uno; fuzzing diferencial entre las
       tres implementaciones (1500×3 casos idénticos)
 - [x] Formato canónico + normalización (reglas 1–7, errores GERO_*)
@@ -592,6 +596,6 @@ ninguno de sus fragmentos. Ver [NOTICE](NOTICE) y [sbom.cdx.json](sbom.cdx.json)
 
 | Artefacto | Versión | Qué numera |
 |---|---|---|
-| Especificación normativa (`docs/spec/gus-2.1.0.md`) | **2.1.0** | La especificación en sí; solo cambia con cambios normativos aprobados (ventana de revisión de 90 días) |
+| Especificación normativa (`docs/spec/gus-3.0.0.md`) | **3.0.0** | La especificación en sí; solo cambia con cambios normativos aprobados (ventana de revisión de 90 días) |
 | Draft IETF (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | El documento de envío (individual submission) que describe la spec; puede avanzar sin que la spec cambie |
 | Paquetes (`pyproject.toml`, `web/package.json`) | **2.4.0** | Los artefactos de software: kernel Python/JS/C, tests, docs y erratas aplicadas. Puede cambiar entre releases de la spec |

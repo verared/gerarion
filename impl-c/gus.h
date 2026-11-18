@@ -11,7 +11,7 @@
  * AAAAYY-MM-DD-X[-HH:MM:SS-SC/LC-TCJ±O] e instante continuo.
  *
  * CONFORMANCIA: según vectors/README.md, esta implementación es conforme si
- * pasa las categorías del núcleo de vectors/gus-normative-002.json
+ * pasa las categorías del núcleo de vectors/gus-normative-003.json
  * (make -C impl-c conformance). No implementa criptografía: las categorías
  * hashots/slh_dsa/notary exigen bibliotecas auditadas FIPS 205.
  *
@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-/* Constantes fundamentales (especificación GUS v2.0, sección 3) */
+/* Constantes fundamentales (especificación GUS v3.0.0, sección 3/§9) */
 #define GUS_ORIGIN_JDN 1719313LL
 #define GUS_SOLAR_DELTA_UD 1242190LL
 #define GUS_SOLAR_THRESHOLD_UD 7000000LL
@@ -37,6 +37,16 @@ extern "C" {
 #define GUS_YEAR_GRAN_DAYS 371LL
 #define GUS_MONTH_BLOCK_DAYS 360LL
 #define GUS_SECS_PER_DAY 86400LL
+
+/* Capa 1 — TCJ (Cap 7/Cap 13 v1.2): TCJ = TAI + 8 400 s (Jerusalén) */
+#define GUS_TCJ_OFFSET_SECONDS 8400LL
+
+/* Tabla TAI − UTC (IERS): entradas {unix_utc_inicio, offset_s} vigente
+ * desde esa fecha (28+1 entradas; pre-1958: 0 s proléptico, spec §9).
+ * El puente GUS-3339 aplica la entrada vigente. */
+typedef struct { long long epoch; int offset; } GusTaiEntry;
+const GusTaiEntry *gus_tai_table(int *count);
+int gus_tai_minus_utc(long long unix_seconds);
 
 /* Códigos de error canónicos (GERO_*) */
 typedef enum {
@@ -64,8 +74,10 @@ typedef struct {
     GusDate date;
     int hour, minute, second; /* 0 si la marca no trae hora */
     bool has_time;
+    bool compact;             /* la entrada vino en formato compacto (29+) */
     char cycle[3];            /* "SC" o "LC"; "" si no hay hora */
-    int offset;               /* TCJ en horas */
+    int offset;               /* TCJ±O en horas (compat 2.x; 0 si hay minutos) */
+    int offset_seconds;       /* TCJ±O exacto en segundos (GUS 3.0.0) */
     bool era_assumed;
     bool weekday_corrected;
     bool cycle_corrected;
@@ -96,7 +108,8 @@ const char *gus_tempalum_name(const GusDate *d);
  * buf debe tener al menos 48 bytes. Devuelve GUS_OK o GUS_EINVAL. */
 GusError gus_canonical(const GusParsed *p, char *buf, size_t buflen);
 
-/* Analiza una marca Geroriana (aplica normalización REGLAS 1-6).
+/* Analiza una marca Geroriana (aplica normalización REGLAS 1-6; acepta
+ * extendido y compacto; offsets TCJ±O con minutos, GUS 3.0.0).
  * Con strict=true, la letra de día inconsistente devuelve GUS_EWEEK. */
 GusError gus_parse(const char *raw, bool strict, GusParsed *out);
 
@@ -109,7 +122,9 @@ bool gus_quick_verify(const char *raw);
 /* ---------------- instante continuo ---------------- */
 
 GusError gus_instant_from_parts(long long day_index, int hour, int minute,
-                                int second, long long *instant);
+                                int second, int offset_seconds, long long *instant);
+GusError gus_parts_from_instant(long long instant, int offset_seconds,
+                                GusDate *date, int *hour, int *minute, int *second);
 GusError gus_instant_parts(long long instant, GusDate *date,
                            int *hour, int *minute, int *second);
 

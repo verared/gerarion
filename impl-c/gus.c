@@ -220,8 +220,23 @@ GusError gus_canonical(const GusParsed *p, char *buf, size_t buflen)
     }
     char base[40];
     canonical_date(&p->date, base, sizeof(base));
-    int n = snprintf(buf, buflen, "%s-%02d:%02d:%02d-%s-TCJ%+d",
-                     base, p->hour, p->minute, p->second, p->cycle, p->offset);
+    char offbuf[16];
+    int os2 = p->offset_seconds;
+    if (os2 == 0) {
+        snprintf(offbuf, sizeof(offbuf), "TCJ+0");
+    } else {
+        const char signch = os2 < 0 ? '-' : '+';
+        long long a = os2 < 0 ? -(long long)os2 : (long long)os2;
+        long long h = a / 3600, m = (a % 3600) / 60;
+        if (m) {
+            /* canónico = SIEMPRE extendido (forma compacta solo en entrada) */
+            snprintf(offbuf, sizeof(offbuf), "TCJ%c%lld:%02lld", signch, h, m);
+        } else {
+            snprintf(offbuf, sizeof(offbuf), "TCJ%c%lld", signch, h);
+        }
+    }
+    int n = snprintf(buf, buflen, "%s-%02d:%02d:%02d-%s-%s",
+                     base, p->hour, p->minute, p->second, p->cycle, offbuf);
     return (n < 0 || (size_t)n >= buflen) ? GUS_EINVAL : GUS_OK;
 }
 
@@ -317,26 +332,37 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
     bool weekday_corrected = (declared != letters[weekday_index]);
     if (weekday_corrected && strict) return GUS_EWEEK;
 
-    int hour = 0, minute = 0, second = 0, offset = 0;
+    int hour = 0, minute = 0, second = 0;
     bool has_time = false, cycle_corrected = false;
     char cycle[3] = { 0, 0, 0 };
     long long tmp_h = 0, tmp_m = 0, tmp_s = 0, tmp_off = 0;
+    bool compact_time = false;
 
     if (*cur == '-') {
         cur++;
-        if (!is_digits(cur, 1, 2, &n)) return GUS_EINVAL;
-        if (!parse_int(cur, n, &tmp_h)) return GUS_EINVAL;
-        cur += n;
-        if (*cur != ':') return GUS_EINVAL;
-        cur++;
-        if (!is_digits(cur, 1, 2, &n)) return GUS_EINVAL;
-        if (!parse_int(cur, n, &tmp_m)) return GUS_EINVAL;
-        cur += n;
-        if (*cur != ':') return GUS_EINVAL;
-        cur++;
-        if (!is_digits(cur, 1, 2, &n)) return GUS_EINVAL;
-        if (!parse_int(cur, n, &tmp_s)) return GUS_EINVAL;
-        cur += n;
+        /* Hora: extendida 'HH:MM:SS' o compacta 'HHMMSS' (Cap 13.1) */
+        if (is_digits(cur, 1, 2, &n) && cur[n] == ':') {
+            if (!parse_int(cur, n, &tmp_h)) return GUS_EINVAL;
+            cur += n;
+            if (*cur != ':') return GUS_EINVAL;
+            cur++;
+            if (!is_digits(cur, 1, 2, &n)) return GUS_EINVAL;
+            if (!parse_int(cur, n, &tmp_m)) return GUS_EINVAL;
+            cur += n;
+            if (*cur != ':') return GUS_EINVAL;
+            cur++;
+            if (!is_digits(cur, 1, 2, &n)) return GUS_EINVAL;
+            if (!parse_int(cur, n, &tmp_s)) return GUS_EINVAL;
+            cur += n;
+        } else if (is_digits(cur, 6, 6, &n)) {
+            tmp_h = (cur[0] - '0') * 10 + (cur[1] - '0');
+            tmp_m = (cur[2] - '0') * 10 + (cur[3] - '0');
+            tmp_s = (cur[4] - '0') * 10 + (cur[5] - '0');
+            cur += 6;
+            compact_time = true;
+        } else {
+            return GUS_EINVAL;
+        }
         if (*cur != '-') return GUS_EINVAL;
         cur++;
         if (strncmp(cur, "SC", 2) == 0 || strncmp(cur, "LC", 2) == 0) {
@@ -347,14 +373,38 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
         }
         if (strncmp(cur, "-TCJ", 4) != 0) return GUS_EINVAL;
         cur += 4;
-        long long sign = 1;
-        if (*cur == '+') cur++;
-        else if (*cur == '-') { sign = -1; cur++; }
-        else return GUS_EINVAL;
-        if (!is_digits(cur, 1, 2, &n)) return GUS_EINVAL;
-        if (!parse_int(cur, n, &tmp_off)) return GUS_EINVAL;
-        cur += n;
-        tmp_off *= sign;
+        long long off_h = 0, off_m = 0;
+        if (*cur == '0' && !(cur[1] >= '0' && cur[1] <= '9')) {
+            cur += 1; /* TCJ0 literal: cero */
+        } else {
+            long long sign = 1;
+            if (*cur == '+') cur++;
+            else if (*cur == '-') { sign = -1; cur++; }
+            else return GUS_EINVAL;
+            if (!is_digits(cur, 1, 4, &n)) return GUS_EINVAL;
+            if (cur[n] == ':') {
+                /* extendido con minutos: H|HH ':' MM (TODO-004, GUS 3.0.0) */
+                if (!parse_int(cur, n, &off_h)) return GUS_EINVAL;
+                cur += n;
+                cur++; /* ':' */
+                if (!is_digits(cur, 2, 2, &n)) return GUS_EINVAL;
+                if (!parse_int(cur, n, &off_m)) return GUS_EINVAL;
+                cur += n;
+            } else if (n <= 2) {
+                if (!parse_int(cur, n, &off_h)) return GUS_EINVAL;
+                cur += n;
+            } else if (n == 3) {
+                off_h = cur[0] - '0';
+                off_m = (cur[1] - '0') * 10 + (cur[2] - '0');
+                cur += 3;
+            } else {
+                off_h = (cur[0] - '0') * 10 + (cur[1] - '0');
+                off_m = (cur[2] - '0') * 10 + (cur[3] - '0');
+                cur += 4;
+            }
+            if (off_h > 23 || off_m > 59) return GUS_EINVAL;
+            tmp_off = sign * (off_h * 3600 + off_m * 60);
+        }
 
         if (tmp_h > 23 || tmp_m > 59 || tmp_s > 59) return GUS_EINVAL;
         char expected[3];
@@ -365,17 +415,19 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
             cycle[0] = expected[0]; cycle[1] = expected[1];
         }
         has_time = true;
-        hour = (int)tmp_h; minute = (int)tmp_m; second = (int)tmp_s; offset = (int)tmp_off;
+        hour = (int)tmp_h; minute = (int)tmp_m; second = (int)tmp_s;
     }
     if (*cur != '\0') return GUS_EINVAL;
 
     out->date = date;
     out->hour = hour; out->minute = minute; out->second = second;
     out->has_time = has_time;
+    out->compact = compact_time;
     out->era_assumed = era_assumed;
     out->weekday_corrected = weekday_corrected;
     out->cycle_corrected = cycle_corrected;
-    out->offset = offset;
+    out->offset = (tmp_off != 0 && tmp_off % 3600 == 0) ? (int)(tmp_off / 3600) : 0;
+    out->offset_seconds = (int)tmp_off;
     memcpy(out->cycle, cycle, sizeof(cycle));
     return GUS_OK;
 }
@@ -391,14 +443,27 @@ GusError gus_cycle_of(int hour, char out[3])
 }
 
 GusError gus_instant_from_parts(long long day_index, int hour, int minute,
-                                int second, long long *instant)
+                                int second, int offset_seconds, long long *instant)
 {
     if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) {
         return GUS_EINVAL;
     }
+    if (offset_seconds % 60 != 0 || offset_seconds < -86400 || offset_seconds > 86400) {
+        return GUS_EINVAL;
+    }
     *instant = day_index * GUS_SECS_PER_DAY + (long long)hour * 3600
-               + (long long)minute * 60 + (long long)second;
+               + (long long)minute * 60 + (long long)second - (long long)offset_seconds;
     return GUS_OK;
+}
+
+GusError gus_parts_from_instant(long long instant, int offset_seconds,
+                                GusDate *date, int *hour, int *minute, int *second)
+{
+    if (offset_seconds % 60 != 0 || offset_seconds < -86400 || offset_seconds > 86400) {
+        return GUS_EINVAL;
+    }
+    return gus_instant_parts(instant + (long long)offset_seconds, date,
+                             hour, minute, second);
 }
 
 GusError gus_instant_parts(long long instant, GusDate *date,
@@ -424,4 +489,56 @@ bool gus_quick_verify(const char *raw)
     GusParsed p;
     if (gus_parse(raw, true, &p) != GUS_OK) return false;
     return !p.era_assumed && !p.weekday_corrected && !p.cycle_corrected;
+}
+
+/* ---------------- Capa 0 — TAI (IERS) y Capa 1 — TCJ ---------------- */
+
+static const GusTaiEntry GUS_TAI_TABLE[] = {
+    {-378691200, 10},  /* 1958-01-01: convención declarada (no medida) */
+    {63072000, 10},    /* 1972-01-01: base UTC IERS */
+    {78796800, 11},    /* 1972-07-01 */
+    {94694400, 12},    /* 1973-01-01 */
+    {126230400, 13},   /* 1974-01-01 */
+    {157766400, 14},   /* 1975-01-01 */
+    {189302400, 15},   /* 1976-01-01 */
+    {220924800, 16},   /* 1977-01-01 */
+    {252460800, 17},   /* 1978-01-01 */
+    {283996800, 18},   /* 1979-01-01 */
+    {315532800, 19},   /* 1980-01-01 */
+    {362793600, 20},   /* 1981-07-01 */
+    {394329600, 21},   /* 1982-07-01 */
+    {425865600, 22},   /* 1983-07-01 */
+    {489024000, 23},   /* 1985-07-01 */
+    {567993600, 24},   /* 1988-01-01 */
+    {631152000, 25},   /* 1990-01-01 */
+    {662688000, 26},   /* 1991-01-01 */
+    {709948800, 27},   /* 1992-07-01 */
+    {741484800, 28},   /* 1993-07-01 */
+    {773020800, 29},   /* 1994-07-01 */
+    {820454400, 30},   /* 1996-01-01 */
+    {867715200, 31},   /* 1997-07-01 */
+    {915148800, 32},   /* 1999-01-01 */
+    {1136073600, 33},  /* 2006-01-01 */
+    {1230768000, 34},  /* 2009-01-01 */
+    {1341100800, 35},  /* 2012-07-01 */
+    {1435708800, 36},  /* 2015-07-01 */
+    {1483228800, 37},  /* 2017-01-01: vigente */
+};
+
+const GusTaiEntry *gus_tai_table(int *count)
+{
+    if (count) *count = (int)(sizeof(GUS_TAI_TABLE) / sizeof(GUS_TAI_TABLE[0]));
+    return GUS_TAI_TABLE;
+}
+
+int gus_tai_minus_utc(long long unix_seconds)
+{
+    int count = 0;
+    const GusTaiEntry *t = gus_tai_table(&count);
+    int result = 0; /* pre-1958: 0 s proléptico (spec §9) */
+    for (int i = 0; i < count; i++) {
+        if (unix_seconds >= t[i].epoch) result = t[i].offset;
+        else break;
+    }
+    return result;
 }
