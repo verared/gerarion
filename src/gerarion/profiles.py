@@ -114,3 +114,56 @@ def instant_from_rfc3339(stamp: str) -> int:
         raise GeroEinval(f"GERO_E3339: fecha inválida: {stamp!r}")
     unix = (j - UNIX_EPOCH_JDN) * 86400 + int(m.group("hour")) * 3600 + int(m.group("minute")) * 60 + second
     return instant_from_unix(unix)  # GUS 3.0.0: unix → TAI → TCJ → GUS
+
+
+# ---------------------------------------------------------------------------
+# Precisión sub-segundo (GUS 3.0.0): campo `nanos` SEPARADO del instante.
+# El instante sigue siendo entero de segundos (int64); la fracción viaja
+# aparte (0..999_999_999) y NUNCA se fusiona en un único entero.
+# ---------------------------------------------------------------------------
+
+from .calendar import NANOS_MAX as _NANOS_MAX, validate_nanos as _validate_nanos
+
+NANOS_MAX = _NANOS_MAX
+
+
+def instant_to_rfc3339_nanos(instant: int, nanos: int = 0) -> str:
+    """Instante + nanos → ``AAAA-MM-DDTHH:MM:SS[.fff]Z`` (perfil GUS-3339).
+
+    Con ``nanos == 0`` la salida es idéntica a :func:`instant_to_rfc3339`
+    (sin sufijo fraccionario). Con ``nanos > 0`` se emite la fracción
+    recortada a dígitos significativos (mínimo 1 dígito, máximo 9);
+    el recorte es división exacta por potencias de diez, sin redondeo.
+    Lanza GeroEinval si ``nanos`` queda fuera de 0..999_999_999.
+    """
+    _validate_nanos(nanos)
+    base = instant_to_rfc3339(instant)
+    if nanos == 0:
+        return base
+    body = base[:-1]  # sin la 'Z'
+    digits = f"{nanos:09d}".rstrip("0")
+    return f"{body}.{digits}Z"
+
+
+def instant_from_rfc3339_nanos(stamp: str) -> tuple:
+    """``AAAA-MM-DDTHH:MM:SS[.f{1,9}]Z`` → ``(instant, nanos)``.
+
+    Acepta la forma de segundos exactos (nanos 0) y la fracción de 1 a 9
+    dígitos (escalada exacta a nanosegundos; ``.5`` = 500_000_000, sin
+    redondeo). Rechaza más de 9 dígitos, fracción vacía (``.Z``) y todo
+    lo que el perfil estricto ya rechaza (offsets, ``:60``, no canónico).
+    """
+    import re as _re
+
+    m = _re.match(
+        r"^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?Z$", stamp
+    )
+    if not m:
+        raise GeroEinval(
+            f"GERO_E3339: sintaxis fuera de perfil (fracción 1-9 dígitos máx.): {stamp!r}"
+        )
+    instant = instant_from_rfc3339(m.group(1) + "Z")
+    frac = m.group(2)
+    nanos = int(frac) * 10 ** (9 - len(frac)) if frac else 0
+    _validate_nanos(nanos)
+    return instant, nanos

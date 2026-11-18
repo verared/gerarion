@@ -42,6 +42,29 @@ MONTH_BLOCK_DAYS = 360
 
 SECS_PER_DAY = 86_400
 
+#: Precisión sub-segundo (GUS 3.0.0, precise sub-second): el instante sigue
+#: siendo un entero de segundos (int64 conceptual); la fracción viaja en un
+#: campo SEPARADO `nanos` (0..999_999_999) que NUNCA se fusiona con los
+#: segundos en un único entero (preserva el horizonte ±292e9 años).
+NANOS_MAX = 999_999_999
+
+
+def validate_nanos(nanos: int) -> int:
+    """Valida la fracción sub-segundo: entero en 0..999_999_999.
+
+    Rechaza (no normaliza en silencio) negativos, >= 10^9, booleanos y
+    no-enteros. Devuelve el valor validado.
+    """
+    if isinstance(nanos, bool) or not isinstance(nanos, int):
+        raise GeroEinval(
+            f"GERO_EINVAL: nanos debe ser un entero en 0..{NANOS_MAX}: {nanos!r}"
+        )
+    if not 0 <= nanos <= NANOS_MAX:
+        raise GeroEinval(
+            f"GERO_EINVAL: nanos fuera de rango 0..{NANOS_MAX}: {nanos}"
+        )
+    return nanos
+
 #: Duración nominal del año tropical, en microdías. Constante declarativa de
 #: la especificación (cálculo exacto no depende de ella, solo del acumulador).
 TROPICAL_YEAR_UD = 365_242_190
@@ -385,3 +408,26 @@ def instant_parts(instant: int) -> Tuple[GerarionDate, int, int, int]:
     hour, rem = divmod(rem, 3600)
     minute, second = divmod(rem, 60)
     return to_gerarion(day_index), hour, minute, second
+
+
+# ---------------------------------------------------------------------------
+# Precisión sub-segundo (campo separado; la aritmética de segundos no cambia)
+# ---------------------------------------------------------------------------
+
+NANOS_PER_SECOND = 1_000_000_000
+
+
+def instant_from_parts_nanos(
+    day_index: int, hour: int = 0, minute: int = 0, second: int = 0,
+    nanos: int = 0, offset_seconds: int = 0,
+) -> Tuple[int, int]:
+    """Constructor de instante con fracción: devuelve ``(instant, nanos)``.
+
+    El par (segundos int64, nanos uint32) es la representación canónica de
+    precisión sub-segundo; los segundos conservan la aritmética entera O(1)
+    intacta y los nanos viajan SIEMPRE por separado, con validación
+    estricta 0..999_999_999 (sin normalización silenciosa).
+    """
+    validate_nanos(nanos)
+    instant = instant_from_parts(day_index, hour, minute, second, offset_seconds)
+    return instant, nanos
