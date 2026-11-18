@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * Runner de conformancia de regresión F2 — consume vectors/gus-regression-001.json.
  * El Gran Tempalum (GT) opera simétricamente en DY y AY; ninguna era se asume

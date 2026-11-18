@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Genera vectors/gus-normative-002.json — la única fuente normativa de vectores.
 
 Cambios respecto de `gus-normative-001` (archivada en vectors/archive/):

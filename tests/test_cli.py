@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Tests del CLI (superficie de uso mínimo, sin dependencias)."""
 
 from __future__ import annotations

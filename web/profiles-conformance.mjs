@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * Runner de conformancia del perfil GUS-3339 — consume vectors/gus-3339-001.json.
  *

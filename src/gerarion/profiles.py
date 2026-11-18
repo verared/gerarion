@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Perfil GUS-3339: mapping exacto instante GUS ↔ fecha-hora RFC 3339 (UTC).
 
 Perfil de notación de la versión 2.0 (documento normativo:

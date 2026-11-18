@@ -35,7 +35,7 @@ output of the calendar and of the instants:
 - The month order (12×30 + Tempalum) and the Nuvid pattern (7 invariant
   days, computed from the day index, not from what any document declares)
 - The canonical GTS format and its normalization rules 1–7
-- The semantics of instants (continuous leap-second-free scale over TAI)
+- The semantics of instants (continuous leap-second-free scale, TAI-analogue[1]: the GUS day rolls at midnight UTC — spec §9)
   and the solar oscillation bound of the anchor (|Δ| < 7 days; the
   concrete window of start dates is an observed measurement that shifts
   over millennia, not a kernel property)
@@ -248,3 +248,11 @@ else.
 - Notary runbook: `docs/notary-runbook.md` (planes: EN pending; see repo).
 - Vectors and conformance clause: `vectors/README.md`.
 - Historical errata: `docs/en/errata-v1.2.md` (EN) / `docs/errata-v1.2.md`.
+
+---
+
+[1] "TAI-analogue" semantics: the instant scale is linear in labels (no
+TAI−UTC table) with the GUS day rolling at midnight UTC — normative text in
+spec §9 and the README "Time scale" section. The alternative boundary
+proposal (TAI-defined instant with an explicit table) remains an AUTHOR
+DECISION in docs/en/decisions/D-001-utc-tai-boundary.md.

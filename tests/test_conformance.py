@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Cláusula de conformancia GUS: el paquete pasa los vectores normativos.
 
 vectors/README.md (normativo): una implementación es conforme si y solo si

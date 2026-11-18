@@ -1,6 +1,8 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Núcleo del Calendario Gerarion — aritmética exacta de enteros.
 
-Implementación de referencia de la Especificación Geroriana Universal (GUS) v2.0.
+Implementación de referencia de la Especificación Geroriana Universal (GUS) v2.1.0.
 Sin dependencias externas. Sin aritmética de punto flotante en las rutas
 normativas: el acumulador solar opera en microdías enteros, por lo que el
 algoritmo es exacto y reproducible en cualquier plataforma y en cualquier
@@ -13,7 +15,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
 # ---------------------------------------------------------------------------
-# Constantes fundamentales (especificación GUS v2.0, sección 2)
+# Constantes fundamentales (especificación GUS v2.1.0, sección 2)
 # ---------------------------------------------------------------------------
 
 #: Día Juliano (JDN) del origen: 1 Keuphero, año 0 DY = 21 de marzo de -5

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Vectores normativos de GUS 2.0 (spec §3-§4) + erratas documentadas.
 
 Origen y verificadores:

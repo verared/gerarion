@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Runner de conformancia GUS contra vectors/gus-normative-002.json.
 
 Verifica que la implementación de referencia en src/gerarion sigue pasando

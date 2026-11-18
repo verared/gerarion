@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Notario multi-réplica de producción (k-de-n sin coordinación).
 
 Modelo de despliegue de producción del notario diario:

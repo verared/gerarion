@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Gerarion Universal Standard (GUS) v2.0 — implementación de referencia.
 
 Un sistema de tiempo universal, regular y con marcas verificables:

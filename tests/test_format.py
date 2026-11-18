@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Tests del formato canónico y normalización (spec GUS 2.0 §6)."""
 
 from __future__ import annotations

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Adaptadores de algoritmos de firma para GST.
 
 Registro de algoritmos con una interfaz común:

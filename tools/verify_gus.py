@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 # -*- coding: utf-8 -*-
 """verify_gus.py — verificador monolítico de marcas GUS, autocontenido.
 

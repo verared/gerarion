@@ -1,4 +1,9 @@
 /*
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ * SPDX-FileCopyrightText: 2026 verared contributors
+ */
+
+/*
  * gus-cli.c — Servidor de líneas para fuzzing diferencial de impl-c.
  *
  * Protocolo (una operación por línea; respuestas JSON una por línea), idéntico

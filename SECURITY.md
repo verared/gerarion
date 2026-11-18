@@ -20,7 +20,7 @@
 
 | Versión | Soporte |
 |---|---|
-| 2.5.0b1 (rama `beta-hardening`) | sí (beta) |
+| 2.5.0b1 (main, rama fusionada via PR #6-#8) | sí (beta) |
 | <= 2.4.0 | solo actualizaciones de disponibilidad crítica; beta sin garantías |
 
 ## Qué SÍ es seguridad de producción hoy

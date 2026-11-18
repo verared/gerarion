@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * Núcleo Gerarion GUS 2.0 — port exacto de src/gerarion/calendar.py + format.py
  *

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Perfil GUS-3161: la marca GUS viaja dentro de RFC 3161 (TSA existentes).
 
 Documento normativo: docs/profiles/gus-3161-perfil.md (ES espejo) /

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Servicio HTTP del notario diario GUS (réplica) — stdlib puro.
 
 Una réplica de producción del notario multi-réplica (src/gerarion/
