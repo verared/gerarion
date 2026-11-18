@@ -1,7 +1,7 @@
-# Vectores normativos GUS — `gus-normative-002`
+# Vectores normativos GUS — `gus-normative-003`
 
 Este directorio contiene la **única fuente normativa de vectores de prueba** de
-GUS activa: `gus-normative-002.json`. Define qué significa "implementación
+GUS activa: `gus-normative-003.json` (GUS 3.0.0). Define qué significa "implementación
 conforme"
 y sirve a la vez a Python, JavaScript y a cualquier tercera implementación.
 
@@ -50,7 +50,7 @@ Regenerar produce un archivo byte a byte idéntico. El checksum SHA-256 del
 archivo vigente se publica en el CHANGELOG de cada versión de GUS:
 
 ```
-SHA-256(vectors/gus-normative-002.json)
+SHA-256(vectors/gus-normative-003.json)
 = 580d8843137c0e8f1a77c670773ce8090a49ea21cb0d70a9b6a5aec2c1de08b0
 ```
 
@@ -59,7 +59,8 @@ SHA-256(vectors/gus-normative-002.json)
 | Vector set | Espec | Estado |
 |---|---|---|
 | `gus-normative-001` | GUS 2.0 (alfa) | **ARCHIVADA** en `vectors/archive/` — desfasada por el Gran Tempalum simétrico (AY), spec 2.1: sus entradas de era AY usaban años comunes fijos de 364. Los valores de era DY de la 002 son bit a bit los de la 001. |
-| `gus-normative-002` | **GUS 2.1.0** | **VIGENTE** — núcleo con GT simétrico en DY y AY; añade vectores AY (`0001AY-00-11-B`, `12000AY-01-01-S`, años -1/-6/-12/-17/-29/-12000, patrón GT m45..m1). |
+| `gus-normative-002` | GUS 2.1.0 | **ARCHIVADA** en `vectors/archive/` — desfasada por GUS 3.0.0 (base TAI + tabla IERS, TCJ = TAI + 8,400 s). |
+| `gus-normative-003` | **GUS 3.0.0** | **VIGENTE** — núcleo GT simétrico DY/AY + base temporal TAI (tabla IERS embebida), TCJ = TAI + 8,400 s, offsets `TCJ±H:MM` con minutos, formato compacto de 29 caracteres y vistas equivalentes del mismo instante (`equivalent_views`). |
 
 ## Runners de conformancia incluidos
 
@@ -69,7 +70,7 @@ SHA-256(vectors/gus-normative-002.json)
 - Fuzzing diferencial entre las tres: `python3 tools/fuzz_diff.py`
 
 Una implementación nueva en cualquier lenguaje debe consumir directamente
-`gus-normative-002.json` (no copiar vectores a mano a su suite) y ejecutar al
+`gus-normative-003.json` (no copiar vectores a mano a su suite) y ejecutar al
 menos la cláusula del núcleo antes de declararse compatible con GUS.
 
 ## Archivos de perfil
@@ -79,8 +80,8 @@ núcleo para que la conformancia del núcleo no dependa de perfiles opcionales:
 
 | Archivo | Perfil | Cláusula |
 |---|---|---|
-| `gus-normative-002.json` | Núcleo calendario/formato/instantes/GST/notario (arriba) | obligatorio toda implementación |
-| `gus-3339-001.json` | **GUS-3339**: instante GUS ↔ RFC 3339 UTC (perfil estricto Z) | obligatoria solo para implementaciones que declaren el perfil |
+| `gus-normative-003.json` | Núcleo calendario/formato/instantes/GST/notario (arriba) | obligatorio toda implementación |
+| `gus-3339-002.json` | **GUS-3339**: instante GUS ↔ RFC 3339 UTC con puente TAI/TCJ de 3.0.0 (perfil estricto Z) | obligatoria solo para implementaciones que declaren el perfil |
 | `gus-3339-negative-001.json` | **GUS-3339 negativo**: entradas inválidas que deben RECHAZARSE (F1) | obligatoria para implementaciones que declaren GUS-3339 |
 | `gus-regression-001.json` | **Regresión AY** (F2): `0001AY-00-11-B` y vecinos tras el GT simétrico | obligatoria toda implementación |
 | `gus-quickverify-001.json` | **Verificación rápida O(1)** (Cap 13.8 v1.2): consistencia sin red, tampering detectado sin normalizar | opcional para implementaciones que expongan `quick_verify`/`quickVerify`/`gus_quick_verify` |

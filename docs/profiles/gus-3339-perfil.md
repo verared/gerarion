@@ -2,7 +2,7 @@
 
 > **Capa**: 0 (núcleo normativo) · **Versión**: 3339-001 · **Estado**: normativo
 > **EN normativo**: [`docs/en/profiles/gus-3339-profile.md`](../en/profiles/gus-3339-profile.md) — en caso de divergencia, prevalece la versión inglesa (EN > ES).
-> **Vectores**: [`vectors/gus-3339-001.json`](../../vectors/gus-3339-001.json)
+> **Vectores**: [`vectors/gus-3339-001.json`](../../vectors/gus-3339-002.json)
 
 ## 1. Propósito
 

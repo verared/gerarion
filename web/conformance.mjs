@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // SPDX-FileCopyrightText: 2026 verared contributors
 /**
- * Runner de conformancia GUS — consume vectors/gus-normative-002.json (núcleo).
+ * Runner de conformancia GUS — consume vectors/gus-normative-003.json (núcleo).
  *
  * Cláusula de conformancia (vectors/README.md): una implementación es conforme
  * si y solo si pasa el 100 % de las categorías del núcleo que declara.
@@ -28,7 +28,7 @@ function resolveVectorsPath() {
     const next = process.argv[idx + 1];
     if (next) return next;
   }
-  return fileURLToPath(new URL("../vectors/gus-normative-002.json", import.meta.url));
+  return fileURLToPath(new URL("../vectors/gus-normative-003.json", import.meta.url));
 }
 
 // --- verificaciones ------------------------------------------------------
@@ -151,9 +151,10 @@ function checkFormat(v, errors) {
 
 function checkInstant(v, errors) {
   for (const row of v.instant) {
+    if (row.ts === undefined) continue; // fila de invariantes (equivalent_views)
     try {
       const p = g.parse(row.ts);
-      const ins = g.instantFromParts(p.dayIndex, p.hour, p.minute, p.second);
+      const ins = g.instantFromParts(p.dayIndex, p.hour, p.minute, p.second, row.offset_seconds ?? 0);
       if (ins.toString() !== String(row.instant)) {
         errors.push(`instant ${row.ts}: ${ins} != ${row.instant}`);
       }

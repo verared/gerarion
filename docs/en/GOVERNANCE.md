@@ -16,7 +16,7 @@ GUS is a technically verifiable standard. Legitimacy does not come from an
 organization, an author, or an affinity community: it comes from the
 **verifiable properties of the artifact**. A change to the GUS kernel does
 not "win" because a committee approves it: it wins because, against the
-published normative vectors (`vectors/gus-normative-002.json`), every
+published normative vectors (`vectors/gus-normative-003.json`), every
 implementation keeps producing the same output, bitwise, from three
 independently written code bases (Python, JavaScript, C).
 
@@ -68,7 +68,7 @@ formalized in this governance:
    informed (§3.5). If there is no agreement, the proposal is postponed to
    the next 90-day cycle (it is not discarded).
 4. **Vectors**: an approved kernel change implies a new versioned vector
-   set (`gus-normative-002.json`, etc.) generated with
+   set (`gus-normative-003.json`, etc.) generated with
    `tools/generate_vectors.py` and a CHANGELOG commit. The previous vector
    set is archived (outside the main branch) for traceability.
 
@@ -229,7 +229,7 @@ trademark office, and this governance declares no registration.
 - The name "Gerarion", the siglum "GUS" and the standard's name are used
   freely by conformant implementations (passing the normative vector set)
   and for honest communication about the standard.
-- Claiming conformance ("conformant with gus-normative-002") is allowed;
+- Claiming conformance ("conformant with gus-normative-003") is allowed;
   any use that declares false conformance or nonexistent sponsorship will
   be forbidden if a registration is formalized in the future.
 - Conformant forks may keep the name with their identifier added
@@ -242,8 +242,8 @@ else.
 
 ## 9. Glossary not here: pointers
 
-- Format properties and regex: `docs/en/gus-2.1.0.md` (EN normative) /
-  `docs/spec/gus-2.1.0.md` (ES mirror, informative).
+- Format properties and regex: `docs/en/gus-3.0.0.md` (EN normative) /
+  `docs/spec/gus-3.0.0.md` (ES mirror, informative).
 - Threat model: `docs/en/threat-model.md` (EN) / `docs/spec/threat-model.md`.
 - Notary runbook: `docs/notary-runbook.md` (planes: EN pending; see repo).
 - Vectors and conformance clause: `vectors/README.md`.

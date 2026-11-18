@@ -110,7 +110,7 @@ static void handle(const char *line)
         if (!q3) { print_err(GUS_EINVAL); return; }
         long long s = strtoll(q3 + 1, NULL, 10);
         long long instant;
-        GusError err = gus_instant_from_parts(di, (int)h, (int)m, (int)s, &instant);
+        GusError err = gus_instant_from_parts(di, (int)h, (int)m, (int)s, 0, &instant);
         if (err != GUS_OK) { print_err(err); return; }
         printf("{\"ok\":true,\"instant\":\"%lld\"}\n", instant);
     }

@@ -6,7 +6,7 @@
 /*
  * conformance.c — Runner de conformancia GUS (núcleo) para impl-c.
  *
- * Lee vectors/gus-normative-002.json con un parser JSON mínimo incluido
+ * Lee vectors/gus-normative-003.json con un parser JSON mínimo incluido
  * (objetos, arrays, strings, enteros, bools, null — sin floats) y ejecuta
  * las categorías del núcleo, igual que tools/conformance.py y
  * web/conformance.mjs.
@@ -471,11 +471,13 @@ static void check_instant(JNode *v)
     JNode *rows = jo(v, "instant");
     for (int i = 0; i < rows->count; i++) {
         JNode *row = rows->items[i];
+        if (!js(row, "ts")) continue; /* fila de invariantes (equivalent_views) */
         GusParsed p;
         GusError err = gus_parse(js(row, "ts"), false, &p);
         if (err != GUS_OK) { fail(cat, "parse falló"); continue; }
         long long instant;
-        err = gus_instant_from_parts(p.date.day_index, p.hour, p.minute, p.second, &instant);
+        err = gus_instant_from_parts(p.date.day_index, p.hour, p.minute, p.second,
+                                    (int)jn(row, "offset_seconds"), &instant);
         if (err != GUS_OK) { fail(cat, "instant_from_parts falló"); continue; }
         char got[32], want[32];
         snprintf(got, sizeof(got), "%lld", instant);
@@ -502,7 +504,7 @@ static void check_negatives(JNode *v)
         long long instant;
         GusError err = gus_instant_from_parts(jn(row, "day_index"),
             (int)jn(row, "hour"), (int)jn(row, "minute"),
-            (int)jn(row, "second"), &instant);
+            (int)jn(row, "second"), 0, &instant);
         if (err == GUS_OK) {
             fail(cat, js(row, "why"));  /* aceptó una entrada inválida */
         }
@@ -566,7 +568,7 @@ static void check_quick_verify(JNode *v)
 
 int main(int argc, char **argv)
 {
-    const char *path = argc > 1 ? argv[1] : "../vectors/gus-normative-002.json";
+    const char *path = argc > 1 ? argv[1] : "../vectors/gus-normative-003.json";
     const char *negPath = argc > 2 ? argv[2] : NULL;
     const char *ayPath = argc > 3 ? argv[3] : NULL;
     const char *quickPath = argc > 4 ? argv[4] : NULL;

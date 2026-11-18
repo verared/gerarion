@@ -2,12 +2,13 @@
 # SPDX-FileCopyrightText: 2026 verared contributors
 """Perfil GUS-3339: mapping exacto instante GUS ↔ fecha-hora RFC 3339 (UTC).
 
-Perfil de notación de la versión 2.0 (documento normativo:
+Perfil de notación de la versión 3.0.0 (documento normativo:
 docs/profiles/gus-3339-perfil.md / docs/en/profiles/gus-3339-profile.md,
 ES espejo informativo, EN prevalece). Vectores normativos:
-vectors/gus-3339-001.json.
+vectors/gus-3339-002.json (GUS 3.0.0; la 001 está ARCHIVADA en
+vectors/archive/).
 
-Reglas del perfil:
+Reglas del perfil (GUS 3.0.0 — puente vía TAI/TCJ, Cap 7/Cap 13):
 
 1. Solo instante UTC. La forma canónica es ``AAAA-MM-DDTHH:MM:SSZ``
    (separador ``T`` y sufijo ``Z`` en mayúsculas; el parser acepta solo
@@ -16,9 +17,13 @@ Reglas del perfil:
 2. Offsets de zona (``+01:00``) rechazados: quien recibe hora local la
    convierte a UTC antes de entrar al perfil.
 3. Segundo ``:60`` (etiqueta de segundo intercalar UTC) rechazado: la
-   escala GUS no tiene segundos intercalares y plegar ``:60`` en 00:00:00
-   del día siguiente rompería la inyectividad; una fuente UTC que emite
-   ``:60`` DEBE convertir antes (regla MUST del perfil).
+   escala GUS no tiene segundos intercalares internos y plegar ``:60``
+   en 00:00:00 del día siguiente rompería la inyectividad; una fuente
+   UTC que emite ``:60`` DEBE convertir antes (regla MUST del perfil).
+   La etiqueta ``:60`` SÍ existe en la conversión (el segundo atómico no
+   se pierde: GUS 3.0.0 aplica la tabla TAI−UTC histórica — ver
+   ``gerarion.tai`` — de modo que cruzar un intercalar histórico avanza
+   el instante GUS 2 s por segundo Unix 1).
 4. Dominio: años gregorianos 0000..9999. El origen GUS (año -5) queda
    fuera del dominio del formato RFC 3339 — para ese rango se usa el
    string canónico GUS o el instante entero, nunca RFC 3339.
@@ -26,7 +31,8 @@ Reglas del perfil:
    ni punto flotante (el año 0000 y las fechas negativas de Unix son
    exactas).
 
-Equivalencia estructural: instante GUS I corresponde al segundo UTC
+Puente (GUS 3.0.0, Cap 13): unix → TAI (tabla IERS) → TCJ (= TAI + 8 400 s)
+→ GUS. Espejo exacto en la dirección inversa (sin ambigüedad).
 etiquetado ``unix = I − GUS_UNIX_OFFSET``. Ambas escalas son
 "etiqueta sin intercalares", así que el mapping es biyectivo en el
 dominio declarado (ver §9 de la spec para la frontera exacta UTC/TAI).
@@ -38,6 +44,7 @@ import re
 
 from .calendar import GeroEinval, jdn, jdn_to_gregorian
 from .calendar import ORIGIN_JDN
+from .tai import instant_from_unix, unix_from_instant
 
 #: JDN (gregoriano proleptico) del 1970-01-01.
 UNIX_EPOCH_JDN = 2_440_588
@@ -60,7 +67,7 @@ def instant_to_rfc3339(instant: int) -> str:
     Lanza GeroEinval si el instante queda fuera del dominio de años
     0000..9999 de RFC 3339.
     """
-    unix = instant - GUS_UNIX_OFFSET
+    unix = unix_from_instant(instant)  # GUS → TCJ → TAI → UTC (tabla IERS)
     days, rem = divmod(unix, 86_400)
     year, month, day = jdn_to_gregorian(UNIX_EPOCH_JDN + days)
     if not 0 <= year <= MAX_YEAR:
@@ -105,9 +112,5 @@ def instant_from_rfc3339(stamp: str) -> int:
     j = jdn(year, month, day)
     if jdn_to_gregorian(j) != (year, month, day):
         raise GeroEinval(f"GERO_E3339: fecha inválida: {stamp!r}")
-    secs_of_day = (
-        int(m.group("hour")) * 3600
-        + int(m.group("minute")) * 60
-        + second
-    )
-    return (j - UNIX_EPOCH_JDN) * 86_400 + secs_of_day + GUS_UNIX_OFFSET
+    unix = (j - UNIX_EPOCH_JDN) * 86400 + int(m.group("hour")) * 3600 + int(m.group("minute")) * 60 + second
+    return instant_from_unix(unix)  # GUS 3.0.0: unix → TAI → TCJ → GUS

@@ -138,14 +138,24 @@ check("instante continuo: día siempre 86400", () => {
 });
 
 // --- perfil GUS-3339 (vectores completos en web/profiles-conformance.mjs) --
-check("GUS-3339: época Unix", () => {
-  assertEq(instantFromRFC3339("1970-01-01T00:00:00Z").toString(), GUS_UNIX_OFFSET.toString());
-  assertEq(instantToRFC3339(GUS_UNIX_OFFSET), "1970-01-01T00:00:00Z");
+check("GUS-3339: época Unix (GUS 3.0.0: TAI + tabla IERS + TCJ)", () => {
+  // 1970-01-01T00:00:00Z = instante GUS 62_318_160_000 + 8 410 (TAI − UTC = 10 s).
+  const epochInstant = GUS_UNIX_OFFSET + 8410n;
+  assertEq(instantFromRFC3339("1970-01-01T00:00:00Z").toString(), epochInstant.toString());
+  assertEq(instantToRFC3339(epochInstant), "1970-01-01T00:00:00Z");
+  // El segundo anterior mantiene la unidad de 1 s (sin saltos fraccionarios).
+  const prev = instantFromRFC3339("1969-12-31T23:59:59Z");
+  assertEq(prev.toString(), (epochInstant - 1n).toString());
+  assertEq(instantToRFC3339(prev), "1969-12-31T23:59:59Z");
 });
 
-check("GUS-3339: ejemplo del README (ins 64097688600)", () => {
-  assertEq(instantToRFC3339(64097688600n), "2026-05-23T09:30:00Z");
-  assertEq(instantFromRFC3339("2026-05-23T09:30:00Z").toString(), "64097688600");
+check("GUS-3339: puente GUS 3.0.0 (TCJ = TAI + 8,400 s)", () => {
+  // 2026-05-23T09:30:00Z → +37 s (TAI−UTC) + 8 400 s (TCJ) → 64097697037.
+  assertEq(instantFromRFC3339("2026-05-23T09:30:00Z").toString(), "64097697037");
+  assertEq(instantToRFC3339(64097697037n), "2026-05-23T09:30:00Z");
+  // TCJ+0 09:30:00 (= 64097688600) es 2 h 20 min 37 s antes del Z de arriba.
+  assertEq(instantToRFC3339(64097688600n), "2026-05-23T07:09:23Z");
+  assertEq(instantFromRFC3339("2026-05-23T07:09:23Z").toString(), "64097688600");
 });
 
 check("GUS-3339: rechaza :60, offset y minúsculas", () => {

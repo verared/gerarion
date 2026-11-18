@@ -19,7 +19,7 @@
 
     <abstract>
       <t>This document specifies the Gerarion Universal Standard (GUS)
-      version 2.1: a regular civil calendar (12 months of exactly 30 days plus
+      version 3.0: a regular civil calendar (12 months of exactly 30 days plus
       a Tempalum closing period of 4 or 11 days), an invariant week (every
       year lasts exactly 52 or 53 weeks, so any given date always falls on the
       same weekday), a continuous count of seconds (no leap seconds), a
@@ -77,13 +77,19 @@
     </section>
 
     <section title="Continuous instant">
-      <t>The GUS instant is a signed integer number of seconds since the
-      origin (day 0, 00:00:00). Days are always exactly 86400 seconds; GUS
-      time MUST NOT apply leap seconds (analogous to TAI). For any day index
-      d and time-of-day (h, m, s): instant = d × 86400 + h×3600 +
-      m×60 + s, with 0 ≤ h ≤ 23, 0 ≤ m ≤ 59, 0 ≤ s ≤ 59.
-      The luminous cycle label is semantic only: SC = 06:00-17:59 and
-      LC = 18:00-05:59; it MUST NOT alter arithmetic.</t>
+      <t>The GUS instant is a signed integer number of continuous seconds
+      since the origin (day 0, 00:00:00, stamp 0000DY-01-01-S-00:00:00-LC-TCJ+0).
+      Days are always exactly 86400 seconds; GUS time MUST NOT apply internal
+      leap seconds: it is defined on TAI (the historical IERS TAI-UTC table is
+      applied only inside the Unix/UTC bridge). For any day index d, the
+      observer's civil time (h, m, s) and the observer's declared TCJ offset
+      O (seconds, multiple of 60): instant = d × 86400 + h×3600 + m×60 + s -
+      O. Thus TCJ+0 09:30:00 and TCJ-2:20 07:10:00 denote the same instant.
+      The global reference coordinate is TCJ = TAI + 8400 s (Jerusalem
+      Coordinated Time, meridian 35.2137E; a mathematical offset, not a
+      server). The luminous cycle label is semantic only: SC = 06:00-17:59
+      and LC = 18:00-05:59, ALWAYS evaluated on the observer's declared civil
+      hour; it MUST NOT alter arithmetic.</t>
     </section>
 
     <section title="Canonical timestamp format">
@@ -98,7 +104,7 @@ weekday      = %x53 / %x4C / %x4D / %x41 / %x54 / %x56 / %x42
 gero-time    = "-" hms "-" cycle gero-offset
 hms          = 2DIGIT ":" 2DIGIT ":" 2DIGIT   ; 00..23 : 00..59 : 00..59
 cycle        = "SC" / "LC"
-gero-offset  = "TCJ" ("+" / "-") 1*2DIGIT
+gero-offset  = "TCJ" ("+" / "-") 1*2DIGIT [ ":" 2DIGIT ]
 ]]></sourcecode>
       <t>Parsers SHOULD accept, and emitters MUST NOT emit, the following
       relaxations: '.' in place of '-' as separators, single spaces in place
@@ -107,6 +113,14 @@ gero-offset  = "TCJ" ("+" / "-") 1*2DIGIT
       hour values above 23 and minute/second values above 59; the optional
       time block is atomic: parsers MUST NOT accept a partial time block (for
       example, hours without the TCJ offset).</t>
+      <t>A COMPACT form (29 characters) omits the separators inside the
+      time (HHMMSS) and writes the offset without colon (TCJ0, TCJ+2,
+      TCJ-220); the EXTENDED form above is the canonical output.
+      The offset may carry minutes (e.g. TCJ-2:20; compact TCJ-220;
+      zero offset is emitted as TCJ+0 / TCJ0): minutes were adopted for
+      zones with minute offsets and the value enters the instant
+      computation (see "Continuous instant"). Parsers MUST reject minute
+      values above 59 and |offset| above 24 h.</t>
       <t>The declared weekday letter and the declared cycle are advisory: the
       computed weekday and cycle always prevail. A conforming parser either
       silently corrects them and raises a "weekday_corrected" /
@@ -193,10 +207,12 @@ gero-offset  = "TCJ" ("+" / "-") 1*2DIGIT
       </section>
 
       <section title="GUS TCJ Offsets registry">
-        <t>The TCJ offset is an integer number of hours in the range -23..+23.
-        A new registry "Gerarion Universal Standard TCJ Offsets" assigns
-        semantic names to offsets. Initial entries: TCJ+0 (GUS reference
-        offset, default), TCJ-7 (Example Zone). Offsets outside -23..+23
+        <t>The TCJ offset is an integer number of hours in the range -23..+23
+        (optionally with minutes, e.g. -2:20). A new registry "Gerarion
+        Universal Standard TCJ Offsets" assigns semantic names to offsets.
+        Initial entries: TCJ+0 (GUS reference offset, TCJ = TAI + 8400 s,
+        Jerusalem meridian; default), TCJ-7 (Example Zone). Offsets outside
+        -23..+23
         MUST be rejected with GERO_EINVAL. The registry is semantic, not
         computational: arithmetic never consumes the offset.</t>
       </section>

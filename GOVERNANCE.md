@@ -17,7 +17,7 @@ GUS es un estándar técnica-verificable. La legitimidad no proviene de una
 organización, ni de un autor, ni de una comunidad de afinidad: proviene de
 las **propiedades verificables del artefacto**. Un cambio al kernel GUS no
 "gana" porque lo apruebe un comité: gana porque siguiendo los vectores
-normativos publicados (`vectors/gus-normative-002.json`) todas las
+normativos publicados (`vectors/gus-normative-003.json`) todas las
 implementaciones siguen produciendo el mismo output, bitwise, desde tres
 bases de código (Python, JavaScript, C) escritas de forma independiente.
 
@@ -72,7 +72,7 @@ formalizado en esta gobernanza:
    informados favorablemente (§3.5). Si no hay acuerdo, la propuesta
    queda postergada al siguiente ciclo de 90 días (no se descarta).
 4. **Vectores**: un cambio de kernel aprobado implica un nuevo vector
-   set versionado (`gus-normative-002.json`, etc.) generado con
+   set versionado (`gus-normative-003.json`, etc.) generado con
    `tools/generate_vectors.py` y un commit del CHANGELOG. El vector set
    anterior queda archivado (fuera de la rama principal) para trazabilidad.
 
@@ -237,7 +237,7 @@ oficina de marcas, y esta gobernanza no declara registro alguno.
   usan libremente para implementaciones conformes (paso del vector set
   normativo) y para comunicación honesta sobre el estándar.
 - Se permite señalar conformidad ("implementación conforme a
-  gus-normative-002"); se prohibirá cualquier uso que declare conformidad
+  gus-normative-003"); se prohibirá cualquier uso que declare conformidad
   falsa o patrocinio inexistente, si en el futuro se formaliza registro.
 - Los forks conformes pueden mantener el nombre añadiendo su
   identificador (p. ej. "Gerarion — fork <nombre>"); los forks no
@@ -248,8 +248,8 @@ Si en el futuro se registra la marca, esta sección se actualiza primero
 
 ## 9. Glosario aquí no: apuntadores
 
-- Propiedades y regex del formato: `docs/spec/gus-2.1.0.md` (ES) /
-  `docs/en/gus-2.1.0.md` (EN normativo).
+- Propiedades y regex del formato: `docs/spec/gus-3.0.0.md` (ES) /
+  `docs/en/gus-3.0.0.md` (EN normativo).
 - Modelo de amenazas: `docs/spec/threat-model.md` (ES) / `docs/en/threat-model.md`.
 - Runbook del notario: `docs/notary-runbook.md`.
 - Vectores y cláusula de conformancia: `vectors/README.md`.

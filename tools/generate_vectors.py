@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # SPDX-FileCopyrightText: 2026 verared contributors
-"""Genera vectors/gus-normative-002.json — la única fuente normativa de vectores.
+"""Genera vectors/gus-normative-003.json y gus-3339-002.json — la única fuente normativa de vectores.
 
 Cambios respecto de `gus-normative-001` (archivada en vectors/archive/):
 kernel de calendario GUS 2.1 con Gran Tempalum simétrico (spec GUS v2.1.0,
@@ -41,8 +41,8 @@ from gerarion import notary as nty  # noqa: E402
 from gerarion import notary_cluster as ncl  # noqa: E402
 from gerarion import gts  # noqa: E402
 
-VECTOR_ID = "gus-normative-002"
-GUS_VERSION = "2.1.0"
+VECTOR_ID = "gus-normative-003"
+GUS_VERSION = "3.0.0"
 
 ERR_CODE = {
     cal.GeroEinval: "GERO_EINVAL",
@@ -105,6 +105,12 @@ FORMAT_CANONICAL = [
     {"input": "6AY-01-01-S", "expected": "0006AY-01-01-S", "flags": []},
     {"input": "12000AY-01-01-S", "expected": "12000AY-01-01-S", "flags": []},
     {"input": "31DY-03-08-t", "expected": "0031DY-03-08-T", "flags": []},
+    # --- GUS 3.0.0: formato compacto (Cap 13.1) ---
+    {"input": "2031DY-03-08-T-093000-SC-TCJ0", "expected": "2031DY-03-08-T-09:30:00-SC-TCJ+0", "flags": []},
+    {"input": "2031DY-03-08-T-073000-SC-TCJ-220", "expected": "2031DY-03-08-T-07:30:00-SC-TCJ-2:20", "flags": []},
+    {"input": "2031DY-03-08-T-013000-LC-TCJ-520", "expected": "2031DY-03-08-T-01:30:00-LC-TCJ-5:20", "flags": []},
+    {"input": "2031DY-03-08-T-072000-SC-TCJ+310", "expected": "2031DY-03-08-T-07:20:00-SC-TCJ+3:10", "flags": []},
+    {"input": "2031DY-03-08-T-034000-SC-TCJ+540", "expected": "2031DY-03-08-T-03:40:00-LC-TCJ+5:40", "flags": ["cycle_corrected"]},
 ]
 
 FORMAT_ERRORS = [
@@ -118,6 +124,8 @@ FORMAT_ERRORS = [
     {"input": "2031DY-03-08-T-24:00:00-SC-TCJ+0", "error": "GERO_EINVAL"},
     {"input": "2031DY-03-08-T-09:60:00-SC-TCJ+0", "error": "GERO_EINVAL"},
     {"input": "2031DY-03-08-T-09:30:00-XX-TCJ+0", "error": "GERO_EINVAL"},
+    {"input": "2031DY-03-08-T-093000-SC-TCJ-260", "error": "GERO_EINVAL"},  # minuto 60
+    {"input": "2031DY-03-08-T-093000-SC-TCJ+990", "error": "GERO_EINVAL"},  # hora 99
 ]
 
 FORMAT_STRICT = [
@@ -126,7 +134,7 @@ FORMAT_STRICT = [
 
 #: Marcas completas -> instante continuo
 INSTANT_CASES = [
-    ("2031DY-03-08-T-09:30:00-SC-TCJ+0", 64097688600),
+    ("2031DY-03-08-T-09:30:00-SC-TCJ+0", 64097688600),  # formula idéntica (offset 0)
     ("2031DY-01-01-S-00:00:00-LC-TCJ+0", 64091865600),
     ("0000DY-01-01-S-00:00:00-LC-TCJ+0", 0),
     ("0000DY-01-01-S-00:00:01-LC-TCJ+0", 1),
@@ -136,6 +144,12 @@ INSTANT_CASES = [
     ("0000DY-01-01-S-17:59:59-SC-TCJ+0", 64799),
     ("0000DY-01-01-S-18:00:00-LC-TCJ+0", 64800),
     ("0001AY-00-11-B-12:00:00-SC-TCJ+0", -43200),  # día -1: último día de 0001AY (GT AY simétrico)
+    # --- GUS 3.0.0: el offset entra en la fórmula (Cap 13.1) ---
+    ("2031DY-03-08-T-07:10:00-SC-TCJ-2:20", 64097688600),  # Londres (UTC+0): 07:10 + 2:20 = TCJ 09:30
+    ("2031DY-03-08-T-071000-SC-TCJ-220", 64097688600),     # COMPACTO de la misma vista; equivale a TCJ+0 09:30
+    ("2031DY-03-08-T-041000-SC-TCJ+0", None),              # TCJ+0 04:10:00
+    ("2031DY-03-08-T-072000-SC-TCJ+310", None),            # Bombay/Mumbai (UTC+5:30): 07:20 = TCJ 04:10 → mismo instante
+    ("2031DY-03-08-T-021000-SC-TCJ+540", None),            # Pekín (UTC+8): 02:10 = TCJ 04:10 → mismo instante
 ]
 
 #: Caso de sello diario del notario determinista
@@ -254,13 +268,24 @@ def build_format_vectors() -> dict:
 
 def build_instant_vectors() -> list:
     rows = []
-    for ts, expected in INSTANT_CASES:
+    for case in INSTANT_CASES:
+        ts, expected = case
         parsed = fmt.parse(ts)
         gdate = cal.from_gerarion(parsed.year, parsed.month, parsed.day)
-        instant = cal.instant_from_parts(gdate.day_index, parsed.hour, parsed.minute, parsed.second)
-        assert instant == expected, (ts, instant, expected)
-        rows.append({"ts": ts, "instant": instant, "day": gdate.day_index})
-    return rows
+        instant = cal.instant_from_parts(
+            gdate.day_index, parsed.hour, parsed.minute, parsed.second,
+            offset_seconds=parsed.offset_seconds)
+        if expected is not None:
+            assert instant == expected, (ts, instant, expected)
+        rows.append({"ts": ts, "instant": instant, "day": gdate.day_index,
+                     "offset_seconds": parsed.offset_seconds})
+    # invariante de equivalencia multi-observador: mismo instante, distinta vista
+    by_val = {}
+    for row in rows:
+        by_val.setdefault(row["instant"], []).append(row["ts"])
+    equiv = [{"instant": v, "views": ts} for v, ts in by_val.items() if len(ts) > 1]
+    assert equiv and any(len(e["views"]) >= 3 for e in equiv)
+    return rows + [{"equivalent_views": equiv}]
 
 
 def build_hashots_vectors() -> dict:
@@ -406,7 +431,8 @@ def _ts_to_parts(ts: str):
     parsed = fmt.parse(ts)
     gdate = cal.from_gerarion(parsed.year, parsed.month, parsed.day)
     canon = fmt.to_canonical(parsed)
-    instant = cal.instant_from_parts(gdate.day_index, parsed.hour, parsed.minute, parsed.second)
+    instant = cal.instant_from_parts(gdate.day_index, parsed.hour, parsed.minute, parsed.second,
+                                     offset_seconds=parsed.offset_seconds)
     return canon, instant
 
 
@@ -437,7 +463,7 @@ def main() -> None:
         "slh_dsa": build_slhdsa_vectors(),
         "notary": build_notary_vectors(),
     }
-    out_path = os.path.join(os.path.dirname(__file__), "..", "vectors", "gus-normative-002.json")
+    out_path = os.path.join(os.path.dirname(__file__), "..", "vectors", "gus-normative-003.json")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(data, fh, indent=2, ensure_ascii=False, sort_keys=False)
@@ -445,5 +471,81 @@ def main() -> None:
     print(f"# escribiendo {os.path.abspath(out_path)}")
 
 
+
+
+# ---------------------------------------------------------------------------
+# vectors/gus-3339-002.json — perfil GUS-3339 v3.0.0 (puente TAI/TCJ)
+# ---------------------------------------------------------------------------
+
+def build_3339() -> dict:
+    from gerarion.profiles import (
+        GUS_UNIX_OFFSET, instant_from_rfc3339, instant_to_rfc3339,
+    )
+    from gerarion.tai import TCJ_OFFSET_SECONDS
+
+    old = json.load(open(os.path.join(os.path.dirname(__file__), "..", "vectors", "archive", "gus-3339-001.json"), encoding="utf-8"))
+    stamps = sorted({row["rfc3339"] for row in old["gus3339"] if "rfc3339" in row})
+    stamps += ["1958-01-01T00:00:00Z", "1972-07-01T00:00:00Z",
+               "2017-01-01T00:00:00Z", "1910-01-01T00:00:00Z"]
+    maps = []
+    for st in stamps:
+        try:
+            ins = instant_from_rfc3339(st)
+        except cal.GeroError:
+            continue  # filas negativas del corpus antiguo: rechazo, no mapeo
+        assert instant_to_rfc3339(ins) == st, st
+        maps.append({"op": "map", "ins": ins, "rfc3339": st})
+    # frontera de intercalar histórico: 1 s Unix = 2 s de instante GUS (TAI)
+    a = instant_from_rfc3339("2016-12-31T23:59:59Z")
+    b = instant_from_rfc3339("2017-01-01T00:00:00Z")
+    assert b - a == 2, (a, b)
+    maps.append({"op": "leap_delta", "before": "2016-12-31T23:59:59Z",
+                 "after": "2017-01-01T00:00:00Z", "delta_instant": b - a})
+    # triples canónicos: vista TCJ+0 del instante (recomputada)
+    canon_rows = []
+    for st in ["2026-05-23T09:30:00Z", "2026-03-16T12:00:00Z", "2000-02-29T12:34:56Z"]:
+        ins = instant_from_rfc3339(st)
+        gd, hh, mm, ss = cal.parts_from_instant(ins)
+        canon_rows.append({
+            "ins": ins, "rfc3339": st, "gus_canonical": gd.canonical() +
+            f"-{hh:02d}:{mm:02d}:{ss:02d}-{cal.cycle_of(hh)}-TCJ+0",
+        })
+        assert instant_to_rfc3339(ins) == st
+    # equivalencia multi-observador (Cap 13.1): mismo instante, vistas distintas
+    ins0 = canon_rows[0]["ins"]
+    views = [canon_rows[0]["gus_canonical"]]
+    for off_s, label in ((-8400, "-2:20"), (-19200, "-5:20"), (11400, "+3:10"), (20400, "+5:40")):
+        gd, hh, mm, ss = cal.parts_from_instant(ins0, offset_seconds=off_s)
+        views.append(gd.canonical() + f"-{hh:02d}:{mm:02d}:{ss:02d}-{cal.cycle_of(hh)}-TCJ{label}")
+        back = cal.instant_from_parts(cal.from_gerarion(gd.year, gd.month, gd.day).day_index, hh, mm, ss, offset_seconds=off_s)
+        assert back == ins0, (off_s, back, ins0)
+    return {
+        "schema": "gus-3339-002",
+        "gus_version": GUS_VERSION,
+        "profile": "GUS-3339 (instante GUS <-> RFC 3339 UTC, perfil estricto Z) — puente GUS 3.0.0: unix -> TAI (tabla IERS, +37 s) -> TCJ (= TAI+8400 s) -> GUS",
+        "source": "src/gerarion/profiles.py + src/gerarion/tai.py (GUS 3.0.0)",
+        "deterministic": True,
+        "constant": {
+            "name": "GUS_UNIX_OFFSET",
+            "value": GUS_UNIX_OFFSET,
+            "definition": "instant GUS of 1970-01-01T00:00:00TCJ = (2440588 - 1719313) * 86400; el puente aplica además tai_minus_utc + TCJ_OFFSET_SECONDS",
+            "TCJ_OFFSET_SECONDS": TCJ_OFFSET_SECONDS,
+            "tai_minus_utc_current": 37,
+        },
+        "gus3339": maps,
+        "gus3339_canonical": canon_rows,
+        "tcj_equivalent_views": [{"instant": ins0, "stamps": views}],
+    }
+
+
+def main_3339() -> None:
+    out_path = os.path.join(os.path.dirname(__file__), "..", "vectors", "gus-3339-002.json")
+    with open(out_path, "w", encoding="utf-8") as fh:
+        json.dump(build_3339(), fh, indent=2, ensure_ascii=False, sort_keys=False)
+        fh.write("\n")
+    print(f"# escribiendo {os.path.abspath(out_path)}")
+
+
 if __name__ == "__main__":
     main()
+    main_3339()

@@ -1,12 +1,16 @@
-# Decision D-001 (PROPOSED for 2.x) — GUS instant boundary with UTC/TAI
+# Decision D-001 (CLOSED / ADOPTED in GUS 3.0.0) — GUS instant boundary with UTC/TAI
 
-> **Status**: PROPOSAL STILL OPEN — spec 2.0 got **frozen with midnight
-> UTC** (TODO-001 closed 2026-11-17; the lowest-numerical-registry decision).
-> This decision stays open as a kernel-change candidate for a future 2.x:
-> it requires the 90-day review window (GOVERNANCE §3.1), a new vector set
-> (`gus-normative-002`) and witness regeneration, because it changes the
-> numeric value of instants.
+> **Status**: **CLOSED — ADOPTED in GUS 3.0.0** (branch `beta/gus-3-tai`).
+> Spec 3.0.0 adopts this proposal in full: the instant defined on TAI with
+> the embedded historical IERS TAI−UTC table (spec §9.3), the global
+> reference coordinate **TCJ = TAI + 8,400 s** (Jerusalem, 31.7683°N /
+> 35.2137°E / 754 m) and a new vector set (`gus-normative-003` +
+> `gus-3339-002`; previous sets archived in `vectors/archive/`).
 > **Spanish mirror**: [`docs/decisions/D-001-frontera-utc-tai.md`](../../decisions/D-001-frontera-utc-tai.md).
+>
+> History: spec 2.x was frozen with midnight UTC (TODO-001 closed
+> 2026-11-17) and this decision remained open as a kernel-change
+> candidate until its adoption in 3.0.0.
 
 ## 1. Context
 

@@ -2,7 +2,7 @@
 
 > **Layer**: 0 (normative core) · **Version**: 3339-001 · **Status**: normative
 > **Spanish mirror**: [`docs/profiles/gus-3339-perfil.md`](../../profiles/gus-3339-perfil.md) — this English version prevails (EN > ES).
-> **Vectors**: [`vectors/gus-3339-001.json`](../../../vectors/gus-3339-001.json)
+> **Vectors**: [`vectors/gus-3339-001.json`](../../../vectors/gus-3339-002.json)
 
 ## 1. Purpose
 

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
 [![Pages](https://github.com/verared/gerarion/actions/workflows/pages.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/pages.yml)
-![Specification: GUS v2.1.0](https://img.shields.io/badge/specification-GUS%20v2.1.0-blue)
+![Specification: GUS v3.0.0](https://img.shields.io/badge/specification-GUS%20v3.0.0-blue)
 
 **Regular, universal, verifiable time.**
 Live demo: **<https://verared.github.io/gerarion/>** — EN spec below;
@@ -20,14 +20,14 @@ Live demo: **<https://verared.github.io/gerarion/>** — EN spec below;
 
 The **date translator** runs entirely in your browser at
 <https://verared.github.io/gerarion/>: type a date in any of ten calendars
-(Gerarion GUS 2.1.0 incl. deep `AY` years, proleptic Gregorian/Julian,
+(Gerarion GUS 3.0.0 incl. deep `AY` years, proleptic Gregorian/Julian,
 Egyptian, Ethiopic, Bahá'í, Maya Long Count, Hebrew, Islamic, Chinese) and
 get every equivalent at once — shareable per-date links (`#cal=…&d=…`),
 live GUS clock, month calendar and interval calculator. No network calls,
 no cookies, no accounts; it keeps working offline once loaded.
 For CUDA-free install options see [Distribution](#distribution) below.
 
-> **STATUS: BETA.** Spec **GUS v2.1.0**: the Gran Tempalum
+> **STATUS: ALPHA.** Spec **GUS v3.0.0**: the Gran Tempalum
 > rule is symmetric and infinite in both eras (DY/AY), and the day
 > boundary is normative (`docs/TODO-pendientes.md` TODO-001 closed;
 > only D-001 stays open as a 2.x proposal — see
@@ -40,8 +40,9 @@ layers under one machine-verifiable specification:
 
 1. **Regular calendar:** 12 months of exactly 30 days + closing Tempalum
    (4/11 days). Every fixed date falls on the same weekday, every year.
-2. **Continuous scale:** linear instants over midnight-UTC day labels, with
-   no leap-second table applied (see [Time scale](#time-scale)).
+2. **Continuous scale:** linear instants on a TAI base with the historical
+   IERS TAI−UTC table, coordinated through TCJ = TAI + 8,400 s
+   (Jerusalem; see [Time scale](#time-scale)).
    Comparisons, ranges and totals trivial in any language.
 3. **Verifiable timestamp (GST):** post-quantum signature + chained daily
    Merkle notary. The effective security level is ~2^128 against a
@@ -59,7 +60,7 @@ this English version and the Spanish original
 
 ---
 
-## Why Gerarion (GUS v2.1.0)?
+## Why Gerarion (GUS v3.0.0)?
 
 - **No leap seconds, ever.** One day is always exactly 86,400 seconds.
   Reading the Civil-TCJ clock (`H:MM:SS` plus the day) relative to another reading is a plain
@@ -144,7 +145,7 @@ Canonical output agrees in all three: `day=742049`, `2031DY-09-06-S`,
 | `src/gerarion/` | Python SDK / reference implementation (kernel, GST, adapters) | `pytest tests/` (110 tests) |
 | `web/` | JS kernel (`gerarion.mjs`) + web calculator (static Pages) | `node web/tests.mjs`, `conformance.mjs`, `profiles-conformance.mjs` |
 | `impl-c/` | Independent C11 implementation of the kernel | `make -C impl-c conformance` |
-| `docs/spec/gus-2.1.0.md` | **Normative specification GUS v2.1.0** | normative vectors `vectors/gus-normative-*.json` |
+| `docs/spec/gus-3.0.0.md` | **Normative specification GUS v3.0.0** | normative vectors `vectors/gus-normative-*.json` |
 | `docs/ietf/` | IETF draft `draft-gerarion-gus-00` (submission document) | IETF nits style; follows the spec |
 | `vectors/` | Normative vector set (single source of conforming truth) | fingerprint in the SBOM and CHANGELOG |
 
@@ -247,37 +248,41 @@ interpreted as described in RFC 2119 / RFC 8174.)
 
 ## Time scale
 
-This is the single authoritative statement of what the code does; it
-replaces every earlier phrasing that mentioned TAI (spec §9 is the
-normative home of this text; TODO-001 is closed, D-001 stays open as a
-2.x proposal — DECISIÓN DEL AUTOR).
+This is the single authoritative statement of what the code does (spec §9
+is the normative home of this text; **D-001 CLOSED/ADOPTED and TODO-004
+CLOSED in GUS 3.0.0**).
 
-- **The GUS day starts at midnight UTC.** Day `[n, n+1)` is the integer
-  range of GUS seconds `[n·86400, (n+1)·86400)`; it is not midnight-TAI
-  and not local civil midnight.
-- **The integer does not apply a TAI−UTC table.** The mapping is
-  Unix/POSIX-style: each UTC label `AAAA-MM-DDTHH:MM:SSZ` maps to one
-  integer by pure arithmetic. The scale is *linear in labels*, and the
-  label line does not count historical leap seconds.
-- **Crossing a historical leap second does not preserve physical
-  duration.** Measured with the reference implementation:
+- **The instant is defined on TAI (Layer 0).** `instant` is a continuous,
+  monotonic count of seconds with no internal leap seconds:
+  `instant = day_index·86400 + h·3600 + m·60 + s − offset_seconds`, with
+  origin `0000DY-01-01-S-00:00:00-LC-TCJ+0 = 0`.
+- **The global coordinate is TCJ = TAI + 8,400 s (Layer 1):** Jerusalem
+  Coordinated Time (meridian 35.2137°E; 31.7683°N, 754 m). It is a
+  mathematical offset, not a server: no single point of failure.
+- **The Unix/UTC bridge applies the complete historical IERS TAI−UTC
+  table** (29 entries, 1958-01-01 = 10 s … 2017-01-01 = 37 s, embedded as
+  a constant in Python, JS and C): `unix → TAI (+37 s in 2026) → TCJ
+  (+8,400 s) → instant`. The inverse is exact by table segments and the
+  round-trip is verified by the test suite.
+- **Crossing a historical leap second now preserves physical duration.**
+  Measured with the reference implementation:
   `2016-12-31T23:59:59Z → 2017-01-01T00:00:00Z` advances the GUS integer
-  by **1 s**, while **2 SI seconds** actually elapsed (the UTC label
-  2016-12-31T23:59:60Z existed). Integer differences of GUS per this
-  profile are therefore *label durations*, not always exact physical
-  durations across historical intercalations. If your use case needs
-  physical duration across those dates, convert through a leap-second
-  table (IERS) or use a TSA that stamps on a continuous scale.
+  by **2 s**, exactly the 2 SI seconds elapsed (the UTC label
+  2016-12-31T23:59:60Z existed).
+- **The HH:MM:SS of a timestamp is the observer's civil time**, and the
+  `TCJ±O` field (whole hours or hours:minutes, e.g. `TCJ-2:20`) enters
+  the instant computation; the SC/LC cycle is evaluated on that declared
+  hour, never on `TCJ+0`.
+- **Pre-1958 extension** is a declared proleptic convention (offset 0 s);
+  it does not claim to reproduce any historical TAI realization
+  (spec §9.3).
 - **Context (verified sources):** NIST documents TAI − UTC = 37 s
   (nist.gov, leap seconds). CGPM Resolution 5 (2026) decided that
   continuous UTC takes effect on 20 May 2027 with a maximum |UT1−UTC|
-  of 3.600 s (bipm.org, DOI 10.59161/CGPM2026RES5E). Neither fact
-  changes the mapping above: historical intercalaries remain, and the
-  clock source is still the operator's responsibility.
-- **Pre-1958 extension** is a declared proleptic convention; it does not
-  claim to reproduce any historical TAI realization (spec §9).
+  of 3,600 s (bipm.org, DOI 10.59161/CGPM2026RES5E). The TAI base of GUS
+  aligns the kernel with that resolution.
 
-The English version of `docs/spec/gus-2.1.0.md`, `docs/spec/threat-model.md`,
+The English version of `docs/spec/gus-3.0.0.md`, `docs/spec/threat-model.md`,
 `docs/errata-v1.2.md` and the adoption report lives in
 [`docs/en/`](docs/en/). `README.es.md` is a complete Spanish mirror of this
 README. **In case of divergence between the English
@@ -296,7 +301,7 @@ historical documentation of the Gerarion Calendar lives in
   Python + JS suites + JS and C conformance before publishing).
 - **SBOM**: [`sbom.cdx.json`](sbom.cdx.json) (CycloneDX 1.5).
 - **Normative vectors**:
-  [`vectors/gus-normative-002.json`](vectors/gus-normative-002.json) — the
+  [`vectors/gus-normative-003.json`](vectors/gus-normative-003.json) — the
   conformance of every implementation (Python, JS, C and third parties)
   is declared against this file. Full clause in
   [`vectors/README.md`](vectors/README.md).
@@ -557,7 +562,7 @@ format. It does not solve calendar arithmetic (irregular months), scale
 stability (leap seconds the CGPM has not yet abolished in practice,
 vendor-specific smears), or verifiability (a `2026-05-23T09:30:00Z` is just
 a number; nothing certifies it). GUS uses a continuous linear scale on
-midnight-UTC day labels (see [Time scale](#time-scale)) and adds the
+TCJ = TAI + 8,400 s labels (see [Time scale](#time-scale)) and adds the
 verification layer; the TCJ±O offset keeps presentation compatibility
 with civil reading.
 
@@ -597,7 +602,7 @@ dependencies. The GST/notary layer is opt-in.
 
 ```
 docs/
-├── spec/gus-2.1.0.md          Normative specification (v2.1.0; EN mirror at docs/en)
+├── spec/gus-3.0.0.md          Normative specification (v3.0.0; EN mirror at docs/en)
 ├── spec/threat-model.md     Threat model and guarantees
 ├── GLOSSARY.md              Single-definition glossary, ES and EN
 ├── informe-adopcion-gus.md  Technical report: why adopt GUS in computing (ES)
@@ -640,7 +645,7 @@ and this kernel are logged in [`docs/errata-v1.2.md`](docs/errata-v1.2.md).
 
 - [x] Exact calendar core (integers, no floats) — 91 Python tests
       (incl. 6 fuzzing + 2 conformance) + 22 JS vectors green
-- [x] Conformance against `vectors/gus-normative-002.json`: Python, JS and
+- [x] Conformance against `vectors/gus-normative-003.json`: Python, JS and
       C, 7/7 core categories each; differential fuzzing across the three
       implementations (1500×3 identical cases)
 - [x] Canonical format + normalization (rules 1–7, GERO_* errors)
@@ -654,7 +659,7 @@ and this kernel are logged in [`docs/errata-v1.2.md`](docs/errata-v1.2.md).
 - [x] Normative English (`docs/en/`, 5 documents, EN>ES precedence)
 - [x] Interop profiles (GUS-3339, GUS-3161, GUS-Roughtime) with local e2e
       tests and a pure-stdlib monolithic verifier (`tools/verify_gus.py`);
-      the open question D-001 (see [Time scale](#time-scale)) as a public draft, in 90-day review
+      the adopted decision D-001 (see [Time scale](#time-scale)) as a public draft, in 90-day review
 - [x] Minimal adoption document GUS-for-notation (notation only)
 - [x] First GitHub push + publication via GitHub Releases (independent distribution, no external registries)
 - [ ] First operational OpenTimestamps anchor
@@ -676,6 +681,6 @@ See [NOTICE](NOTICE) and [sbom.cdx.json](sbom.cdx.json).
 
 | Artifact | Version | What it numbers |
 |---|---|---|
-| Normative specification (`docs/spec/gus-2.1.0.md`) | **2.1.0** | The standard itself; only approved normative changes (90-day review window) |
+| Normative specification (`docs/spec/gus-3.0.0.md`) | **3.0.0** | The standard itself; only approved normative changes (90-day review window) |
 | IETF draft (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | The submission document (individual submission) that describes the spec; it can advance without the spec changing |
 | Packages (`pyproject.toml`, `web/package.json`) | **2.4.0** | The software artifacts: Python/JS/C kernel, tests, docs and applied errata. Can change between spec releases |

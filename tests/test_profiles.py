@@ -5,7 +5,7 @@
 
 Cláusula de conformancia del perfil: una implementación que declara el
 perfil es conforme si y solo si pasa el 100 % de los vectores de
-vectors/gus-3339-001.json. El núcleo (gus-normative-002.json) no cambia.
+vectors/gus-3339-002.json. El núcleo (gus-normative-003.json) no cambia.
 """
 import json
 from pathlib import Path
@@ -23,7 +23,7 @@ from gerarion.profiles import (
 from gerarion.calendar import GeroEinval
 
 VECTORS = json.loads(
-    (Path(__file__).resolve().parent.parent / "vectors" / "gus-3339-001.json").read_text(
+    (Path(__file__).resolve().parent.parent / "vectors" / "gus-3339-002.json").read_text(
         encoding="utf-8"
     )
 )
@@ -81,10 +81,13 @@ def test_profile_injectivity_and_domain():
 
 
 def test_epoch_seconds_and_negative_unix():
-    # Unix 0 = instante GUS 62_318_160_000; unix negativo (pre-1970) map fine.
-    assert instant_to_rfc3339(GUS_UNIX_OFFSET) == "1970-01-01T00:00:00Z"
-    assert instant_from_rfc3339("1969-12-31T23:59:59Z") == GUS_UNIX_OFFSET - 1
-    assert instant_to_rfc3339(GUS_UNIX_OFFSET - 1) == "1969-12-31T23:59:59Z"
+    # GUS 3.0.0: unix → TAI (tabla IERS) → TCJ (+8 400 s) → instante GUS.
+    # En 1970 TAI − UTC = 10 s → 1970-01-01T00:00:00Z = 62_318_160_000 + 8 410.
+    assert instant_to_rfc3339(GUS_UNIX_OFFSET + 8410) == "1970-01-01T00:00:00Z"
+    assert instant_from_rfc3339("1970-01-01T00:00:00Z") == GUS_UNIX_OFFSET + 8410
+    # El segundo anterior conserva la unidad de 1 s (sin saltos fraccionarios).
+    assert instant_from_rfc3339("1969-12-31T23:59:59Z") == GUS_UNIX_OFFSET + 8410 - 1
+    assert instant_to_rfc3339(GUS_UNIX_OFFSET + 8410 - 1) == "1969-12-31T23:59:59Z"
 
 
 def test_no_datetime_no_float_path():

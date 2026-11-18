@@ -63,28 +63,17 @@ ninguna representación serializable adicional.
 
 ## TODO-004 — Offsets de zona con minutos en `TCJ±O` (spec §6)
 
-Estado: **ABIERTO** (2026-11) — **DECISIÓN DEL AUTOR**.
+Estado: **CERRADO / ADOPTADO en GUS 3.0.0** (2026-12) — el parser y el
+formateador canónico de los tres lenguajes (Python, C11, JS) aceptan y
+emiten offsets con minutos (`TCJ-2:20` ampliado / `TCJ-220` compacto) y
+el campo entra en el cálculo del instante (ver spec 3.0.0 §5/§6/§9.4 y
+vectores `gus-normative-003`).
 
-Contexto: el campo `TCJ±O` admite hoy solo horas enteras (`TCJ\d{1,2}`);
-existen zonas civiles con minutos, p. ej. `Asia/Kathmandu` con `+05:45`.
-El hallazgo F3 del informe técnico independiente lo reprodujo: Python y JS
-rechazan 2031DY-…-TCJ+5:45.
-
-Opciones:
-
-1. **Extensión compatible (propuesta en la spec §6 ES+EN):** aceptar en
-   ENTRADA la forma opcional `TCJ±H:MM` como presentación sin valor
-   canónico indefinido; el entero `instant` no cambia, y el formato
-   canónico sigue emitiendo horarios enteros. No rompe ningún vector
-   vigente (todos usan `TCJ+0`). Coste: el sello canónico no puede
-   expresar `+05:45` sin ampliar la gramática — hay que decidir la
-   forma canónica (redondeo prohibido; propongo `TCJ+05:45` literal).
-2. **No hacer nada:** documentar que los offsets con minutos quedan fuera
-   del perfil y que la lectura por zona (tzdata) sigue siendo tarea del
-   adaptador, no del formato.
-
-Mientras la decisión no se tome, el formato no cambia: ninguna
-implementación acepta hoy offsets con minutos (comportamiento actual).
+Historial (resuelto): el hallazgo F3 del informe técnico independiente
+(2026-11) reproducía el rechazo de `2031DY-…-TCJ+5:45` en Python y JS.
+La opción 1 (extensión compatible) fue la adoptada, ampliada en 3.0.0:
+el offset ya no es decorativo, entra en el cálculo del instante
+(`instant` = … − offset_seconds).
 
 ## TODO-005 — Era UTC continuo: contexto para 2.x (informativo)
 

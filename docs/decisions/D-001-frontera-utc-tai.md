@@ -1,12 +1,17 @@
-# Decisión D-001 (PROPUESTA para 2.x) — Frontera del instante GUS con UTC/TAI
+# Decisión D-001 (CERRADA / ADOPTADA en GUS 3.0.0) — Frontera del instante GUS con UTC/TAI
 
-> **Estado**: PROPUESTA VIVA — la spec 2.1 quedó **congelada con medianoche
-> UTC** (TODO-001 cerrado 2026-11-17, decisión de menor registro numérico).
-> Esta decisión permanece abierta como candidato a cambio de kernel en una
-> futura 2.x: exige ventana de revisión de 90 días (GOVERNANCE §3.1),
-> nuevo vector set (`gus-normative-002`) y regeneración de sellos, porque
-> cambia el valor numérico de los instantes. **EN normativo**:
+> **Estado**: **CERRADA — ADOPTADA en GUS 3.0.0** (rama
+> `beta/gus-3-tai`). La spec 3.0.0 adopta la propuesta íntegra: instante
+> definido sobre TAI con la tabla histórica IERS TAI−UTC embebida
+> (§9.3), coordenada global **TCJ = TAI + 8,400 s** (Jerusalén,
+> 31.7683°N / 35.2137°E / 754 m) y nuevo vector set
+> (`gus-normative-003` + `gus-3339-002`; los anteriores archivados en
+> `vectors/archive/`). **EN normativo**:
 > [`docs/en/decisions/D-001-utc-tai-boundary.md`](../en/decisions/D-001-utc-tai-boundary.md).
+>
+> Histórico: la spec 2.1 quedó congelada con medianoche UTC (TODO-001
+> cerrado 2026-11-17) y esta decisión permaneció abierta como candidato
+> a cambio de kernel hasta su adopción en 3.0.0.
 >
 > **Qué hace HOY el código** (sección única «Escala de tiempo» del README):
 > el día GUS rueda a medianoche UTC y el entero NO aplica tabla TAI−UTC

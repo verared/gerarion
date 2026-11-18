@@ -166,10 +166,10 @@ function bindTheme() {
 
 // ---------------------------------------------------------------------------
 // Reloj en vivo
-// Convención de la spec: el día rueda a medianoche UTC (el instante continuo
-// es lineal día*86400 + h*3600 + m*60 + s); el ciclo SC/LC es solo la etiqueta
-// luminosa de la hora de referencia (SC 06:00-17:59, LC 18:00-05:59, en UTC
-// para el modo TCJ+0).
+// GUS 3.0.0: la coordenada global es TCJ+0 = TAI + 8,400 s (Jerusalén ·
+// 35.2137°E); TCJ ≈ UTC + 8,437 s (tabla TAI−UTC: +37 s). El ciclo SC/LC se
+// evalúa sobre la hora civil declarada del observador (SC 06:00-17:59,
+// LC 18:00-05:59); el sello canónico se emite SIEMPRE en la vista TCJ+0.
 // ---------------------------------------------------------------------------
 
 let clockMode = 'utc';
@@ -177,28 +177,49 @@ let clockMode = 'utc';
 function clockStamp() {
   const now = new Date();
   const utcMode = clockMode === 'utc';
-  // W2: día, JDN, day_index, instant y sello canónico son SIEMPRE UTC
-  // (TCJ+0). El modo local solo cambia la PRESENTACIÓN de la hora y la
-  // etiqueta TCJ±O; nunca desplaza el entero ni el sello.
-  const y = now.getUTCFullYear();
-  const mo = now.getUTCMonth() + 1;
-  const d = now.getUTCDate();
-  const h = now.getUTCHours();
-  const mi = now.getUTCMinutes();
-  const s = now.getUTCSeconds();
-  const dayIndex = dayIndexFromGregorian(y, mo, d);
+  // W2: día, JDN, day_index, instant y sello canónico son SIEMPRE TCJ+0
+  // (Jerusalén · TAI + 8,400 s, GUS 3.0.0). El modo local solo cambia la
+  // PRESENTACIÓN de la hora y la etiqueta TCJ±O; nunca desplaza el entero
+  // ni el sello.
+  const unix = Math.floor(now.getTime() / 1000);
+  const tcj = ((unix + TAI_MINUS_UTC + TCJ_OFFSET_SECONDS) % 86400 + 86400) % 86400;
+  const dayIndex = Math.floor((unix + TAI_MINUS_UTC + TCJ_OFFSET_SECONDS) / 86400);
   const g = toGerarion(dayIndex);
+  const h = Math.floor(tcj / 3600);
+  const mi = Math.floor((tcj % 3600) / 60);
+  const s = tcj % 60;
   const cyc = cycleOf(h);
-  const offsetHours = utcMode ? 0 : -now.getTimezoneOffset() / 60;
   const stamp = canonicalOf({ ...g, hour: h, minute: mi, second: s, cycle: cyc, offset: 0 });
   // W2: presentación local es solo texto auxiliar; el sello y el entero
   // (instant) permanecen en TCJ+0 en ambos modos.
+  const utcOffSeconds = -now.getTimezoneOffset() * 60;
+  const tcjOffSeconds = utcOffSeconds - (TAI_MINUS_UTC + TCJ_OFFSET_SECONDS);
+  const taiText = `TAI = UTC + ${TAI_MINUS_UTC} s · TCJ = TAI + 8,400 s`;
   const localText = utcMode
-    ? 'TCJ+0 (UTC)'
-    : `TCJ (local) ${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())} · offset UTC ${offsetHours >= 0 ? '+' : ''}${offsetHours} h`;
+    ? `TCJ+0 (Jerusalén · ${taiText})`
+    : `TCJ (local) ${tcjOffLabel(tcjOffSeconds)} · ${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())} ${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())} UTC · ${taiText}`;
   const jdnNow = ORIGIN_JDN + dayIndex;
   const instant = dayIndex * 86400 + h * 3600 + mi * 60 + s;
-  return { stamp, dayIndex, jdnNow, instant, g, cyc, offsetHours, utcMode, localText };
+  return { stamp, dayIndex, jdnNow, instant, g, cyc, utcOffSeconds, tcjOffSeconds, utcMode, localText };
+}
+
+const TAI_MINUS_UTC = 37;         // TAI − UTC vigente desde 2017 (tabla IERS)
+const TCJ_OFFSET_SECONDS = 8400;  // TCJ = TAI + 8,400 s (Jerusalén, Cap 7)
+
+// TCJ ≈ UTC + 37 s (TAI) + 8,400 s → corrección aplicada al instante Unix.
+function tcjParts(unixSeconds) {
+  const tcj = ((unixSeconds + TAI_MINUS_UTC + TCJ_OFFSET_SECONDS) % 86400 + 86400) % 86400;
+  return { h: Math.floor(tcj / 3600), m: Math.floor((tcj % 3600) / 60), s: tcj % 60 };
+}
+
+// Etiqueta civil TCJ±H:MM del observador (redondeo al minuto: el residuo
+// de 37 s de TAI − UTC se muestra aparte en la equivalencia TAI/UTC).
+function tcjOffLabel(offSeconds) {
+  const sign = offSeconds >= 0 ? '+' : '-';
+  const a = Math.abs(offSeconds);
+  const hh = Math.floor(a / 3600);
+  const mm = Math.round((a % 3600) / 60);
+  return `TCJ${sign}${mm ? `${hh}:${String(mm).padStart(2, '0')}` : `${hh}`}`;
 }
 
 function tickClock() {
@@ -850,7 +871,7 @@ function runSelfTest() {
   if (!el) return;
   try {
     // tests.mjs ya corrió sus 36 checks al importarse (el mismo set normativo
-    // en el navegador, gus-normative-002 + reglas del núcleo + quickVerify)
+    // en el navegador, gus-normative-003 + reglas del núcleo + quickVerify)
     el.textContent = report();
     el.classList.add(failed === 0 ? 'pass' : 'fail');
   } catch (err) {

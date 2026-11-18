@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // SPDX-FileCopyrightText: 2026 verared contributors
 /**
- * Runner de conformancia del perfil GUS-3339 — consume vectors/gus-3339-001.json.
+ * Runner de conformancia del perfil GUS-3339 — consume vectors/gus-3339-002.json.
  *
  * Cláusula de conformancia (vectors/README.md): una implementación que declara
  * el perfil GUS-3339 es conforme si y solo si pasa el 100 % de los vectores de
- * este archivo. El núcleo de calendario (gus-normative-002.json) no cambia.
+ * este archivo. El núcleo de calendario (gus-normative-003.json) no cambia.
  *
  *   node web/profiles-conformance.mjs
  */
@@ -14,7 +14,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import * as g from "./gerarion.mjs";
 
-const path = fileURLToPath(new URL("../vectors/gus-3339-001.json", import.meta.url));
+const path = fileURLToPath(new URL("../vectors/gus-3339-002.json", import.meta.url));
 const v = JSON.parse(readFileSync(path, "utf8"));
 
 let total = 0;
@@ -91,7 +91,7 @@ for (const c of v.gus3339_canonical) {
 
 // F1: casos negativos compartidos — una entrada inválida se rechaza, jamás
 // se normaliza. Archivo nuevo (gus-3339-negative-001.json); no toca el
-// vector normativo gus-3339-001.json.
+// vector normativo gus-3339-002.json.
 const negPath = fileURLToPath(new URL("../vectors/gus-3339-negative-001.json", import.meta.url));
 const neg = JSON.parse(readFileSync(negPath, "utf8"));
 let negTotal = 0;

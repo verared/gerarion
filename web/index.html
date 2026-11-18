@@ -123,7 +123,7 @@
         <div class="clock-controls">
           <label class="visually-hidden" for="clock-tz">Zona de referencia</label>
           <select id="clock-tz" class="chip" title="Zona de referencia">
-            <option value="utc">TCJ+0 (UTC)</option>
+            <option value="utc">TCJ+0 (Jerusalén · TAI + 8,400 s)</option>
             <option value="local">TCJ local</option>
           </select>
           <button id="now-copy" class="chip" type="button" title="Copiar la marca completa">copiar</button>
@@ -133,7 +133,7 @@
       <div id="now-details" class="dim" aria-live="off"></div>
       <div class="cycle-box">
         <span id="now-cycle" class="cycle">—</span>
-        <span class="cycle-legend">SC 06:00–17:59 · LC 18:00–05:59 (hora de referencia: UTC)</span>
+        <span class="cycle-legend">SC 06:00–17:59 · LC 18:00–05:59 (hora declarada del observador; TCJ+0 = Jerusalén = TAI + 8,400 s)</span>
       </div>
       <details class="fold" id="tecnicos">
         <summary>Detalles técnicos</summary>
@@ -191,7 +191,7 @@
       <h2 id="selftest-title">Verificación en el navegador</h2>
       <p class="dim">
         Tu navegador ejecuta el mismo vector normativo que la suite oficial
-        (<tt>gus-normative-002</tt>). Si el portal y la spec alguna vez
+        (<tt>gus-normative-003</tt>). Si el portal y la spec alguna vez
         divergieran, la página misma lo delata.
       </p>
       <details class="fold">
@@ -205,9 +205,10 @@
     <p class="dim">
       Matemática 100 % local: cero backend, cero cookies, cero telemetría, cero
       dependencias; una vez cargada, la página funciona sin conexión.
-      Convención de hora: todo pivote usa medianoche UTC como inicio del día
-      GUS (el sello conserva la hora como dato adjunto).
-      Espec: <a href="https://github.com/verared/gerarion/blob/main/docs/spec/gus-2.1.0.md">gus-2.1.0.md</a> —
+      Escala de tiempo (GUS 3.0.0): instant continuo sobre TAI (tabla IERS,
+      sin segundos intercalares internos) con TCJ = TAI + 8,400 s como
+      coordenada global (Jerusalén, 35.2137°E).
+      Espec: <a href="https://github.com/verared/gerarion/blob/main/docs/spec/gus-3.0.0.md">gus-3.0.0.md</a> —
       Releases con <tt>SHA256SUMS.txt</tt>:
       <a href="https://github.com/verared/gerarion/releases">github.com/verared/gerarion/releases</a>.
     </p>

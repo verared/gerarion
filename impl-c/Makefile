@@ -14,7 +14,7 @@ gus-cli: gus-cli.c gus.c gus.h
 	$(CC) $(CFLAGS) -o $@ gus-cli.c gus.c
 
 conformance: gus-conformance
-	./gus-conformance ../vectors/gus-normative-002.json ../vectors/gus-3339-negative-001.json ../vectors/gus-regression-001.json ../vectors/gus-quickverify-001.json
+	./gus-conformance ../vectors/gus-normative-003.json ../vectors/gus-3339-negative-001.json ../vectors/gus-regression-001.json ../vectors/gus-quickverify-001.json
 
 fuzz: gus-cli
 	python3 ../tools/fuzz_diff.py

@@ -243,9 +243,13 @@ def verify_receipt(receipt: dict, trusted_pubkeys_b64: Iterable[str] = (),
     if radius < 0:
         errors.append("radius negativo: aserción de ventana inválida, receipt no usable")
     parts_signed = signed.split(b"\n")
-    if len(parts_signed) < 3:
+    # Formato: dominio || nonce(32 B) || midpoint(20 B) || radius || ''.
+    # El nonce es binario y PUEDE contener 0x0a: se reensambla separando
+    # midpoint y radius desde el final (ambos libres de \n por construcción),
+    # nunca asumiendo una posición fija del nonce en el split.
+    if len(parts_signed) < 4:
         return {"ok": False, "errors": ["bytes firmados malformados"], "window": None}
-    nonce = parts_signed[1]
+    nonce = b"\n".join(parts_signed[1:-3])
     if expected_nonce is not None and not hmac.compare_digest(nonce, expected_nonce):
         errors.append("el nonce del receipt no coincide con el nonce de la consulta: "
                       "el receipt no prueba la existencia de LA marca verificada")

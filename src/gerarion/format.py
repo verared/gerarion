@@ -2,12 +2,18 @@
 # SPDX-FileCopyrightText: 2026 verared contributors
 """Formato canónico de marca temporal Geroriana y normalización de entradas.
 
-Implementa la especificación de formatos (spec GUS 2.1, §6):
+Implementa la especificación de formatos (spec GUS 3.0.0, §6 / Cap 13.1):
 
-    AAAAYY-MM-DD-X[-HH:MM:SS-CC-TCJ±O]
+    Extendido:  AAAAYY-MM-DD-X-HH:MM:SS-CC-TCJ±O   (ej. TCJ+0, TCJ-2:20)
+    Compacto:   AAAAYY-MM-DD-X-HHMMSS-CC-TCJ±O     (ej. TCJ0, TCJ+2, TCJ-220)
 
-    Obligatorios:   AAAAYY-MM-DD-X      (fecha + letra de día Nuvid)
-    Opcionales:     -HH:MM:SS-CC-TCJ±O  (hora, ciclo, offset temporal)
+    Obligatorios:   AAAAYY-MM-DD-X          (fecha + letra de día Nuvid)
+    Opcionales:     -HH:MM:SS-CC-TCJ±O      (hora, ciclo, offset temporal)
+
+    Offset: el signo es OBLIGATORIO salvo el cero sin firmar (`TCJ+0` o
+    `TCJ0`). Con minutos (TODO-004 cerrado, v3.0.0): `TCJ+H:MM` (ext.) /
+    `TCJ±HMM` (comp., hora de 1 dígito + MM de 2, p. ej. `TCJ+540` = +05:40;
+    hora ≥ 10 usa HHMM: `TCJ+1030` = +10:30).
 
 Errores canónicos:
     GERO_EINVAL     campo fuera de rango o sintaxis inválida
@@ -24,13 +30,20 @@ from typing import List
 from . import calendar as cal
 from .calendar import GeroEinval, GeroError, GeroItemporal
 
+_DATE_PART = r"^(?P<year>\d{1,6})(?:(?P<era>DY|AY))?[-.](?P<month>\d{1,2})[-.](?P<day>\d{1,2})[-.](?P<weekday>[SLMATVBslmatvb])"
+
 TIMESTAMP_RE = re.compile(
-    r"^(?P<year>\d{1,6})(?:(?P<era>DY|AY))?"
-    r"[-.](?P<month>\d{1,2})[-.](?P<day>\d{1,2})[-.]"
-    r"(?P<weekday>[SLMATVBslmatvb])"
-    r"(?:[-](?P<hour>\d{1,2}):(?P<minute>\d{1,2}):(?P<second>\d{1,2})"
+    _DATE_PART
+    + r"(?:[-](?P<hour>\d{1,2}):(?P<minute>\d{1,2}):(?P<second>\d{1,2})"
     r"[-](?P<cycle>SC|LC|sc|lc)"
-    r"[-]TCJ(?P<offset>[+-]\d{1,2}))?$"
+    r"[-]TCJ(?:(?P<offzero>0(?!\d))|(?P<offsign>[+\-])(?P<offh>\d{1,2})(?::(?P<offm>\d{2}))?))?$"
+)
+
+TIMESTAMP_COMPACT_RE = re.compile(
+    _DATE_PART
+    + r"(?:[-](?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})"
+    r"[-](?P<cycle>SC|LC|sc|lc)"
+    r"[-]TCJ(?:0|(?P<coffsign>[+\-])(?P<coffdigits>\d{1,4})))?$"
 )
 
 WEEKDAY_LETTERS = {abbrev: idx for idx, (_, abbrev, _latin) in enumerate(cal.WEEKDAYS)}
@@ -51,7 +64,10 @@ class ParsedTimestamp:
     second: int = 0
     autocycle: bool = True   # ciclo inferido de la hora
     cycle: str | None = None  # si el emisor declaró SC/LC explícito
-    offset: int = 0           # TCJ en horas
+    offset: int = 0           # TCJ±O en horas (compatibilidad 2.x)
+    offset_seconds: int = 0   # TCJ±O exacto en segundos (GUS 3.0.0)
+    has_time: bool = False    # la marca trae hora completa
+    compact: bool = False     # la entrada vino en formato compacto (29+ chars)
     flags: List[str] = field(default_factory=list)
 
 
@@ -71,6 +87,10 @@ def parse(raw: str, *, strict_weekday: bool = False) -> ParsedTimestamp:
     """
     cleaned = normalize(raw)
     m = TIMESTAMP_RE.match(cleaned)
+    compact = False
+    if not m:
+        m = TIMESTAMP_COMPACT_RE.match(cleaned)
+        compact = True
     if not m:
         raise GeroEinval(f"Sintaxis inválida: {raw!r}")
     flags: List[str] = []
@@ -109,6 +129,7 @@ def parse(raw: str, *, strict_weekday: bool = False) -> ParsedTimestamp:
     hour = minute = second = 0
     cycle: str | None = None
     offset = 0
+    offset_seconds = 0
     if m.group("hour") is not None:
         hour, minute, second = (
             int(m.group("hour")),
@@ -118,7 +139,8 @@ def parse(raw: str, *, strict_weekday: bool = False) -> ParsedTimestamp:
         if hour > 23 or minute > 59 or second > 59:
             raise GeroEinval("Hora fuera de rango")
         cycle = m.group("cycle").upper() if m.group("cycle") else None
-        offset = int(m.group("offset") or 0)
+        offset_seconds = _offset_seconds_from_match(m, compact)
+        offset = offset_seconds // 3600 if offset_seconds % 3600 == 0 else 0
         if cycle is not None:
             expected = cal.cycle_of(hour)
             if cycle != expected:
@@ -137,8 +159,41 @@ def parse(raw: str, *, strict_weekday: bool = False) -> ParsedTimestamp:
         second=second,
         cycle=cycle,
         offset=offset,
+        offset_seconds=offset_seconds,
+        has_time=m.group("hour") is not None,
+        compact=compact,
         flags=flags,
     )
+
+
+def _offset_seconds_from_match(m: "re.Match", compact: bool) -> int:
+    """Extrae el offset TCJ±O en segundos del match (extendido o compacto).
+
+    Extendido: `TCJ0`, `TCJ+2`, `TCJ-2:20`, `TCJ+05:45`. Compacto: `TCJ0`,
+    `TCJ+2`, `TCJ-220` (=−02:20), `TCJ+1030` (=+10:30). Rango ±23:59.
+    """
+    if compact:
+        sign = m.group("coffsign")
+        if sign is None:
+            return 0  # TCJ0 exacto
+        d = m.group("coffdigits")
+        if len(d) <= 2:
+            h, mi = int(d), 0
+        elif len(d) == 3:
+            h, mi = int(d[0]), int(d[1:])
+        else:
+            h, mi = int(d[:2]), int(d[2:])
+    else:
+        if m.group("offzero") is not None:
+            return 0  # TCJ0 literal
+        if m.group("offsign") is None or m.group("offh") is None:
+            return 0
+        sign = m.group("offsign")
+        h, mi = int(m.group("offh")), int(m.group("offm") or 0)
+    if h > 23 or mi > 59:
+        raise GeroEinval(f"GERO_EINVAL: offset TCJ fuera de rango (±23:59): {h:02d}:{mi:02d}")
+    val = h * 3600 + mi * 60
+    return -val if sign == "-" else val
 
 
 def quick_verify(raw: str) -> bool:
@@ -157,19 +212,54 @@ def quick_verify(raw: str) -> bool:
     return not parsed.flags
 
 
+def _format_offset(offset_seconds: int, compact: bool) -> str:
+    """TCJ±O textual: `TCJ0`/`TCJ+2`/`TCJ-2:20` (ext.) o `TCJ±HMM` (comp.)."""
+    if offset_seconds == 0:
+        return "TCJ0" if compact else "TCJ+0"
+    sign = "-" if offset_seconds < 0 else "+"
+    total = abs(offset_seconds)
+    h, rem = divmod(total, 3600)
+    if rem:
+        m = rem // 60
+        if compact:
+            if h < 10:
+                return f"TCJ{sign}{h}{m:02d}"
+            return f"TCJ{sign}{h:02d}{m:02d}"
+        return f"TCJ{sign}{h}:{m:02d}"
+    if compact:
+        return f"TCJ{sign}{h}"
+    return f"TCJ{sign}{h}" if h >= 10 else f"TCJ{sign}{h}"
+
+
 def to_canonical(parsed: ParsedTimestamp) -> str:
-    """Serializa a formato canónico completo."""
+    """Serializa a formato canónico extendido (GUS 3.0.0, Cap 13.1)."""
     era = "DY" if parsed.year >= 0 else "AY"
     yy = abs(parsed.year)
     date = cal.from_gerarion(parsed.year, parsed.month, parsed.day)
     _, abbrev = date.weekday
     base = f"{yy:04d}{era}-{parsed.month:02d}-{parsed.day:02d}-{abbrev}"
-    if parsed.cycle is None:
+    if not parsed.has_time:
         return base
     cycle = parsed.cycle or cal.cycle_of(parsed.hour)
     return (
         f"{base}-{parsed.hour:02d}:{parsed.minute:02d}:{parsed.second:02d}"
-        f"-{cycle}-TCJ{parsed.offset:+d}"
+        f"-{cycle}-{_format_offset(parsed.offset_seconds, compact=False)}"
+    )
+
+
+def to_compact(parsed: ParsedTimestamp) -> str:
+    """Serializa a formato canónico compacto (29+ chars, Cap 13.1: HHMMSS)."""
+    era = "DY" if parsed.year >= 0 else "AY"
+    yy = abs(parsed.year)
+    date = cal.from_gerarion(parsed.year, parsed.month, parsed.day)
+    _, abbrev = date.weekday
+    base = f"{yy:04d}{era}-{parsed.month:02d}-{parsed.day:02d}-{abbrev}"
+    if not parsed.has_time:
+        return base
+    cycle = parsed.cycle or cal.cycle_of(parsed.hour)
+    return (
+        f"{base}-{parsed.hour:02d}{parsed.minute:02d}{parsed.second:02d}"
+        f"-{cycle}-{_format_offset(parsed.offset_seconds, compact=True)}"
     )
 
 
