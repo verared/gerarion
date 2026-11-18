@@ -1,7 +1,30 @@
 cff-version: 1.2.0
 message: "If you use GUS, please cite it as below."
 title: "Gerarion Universal Standard (GUS 3.0.0): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables"
-version: 3.0.1
+cff-version: 1.2.0
+message: "If you use GUS, please cite it as below."
+title: "Gerarion Universal Standard (GUS 3.0.0): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables"
+version: 3.1.0
+date-released: "2026-11-18"
+license:
+  - MIT
+  - Apache-2.0
+  - CC-BY-4.0
+  - CC0-1.0
+authors:
+  - name: "verared"
+    website: "https://github.com/verared"
+  - name: "Gerardo Loyola"
+    website: "https://github.com/geroiloyola"
+abstract: "GUS defines a regular calendar kernel (364-day common year, 371-day Gran Tempalum year) plus a continuous instant scale and an optional notary anchoring layer with post-quantum signatures (SLH-DSA / FIPS 205). Three independent implementations (Python, JavaScript, C) conform to a single normative vector set."
+keywords:
+  - calendar
+  - timestamp
+  - post-quantum
+  - cryptography
+  - time
+repository-code: "https://github.com/verared/gerarion"
+
 date-released: "2026-11-18"
 license:
   - MIT
