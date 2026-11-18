@@ -360,3 +360,99 @@ Optional astronomical verification for Level 3 evidence:
 - Cryptographic or anchoring-only changes: `x.0.z` (minor).
 - Any change requires: (1) new vectors in `tests/`, (2) an
   errata/changelog entry, (3) a public comment period of one release.
+
+## Appendix A — Mathematical formalization and normative epoch (GUS 3.0.0)
+
+This appendix states, with closed proofs, the numerical properties of the
+calendar and the status of the epoch. Nothing here changes the algorithm:
+freezing the arithmetic and documenting why it is safe are complementary
+goals.
+
+### A.1 Exact mean year length
+
+With the solar accumulator in microdays `U = 7,000,000` and the Tempalum
+step `S = 1,242,190`, every block of `U` years adds `7·S = 8,695,330` solar
+days, distributed as 7 extra days in `S` Gran Tempalum years:
+
+    L  = 364 + 7·(1,242,190 / 7,000,000)
+       = 364 + 8,695,330 / 7,000,000
+       = 364 + 1.24219
+       = 365.24219 days  (exact rational, no approximation)
+
+The decimal expansion terminates after exactly 5 decimals: 365.24219 is
+not a floating-point approximation but the exact rational quotient,
+coincident with the mean tropical year of the J2000 reference.
+
+### A.2 Strict solar drift bound: |Δ| < 7 days for all n ∈ ℤ
+
+Let `ysi(n)` be the `day_index` of 1-1 of year `n` and, with the Euclidean
+floor division (remainder `R_n = n·S mod U ∈ [0, U)`, valid in the `AY`
+era too):
+
+    g(n)    = floor(n·S / U)
+    ysi(n)  = n·364 + 7·g(n)
+
+Subtracting the ideal trace `n·L`:
+
+    ysi(n) − n·L = 7·( floor(n·S/U) − n·S/U ) = −7·( R_n / U )
+
+with `R_n/U ∈ [0, 1)` by the very definition of the Euclidean remainder
+(invariant: `n = q·U + R_n`, `0 ≤ R_n < U`, valid for `n < 0`). Therefore:
+
+    −7 < ysi(n) − n·L ≤ 0      and      |Δ(n)| < 7 days, ∀ n ∈ ℤ (AY and DY)
+
+The drift of the year start against the ideal solar calendar is bounded
+STRICTLY by 7 days: the year never starts more than 7 days "after" the
+ideal point, and the value is reclaimed at every Gran Tempalum (the
+remainder never accumulates across cycles). Numerical check of the
+invariant: for n = 1 … 200,000, max(R_n/U) = 0.99999857… < 1.
+
+### A.3 Perpetual weekly invariance
+
+Every common year lasts `364 ≡ 0 (mod 7)` days and every Gran Tempalum
+year `371 = 364 + 7 ≡ 0 (mod 7)`. Whatever the year, the week ends
+aligned: 1-1 of EVERY year falls on the same weekday (Soludyia), and for
+any two days `d₁, d₂`:
+
+    weekday(d₁) = weekday(d₂)  ⟺  d₁ ≡ d₂ (mod 7),   ∀ d ∈ ℤ
+
+The Gerarion week can never misalign, in any era or offset; the day
+letter is a pure function `weekday(d) = ((d mod 7)+7) mod 7`.
+
+### A.4 Normative epoch convention ≠ historiography
+
+The standard epoch is:
+
+    0000DY-01-01-S  ≡  JDN 1,719,313  ≡  March 21 of proleptic −5
+                       (astronomical year −5; 6 BC)
+
+It is declared a **fixed, deterministic, reproducible mathematical
+epoch**: an origin chosen for the project's astronomical and cultural
+coherence. Its normative function is UNIQUENESS and REPRODUCIBILITY of
+coordinates, not the historiographic dating of ancient events: GUS makes
+no claim about the exact date of any historical event, and
+historiographic debates are explicitly DECOUPLED from the standard (§10:
+a fork may set a different epoch by changing the base JDN, without
+altering a single step of the algorithm).
+
+### A.5 Safe operational envelope per platform
+
+Verified limits (no signed overflow; C11 returns `GERO_ERANGE` before
+computing any out-of-range value):
+
+| Quantity | C11 (`impl-c`) | Python (reference) | JavaScript (`web/`) |
+|---|---|---|---|
+| `instant` (s) | exact int64 within ±9,223,372,036,854,775,807 s ≈ ±2.92·10¹¹ years; beyond: `GERO_ERANGE` | arbitrary `int`: exact on all ℤ (wire format: int64) | `BigInt`: exact (covers the whole int64 contract) |
+| `nanos` | uint32 0..999,999,999, separate field | int 0..999,999,999, separate field (strict validation) | 0..999,999,999, separate field |
+| Calendar: `day_index` | ±9,172,971,096,762,673,200 d ≈ ±2.51·10¹⁶ years | exact | `Number` exact up to 2⁵³−1 d ≈ ±2.466·10¹³ years; beyond: `GERO_EINVAL` |
+| Gregorian path (JDN) | ±2,305,843,009,211,906,069 d ≈ ±6.31·10¹⁵ years | exact | 2⁵³−1 (the factor 4 of the conversion bounds earlier) |
+| Input year (`fromGerarion`) | ±25,200,470,046,051,300 ≈ ±2.52·10¹⁶ years | exact | ±23,703,155,933,528 ≈ ±2.37·10¹³ years |
+
+`day_index` values above 2⁵³−1 are valid and exact in C11 and Python;
+JavaScript rejects them. This asymmetry is the contract (see the
+appendix in `gus.h` and the header comment of `web/gerarion.mjs`), and
+the test web exercises it: `tools/fuzz_diff.py --cases 1000000` (common
+`tg`/`fg` ops, `tgs`/`fgs` Python↔C, and `tgq`/`fgq`/`grq`/`inq` with
+`GERO_ERANGE` expected) and `make -C impl-c audit` (one million
+round-trips at the int64 extremes plus 400,000 parser inputs under
+ASan+UBSan).

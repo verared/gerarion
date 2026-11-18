@@ -18,3 +18,5 @@ impl-c/gus-cli
 impl-c/gus-conformance
 impl-c/*.o
 AGENTS.md
+impl-c/gus-audit-stress
+impl-c/gus-audit-stress.dSYM/

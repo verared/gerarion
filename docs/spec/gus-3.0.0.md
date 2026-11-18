@@ -366,3 +366,98 @@ Verificación astronómica opcional para evidencia de Nivel 3:
 - Cambios solo criptográficos o de anclaje: `x.0.z` (menor).
 - Cualquier cambio requiere: (1) vectores nuevos en `tests/`, (2) entrada de
   errata/changelog, (3) periodo de comentario público de un release.
+
+## Apéndice A — Formalización matemática y época normativa (GUS 3.0.0)
+
+Este apéndice fija, con demostraciones cerradas, las propiedades numéricas
+del calendario y el estatus de la época. Nada de lo aquí escrito modifica el
+algoritmo: congelar la aritmética y dejar constancia de por qué es segura
+son objetivos complementarios.
+
+### A.1 Duración media exacta del año
+
+Con el acumulador solar en microdías `U = 7.000.000` y el paso de
+Tempalum `S = 1.242.190`, cada bloque de `U` años añade `7·S = 8.695.330`
+días solares, repartidos como 7 días extra en `S` años Gran Tempalum:
+
+    L  = 364 + 7·(1.242.190 / 7.000.000)
+       = 364 + 8.695.330 / 7.000.000
+       = 364 + 1,24219
+       = 365,24219 días  (racional exacto, sin aproximación)
+
+La expansión decimal se agota en 5 decimales exactos: 365,24219 no es una
+aproximación flotante sino el cociente racional exacto, coincidente con la
+duración del año trópico medio de la referencia J2000.
+
+### A.2 Cota estricta de la deriva solar: |Δ| < 7 días para todo n ∈ ℤ
+
+Defínase `ysi(n)` = `day_index` del 1-1 del año `n` y, con la división piso
+euclidiana ( resto `Rₙ = n·S mod U ∈ [0, U)` también en la era `AY`):
+
+    g(n)    = floor(n·S / U)
+    ysi(n)  = n·364 + 7·g(n)
+
+Restándole la traza ideal `n·L`:
+
+    ysi(n) − n·L = 7·( floor(n·S/U) − n·S/U ) = −7·( Rₙ / U )
+
+con `Rₙ/U ∈ [0, 1)` por la definición misma del residuo euclidiano
+(invariante: `n = q·U + Rₙ`, `0 ≤ Rₙ < U`, válido para `n < 0`). Por tanto:
+
+    −7 < ysi(n) − n·L ≤ 0      y      |Δ(n)| < 7 días, ∀ n ∈ ℤ (AY y DY)
+
+La deriva del inicio de año respecto del calendario solar ideal está
+acotada ESTRICTAMENTE por 7 días: el año nunca empieza más de 7 días
+"después" del punto ideal y siempre dentro del mismo año, y el valor se
+recupera en cada Gran Tempalum (el residuo nunca se hereda acumulado).
+Comprobación numérica del invariante: para n = 1 … 200.000, max(Rₙ/U)
+= 0,99999857… < 1.
+
+### A.3 Invariancia semanal perpetua
+
+Todo año común dura `364 ≡ 0 (mod 7)` días y todo año Gran Tempalum
+`371 = 364 + 7 ≡ 0 (mod 7)`. Sea cual sea el año, la semana termina
+alineada: el 1-1 de TODO año cae en el mismo día de la semana (Soludyia)
+y para dos días cualesquiera `d₁, d₂`:
+
+    semana(d₁) = semana(d₂)  ⟺  d₁ ≡ d₂ (mod 7),   ∀ d ∈ ℤ
+
+La semana de Gerarion no puede desalinearse jamás, en ninguna era ni
+desplazamiento; la letra del día es función pura `weekday(d) = ((d mod 7)+7) mod 7`.
+
+### A.4 Convención normativa de época ≠ historiografía
+
+La época del estándar es:
+
+    0000DY-01-01-S  ≡  JDN 1.719.313  ≡  21 de marzo de −5 proléptico
+                       (año astronómico −5; 6 a.C.)
+
+Se declara como **época matemática fija, determinista y reproducible**:
+un origen elegido por coherencia astronómica y cultural del proyecto. Su
+función normativa es la UNICIDAD y la REPRODUCIBILIDAD de las coordenadas,
+no la datación historiográfica de eventos antiguos: GUS no afirma nada
+sobre la fecha exacta de ningún hecho histórico, y los debates
+historiográficos quedan explícitamente DESACOPLADOS del estándar (§10:
+un fork puede fijar otra época cambiando el JDN base, sin alterar un
+solo paso del algoritmo).
+
+### A.5 Envolvente operativa segura por plataforma
+
+Límites verificados (sin desbordamiento con signo; C11 devuelve
+`GERO_ERANGE` antes de calcular cualquier valor fuera de rango):
+
+| Magnitud | C11 (`impl-c`) | Python (referencia) | JavaScript (`web/`) |
+|---|---|---|---|
+| `instant` (s) | `int64` exacto en ±9.223.372.036.854.775.807 s ≈ ±2,92·10¹¹ años; más allá: `GERO_ERANGE` | `int` arbitrario: exacto en todo ℤ (en wire/formato: int64) | `BigInt`: exacto (cobertura total del contrato int64) |
+| `nanos` | `uint32` 0..999.999.999, campo separado | `int` 0..999.999.999, campo separado (validación estricta) | 0..999.999.999, campo separado |
+| Calendario: `day_index` | ±9.172.971.096.762.673.200 d ≈ ±2,51·10¹⁶ años | exacto | `Number` exacto hasta 2⁵³−1 d ≈ ±2,466·10¹³ años; más allá: `GERO_EINVAL` |
+| Vía gregoriana (JDN) | ±2.305.843.009.211.906.069 d ≈ ±6,31·10¹⁵ años | exacta | 2⁵³−1 (el factor 4 de la conversión acota antes) |
+| Año de entrada (`fromGerarion`) | ±25.200.470.046.051.300 ≈ ±2,52·10¹⁶ años | exacto | ±23.703.155.933.528 ≈ ±2,37·10¹³ años |
+
+Los `day_index` por encima de 2⁵³−1 son válidos y exactos en C11 y Python;
+JavaScript los rechaza. Esta asimetría es el contrato (Apéndice de
+`gus.h`, comentario de cabecera de `web/gerarion.mjs`) y la red de pruebas
+la ejerce: `tools/fuzz_diff.py --cases 1000000` (ops `tg`/`fg` comunes,
+`tgs`/`fgs` Python↔C y `tgq`/`fgq`/`grq`/`inq` con `GERO_ERANGE` esperado)
+y `make -C impl-c audit` (un millón de idas y vueltas en los extremos
+int64 más 400.000 entradas de parser bajo ASan+UBSan).
