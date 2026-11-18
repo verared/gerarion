@@ -29,6 +29,10 @@ gus-conformance: conformance.c gus.c $(LIBHDR)
 gus-conformance-cal: conformance.c gus.c $(LIBSRC) $(LIBHDR)
 	$(CC) $(CFLAGS) -o $@ conformance.c gus.c china_table.c gerarion_calendars.c
 
+# motor multi-calendario: conformance contra el set compartido CC0
+guti-conformance: guti_conformance.c $(LIBSRC) $(LIBHDR)
+	$(CC) $(CFLAGS) -o $@ guti_conformance.c gus.c china_table.c gerarion_calendars.c
+
 gus-cli: gus-cli.c gus.c $(LIBHDR)
 	$(CC) $(CFLAGS) -o $@ gus-cli.c gus.c
 
@@ -73,8 +77,9 @@ cal-audit: cal_audit_stress.c $(LIBSRC) $(LIBHDR)
 	$(CC) -std=c11 -O2 -g -Wall -Wextra -Werror -pedantic $(SANFLAGS) -o $@ cal_audit_stress.c gus.c china_table.c gerarion_calendars.c
 	ASAN_OPTIONS=halt_on_error=1 ./cal-audit
 
-conformance: gus-conformance
+conformance: gus-conformance guti-conformance
 	./gus-conformance ../vectors/gus-normative-003.json ../vectors/gus-3339-negative-001.json ../vectors/gus-regression-001.json ../vectors/gus-quickverify-001.json
+	./guti-conformance ../vectors/guti-calendars-001.json
 
 fuzz: gus-cli
 	python3 ../tools/fuzz_diff.py
@@ -98,6 +103,6 @@ install: lib$(NAME).a lib$(NAME).so.$(MAJOR) gerarion.pc
 test: conformance fuzz
 
 clean:
-	rm -f gus-conformance gus-cli gus-audit-stress cal-audit \
+	rm -f gus-conformance gus-cli gus-audit-stress cal-audit guti-conformance \
 		lib$(NAME).a lib$(NAME).so.$(MAJOR) lib$(NAME).dylib gerarion.pc \
 		gus-conformance-cal gus-conformance-cal.o

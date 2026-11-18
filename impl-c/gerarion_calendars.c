@@ -363,6 +363,9 @@ static int ger_maya_to_di(int system, const GerarionCalDate *d, long long *o) {
     if (d->f[1] < 0 || d->f[1] > 19 || d->f[2] < 0 || d->f[2] > 19 ||
         d->f[3] < 0 || d->f[3] > 17 || d->f[4] < 0 || d->f[4] > 19)
         return GUS_EINVAL;
+    /* guardia de producto: |b|*144000 debe caber en int64 antes de multiplicar */
+    if (d->f[0] > GUS_INT64_MAX / 144000 || d->f[0] < GUS_INT64_MIN / 144000)
+        return GUS_ERANGE;
     long long days = d->f[0] * 144000 + d->f[1] * 7200 + d->f[2] * 360
                      + d->f[3] * 20 + d->f[4];
     long long out = 584283LL + days - GUS_ORIGIN_JDN;
@@ -511,13 +514,33 @@ static int ger_heb_from_di(long long di, GerarionCalDate *o) {
     if (rc != GUS_OK)
         return rc;
     long long jdn = di + GUS_ORIGIN_JDN;
-    long long year = fdiv_ll(jdn - 347998LL, 365) + 1;
+    /* descarte barato por división (sin productos) antes del estimador:
+     * |jdn - 347998| / 365 ≈ años AM, horizonte GER_HEB_YEAR_LIMIT */
+    long long span = jdn - 347998LL;
+    if (span > GER_HEB_YEAR_LIMIT * 365LL + 2LL ||
+        span < -(GER_HEB_YEAR_LIMIT * 365LL + 2LL))
+        return GUS_ERANGE;
+    /* estimación O(1) por molad (sin deriva lineal): el escaneo puro
+     * acumula error ≈ año/48 días y se vuelve O(año); partiendo del
+     * molad invertido el lazo corrige en ≤ 8 iteraciones. */
+    long long months_est = fdiv_ll((jdn - GER_HEB_BASE) * GER_HALAKIM_DAY,
+                                   GER_MOLAD_PER_MONTH);
+    long long year = fdiv_ll(19LL * months_est - 19LL + 234LL, 235LL) + 1;
     if (year > GER_HEB_YEAR_LIMIT || year < -GER_HEB_YEAR_LIMIT)
         return GUS_ERANGE;
-    while (ger_heb_rh(year) > jdn)
-        year -= 1;
-    while (ger_heb_rh(year + 1) <= jdn)
-        year += 1;
+    {
+        int guard;
+        for (guard = 0; guard < 9; guard++) {
+            if (ger_heb_rh(year) > jdn)
+                year -= 1;
+            else if (ger_heb_rh(year + 1) <= jdn)
+                year += 1;
+            else
+                break;
+        }
+        if (guard == 9)
+            return GUS_EINVAL;
+    }
     long long doy = jdn - ger_heb_rh(year);
     long long L = ger_heb_rh(year + 1) - ger_heb_rh(year);
     long long h, k;
@@ -533,23 +556,30 @@ static int ger_heb_from_di(long long di, GerarionCalDate *o) {
     }
     int nmonths = ger_heb_is_leap(year) ? 13 : 12;
     const long long *tail = ger_heb_is_leap(year) ? tail_leap : tail_common;
-    long long cum = 0, m = 1, day = 1;
-    for (m = 1; m <= nmonths; m++) {
+    long long cum = 0, mc = 1, day = 1;
+    for (mc = 1; mc <= nmonths; mc++) {
         long long len;
-        if (m == 1)
+        if (mc == 1)
             len = 30;               /* Tishrei */
-        else if (m == 2)
+        else if (mc == 2)
             len = h;                /* Marheshvan */
-        else if (m == 3)
+        else if (mc == 3)
             len = k;                /* Kislev */
         else
-            len = tail[m - 4];      /* Tevet..Elul (Adar I = 30 en embolismal) */
+            len = tail[mc - 4];     /* Tevet..Elul (Adar I = 30 en embolismal) */
         if (doy < cum + len) {
             day = doy - cum + 1;
             break;
         }
         cum += len;
     }
+    /* numeración RABÍNICA (1 = Nisan ... 7 = Tishri; bisiesto:
+     * 12 = Adar I y 13 = Adar II; común: 12 = Adar) */
+    long long m;
+    if (ger_heb_is_leap(year))
+        m = (mc <= 7) ? mc + 6 : mc - 7;
+    else
+        m = (mc <= 6) ? mc + 6 : mc - 6;
     o->f[0] = year;
     o->f[1] = m;
     o->f[2] = day;
@@ -566,6 +596,9 @@ static int ger_heb_to_di(int system, const GerarionCalDate *d, long long *o) {
     int rc = ger_range_fail(y);
     if (rc != GUS_OK)
         return rc;
+    /* horizonte del molad en int64: idéntico a la guardia de from_di */
+    if (y > GER_HEB_YEAR_LIMIT || y < -GER_HEB_YEAR_LIMIT)
+        return GUS_ERANGE;
     long long rh = ger_heb_rh(y);
     long long L = ger_heb_rh(y + 1) - rh;
     long long h, k;
@@ -580,14 +613,17 @@ static int ger_heb_to_di(int system, const GerarionCalDate *d, long long *o) {
         k = 30;
     }
     int nmonths = ger_heb_is_leap(y) ? 13 : 12;
-    if (m < 1 || m > nmonths)
-        return GUS_EINVAL;
     const long long *tail = ger_heb_is_leap(y) ? tail_leap : tail_common;
-    long long len = (m == 1) ? 30 : (m == 2) ? h : (m == 3) ? k : tail[m - 4];
+    /* rabínico -> civil (Tishri primero): 1..6 = Nisan..Elul -> 8..13/
+     * 7..12; 7..12/13 = Tishri..Adar(I/II) -> 1..6/7 */
+    long long mc = (m <= 6) ? (ger_heb_is_leap(y) ? m + 7 : m + 6) : (m - 6);
+    if (m < 1 || m > nmonths || mc < 1 || mc > nmonths)
+        return GUS_EINVAL;
+    long long len = (mc == 1) ? 30 : (mc == 2) ? h : (mc == 3) ? k : tail[mc - 4];
     if (day < 1 || day > len)
         return GUS_EINVAL;
     long long cum = 0;
-    for (long long mm = 1; mm < m; mm++) {
+    for (long long mm = 1; mm < mc; mm++) {
         long long lm;
         if (mm == 1)
             lm = 30;
@@ -879,7 +915,7 @@ int gerarion_cal_selfcheck(void) {
     /* 1948-05-14 greg == 5 Iyar 5708 (año embolismal: mes 9) */
     f.f[0] = 2012; f.f[1] = 12; f.f[2] = 21; f.count = 3; f.leap = 0;
     f.f[0] = 1948; f.f[1] = 5; f.f[2] = 14;
-    w.f[0] = 5708; w.f[1] = 9; w.f[2] = 5; w.count = 3; w.leap = 0;
+    w.f[0] = 5708; w.f[1] = 2; w.f[2] = 5; w.count = 3; w.leap = 0;
     bad += ger_one("greg", &f, GER_CAL_HEBREW, &w);
 
     /* 1844-03-21 greg == Naw-Rúz 1 B.E. */

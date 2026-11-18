@@ -196,7 +196,7 @@ METADATA: List[dict] = [
         "astronomical_dependency": "ninguna en tiempo de ejecución (molad BaHaRaD + dehiyot, ciclo metónico de 19 años — aritmética de halakim entera)",
         "reference_meridian": "Jerusalén (histórico; el algoritmo clásico ya lo fija)",
         "known_limitations": [
-            "numeración civil: mes 1 = Tishrei; en años bisiestos 6 = Adar I y 7 = Adar II (8..13 con el desplazamiento de Nisan..Elul)",
+            "numeración rabínica: mes 1 = Nisan y 7 = Tishri; en años bisiestos 12 = Adar I y 13 = Adar II",
             "el calendario OFICIAL de Israel depende de la observación/avistamiento histórico; esta variante es el algoritmo clásico determinista",
         ],
         "field_names": ["year", "month", "day"],
@@ -206,7 +206,9 @@ METADATA: List[dict] = [
         "name": "Chino lunisolar (computacional)",
         "version": "1.0.0",
         "type": "lunisolar-astronomical",
-        "epoch_jdn": None,
+        # Año Nuevo chino de 1645 (primer día del año 1645 en la tabla):
+        # JDN 2319912 = 28-01-1645 gregoriano.
+        "epoch_jdn": 2319912,
         "supported_range": ["1645 d.C.", "2650 d.C. tras la reforma Shixian"],
         "astronomical_dependency": "lunas nuevas (shuo) y 12 términos principales (zhongqi) en el meridiano de Pekín (UTC+8, 120°E), calculados con efemérides truncadas al generar `china_table` (herramienta offline, sin red); el motor en ejercito consume solo enteros tablados",
         "reference_meridian": "Pekín: UTC+8 / 120°E",
@@ -358,9 +360,17 @@ def _ethiopic_jdn_of_1_1(year: int) -> int:
     return _ETHIOPIC_EPOCH + 365 * (year - 1) + year // 4
 
 
+def _ethiopic_year_of(jdn: int) -> int:
+    """Inversa exacta del ciclo juliano de 1.461 días, O(1) para cualquier
+    JDN int64 (la estimación por /365 diverge en horizontes grandes)."""
+    N = jdn - _ETHIOPIC_EPOCH
+    q, r = divmod(N, 1461)
+    return 4 * q + (4 * r + 1463) // 1461
+
+
 def _ethiopic_from_di(di: int) -> CalendarDate:
     jdn = di + 1719313
-    year = (jdn - _ETHIOPIC_EPOCH) // 365 + 1
+    year = _ethiopic_year_of(jdn)
     while _ethiopic_jdn_of_1_1(year) > jdn:
         year -= 1
     while _ethiopic_jdn_of_1_1(year + 1) <= jdn:
@@ -467,8 +477,13 @@ def _maya_from_di(di: int) -> CalendarDate:
 
 def _maya_to_di(f):
     b, k, t, u, n = (f[x] for x in ("baktun", "katun", "tun", "uinal", "kin"))
-    if min(b, k, t, u, n) < 0 or k > 19 or t > 19 or u > 17 or n > 19:
+    # baktun puede ser negativo (proléptico); el resto son grupos finitos.
+    if k > 19 or t > 19 or u > 17 or n > 19:
         raise ValueError("GERO_EINVAL: cuenta larga fuera de rango (uinal < 18)")
+    if min(k, t, u, n) < 0:
+        raise ValueError("GERO_EINVAL: cuenta larga fuera de rango (uinal < 18)")
+    if abs(b) > (2**63 - 1) // 144000:
+        raise ValueError("GERO_ERANGE: baktun fuera del horizonte int64")
     return _MAYA_EPOCH + b * 144000 + k * 7200 + t * 360 + u * 20 + n - 1719313
 
 
@@ -639,24 +654,54 @@ def _heb_from_di(di: int) -> CalendarDate:
     jdn = di + 1719313
     if abs(jdn - 347998) // 365 + 2 > _HEB_YEAR_LIMIT:
         raise ValueError("GERO_ERANGE: año hebreo fuera del horizonte del molad int64")
-    year_est = (jdn - _HEBREW_EPOCH) * 19 // 6940 + 1  # 6939.75 ≈ días/mes AM medio
-    while _heb_rosh_hashanah(year_est) > jdn:
-        year_est -= 1
-    while _heb_rosh_hashanah(year_est + 1) <= jdn:
-        year_est += 1
+    # Estimación O(1) por molad (sin deriva): m(y) = floor((235y-234)/19),
+    # molad(y) ≈ floor(_HEB_BASE + m·W/H); invierto para partir cerca
+    # del año correcto (válido también con m negativo) y corrijo con un
+    # lazo acotado (≤ 8 iteraciones).
+    months_est = ((jdn - _HEB_BASE) * _HALAKIM_PER_DAY) // _weeks_per_month
+    year_est = (19 * months_est - 19 + 234) // 235 + 1
+    for _ in range(8):
+        rh = _heb_rosh_hashanah(year_est)
+        if rh > jdn:
+            year_est -= 1
+        elif _heb_rosh_hashanah(year_est + 1) <= jdn:
+            year_est += 1
+        else:
+            break
+    else:
+        raise ValueError("GERO_EINVAL: día hebreo fuera de año")
     doy = jdn - _heb_rosh_hashanah(year_est)
     months = _heb_month_lengths(year_est)
     cum = 0
+    mc = None
     for idx, L in enumerate(months):
         if doy < cum + L:
-            month, day = idx + 1, doy - cum + 1
+            mc, day = idx + 1, doy - cum + 1
             break
         cum += L
     else:
         raise ValueError("GERO_EINVAL: día hebreo fuera de año")
-    name = HEBREW_MONTHS[month - 1]
+    # numeración RABÍNICA (UI estable): 1 = Nisan ... 7 = Tishri;
+    # bisiesto: 12 = Adar I y 13 = Adar II; común: 12 = Adar.
+    if year_est and _heb_is_leap(year_est):
+        month = mc + 6 if mc <= 7 else mc - 7
+    else:
+        month = mc + 6 if mc <= 6 else mc - 6
+    name = _HEB_MONTH_NAME_RABINIC(year_est, month)
     return CalendarDate("hebrew", (year_est, month, day),
                         f"{year_est:04d}-{month:02d}-{day:02d} ({name})")
+
+
+_HEB_NAME_COMMON = ["Nisan", "Iyar", "Sivan", "Tamuz", "Av", "Elul",
+                    "Tishri", "Heshvan", "Kislev", "Tevet", "Shevat", "Adar"]
+_HEB_NAME_LEAP = ["Nisan", "Iyar", "Sivan", "Tamuz", "Av", "Elul",
+                  "Tishri", "Heshvan", "Kislev", "Tevet", "Shevat",
+                  "Adar I", "Adar II"]
+
+
+def _HEB_MONTH_NAME_RABINIC(year, month):
+    names = _HEB_NAME_LEAP if _heb_is_leap(year) else _HEB_NAME_COMMON
+    return names[month - 1]
 
 
 def _heb_to_di(f):
@@ -664,13 +709,19 @@ def _heb_to_di(f):
     if not -_HEB_YEAR_LIMIT <= y <= _HEB_YEAR_LIMIT:
         raise ValueError("GERO_ERANGE: año hebreo fuera del horizonte del molad int64")
     months = _heb_month_lengths(y)
-    if not 1 <= m <= len(months):
-        raise ValueError(
-            f"GERO_EINVAL: mes hebreo fuera de 1..{len(months)} "
-            "(en años bisiestos: 6 = Adar I, 7 = Adar II)")
-    if not 1 <= d <= months[m - 1]:
-        raise ValueError(f"GERO_EINVAL: día hebreo inválido (mes {m} tiene {months[m-1]})")
-    return _heb_rosh_hashanah(y) + sum(months[: m - 1]) + (d - 1) - 1719313
+    leap = _heb_is_leap(y)
+    # rabínico → civil (Tishri primero): 7 = Tishri; embolismal:
+    # 12 = Adar I, 13 = Adar II; común: 12 = Adar
+    if not 1 <= m <= (13 if leap else 12):
+        raise ValueError(f"GERO_EINVAL: mes hebreo inválido: {m} "
+                         "(numeración rabínica: 1 = Nisan ... 12 = Adar I/Adar, 13 = Adar II)")
+    mc = (m + 7 if leap else m + 6) if m <= 6 else (m - 6)
+    if not 1 <= mc <= len(months):
+        raise ValueError(f"GERO_EINVAL: mes hebreo inválido: {m} "
+                         "(numeración rabínica: 1 = Nisan ... 12 = Adar I/Adar, 13 = Adar II)")
+    if not 1 <= d <= months[mc - 1]:
+        raise ValueError(f"GERO_EINVAL: día hebreo inválido (mes {m} tiene {months[mc-1]})")
+    return _heb_rosh_hashanah(y) + sum(months[: mc - 1]) + (d - 1) - 1719313
 
 
 # =========================================================================
@@ -920,7 +971,7 @@ def selfcheck() -> List[str]:
     expect = [
         # (de, campos, a, esperado)
         ("greg", {"year": 2012, "month": 12, "day": 21}, "maya", (13, 0, 0, 0, 0)),
-        ("greg", {"year": 1948, "month": 5, "day": 14}, "hebrew", (5708, 9, 5)),
+        ("greg", {"year": 1948, "month": 5, "day": 14}, "hebrew", (5708, 2, 5)),
         ("greg", {"year": 1844, "month": 3, "day": 21}, "bahai", (1, 1, 1)),
         ("greg", {"year": 2023, "month": 7, "day": 19}, "islamic", (1445, 1, 1)),
     ]

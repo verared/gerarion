@@ -72,7 +72,7 @@ static void invalid_inputs(void) {
 
     d.f[0] = 5784; d.f[1] = 14; d.f[2] = 3; d.count = 3; d.leap = 0; /* hebreo mes 14 */
     CHK(gerarion_cal_to_day_index(GER_CAL_HEBREW, &d, &out) != GUS_EINVAL);
-    d.f[1] = 7; d.f[2] = 30; /* Adar II de 29 días (5784 embolismal) */
+    d.f[1] = 13; d.f[2] = 30; /* Adar II (rabínico 13) tiene 29 días */
     CHK(gerarion_cal_to_day_index(GER_CAL_HEBREW, &d, &out) != GUS_EINVAL);
     d.f[0] = 5785; d.f[1] = 13; d.f[2] = 1; /* 5785 común no tiene mes 13 */
     CHK(gerarion_cal_to_day_index(GER_CAL_HEBREW, &d, &out) != GUS_EINVAL);
