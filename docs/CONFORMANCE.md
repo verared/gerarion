@@ -74,4 +74,4 @@ Un archivo de vectores es JSON con:
 
 Invitamos implementaciones independientes (inclusive en otros lenguajes) a
 consumir los vectores y abrir issue/PR con resultados; ver
-[CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](../CONTRIBUTING.md).

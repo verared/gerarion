@@ -28,7 +28,7 @@ from .calendar import (
     instant_parts,
     to_gerarion,
 )
-from .format import ParsedTimestamp, parse, to_canonical
+from .format import ParsedTimestamp, parse, quick_verify, to_canonical
 from .gts import GtsDocument, create as create_gst, verify as verify_gst
 from .profiles import (
     GUS_UNIX_OFFSET,
@@ -36,7 +36,7 @@ from .profiles import (
     instant_to_rfc3339,
 )
 
-__version__ = "2.4.0"
+__version__ = "2.5.0b1"
 
 __all__ = [
     "GeroEinval",
@@ -53,6 +53,7 @@ __all__ = [
     "instant_parts",
     "instant_to_rfc3339",
     "parse",
+    "quick_verify",
     "to_canonical",
     "to_gerarion",
     "verify_gst",

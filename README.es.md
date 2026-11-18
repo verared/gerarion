@@ -11,7 +11,7 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 > para decisiones de seguridad reales y no tienen auditoría criptográfica.
 > Vía recomendada para producción: biblioteca SLH-DSA (FIPS 205) auditada
 > y/o TSA externa (RFC 3161). Ver [SECURITY.md](SECURITY.md) y
-> [docs/threat-model.md](docs/threat-model.md).
+> [docs/threat-model.md](docs/spec/threat-model.md).
 
 > **Spec GUS v2.1.0 (ESTADO: BETA):** el Gran Tempalum es simétrico e
 > infinito en ambas eras (DY/AY) (`docs/TODO-pendientes.md` TODO-001

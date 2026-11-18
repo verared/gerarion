@@ -849,8 +849,8 @@ function runSelfTest() {
   const el = $('selftest');
   if (!el) return;
   try {
-    // tests.mjs ya corrió sus 22 checks al importarse (el mismo set normativo
-    // en el navegador, gus-normative-002 + reglas del núcleo)
+    // tests.mjs ya corrió sus 36 checks al importarse (el mismo set normativo
+    // en el navegador, gus-normative-002 + reglas del núcleo + quickVerify)
     el.textContent = report();
     el.classList.add(failed === 0 ? 'pass' : 'fail');
   } catch (err) {

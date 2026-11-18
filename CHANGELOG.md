@@ -1,5 +1,45 @@
 # Changelog — GUS
 
+## Sin publicar (rama beta/cap13-improvements)
+
+Mejoras derivadas del contraste «Cap 13 — Identificadores y Seguridad v1.2»
+(documento canónico externo de GeroTime Foundation) contra el stack real.
+Sin cambios en vectores normativos ni en la matemática del calendario.
+
+### Seguridad y criptografía
+
+- **Adaptador ML-DSA (FIPS 204) opcional** (`src/gerarion/adapters.py`,
+  `MlDsaSigner`): firma pura con contexto de dominio `GUS2-TS`, vía el
+  paquete `cryptography>=47` (extra `gerarion[pqc]`); semilla determinista
+  para tests. `gts.verify` ahora despacha por `alg` a SLH-DSA o ML-DSA.
+  NOTICE, sbom.cdx.json y pyproject actualizados (sin dependencias nuevas
+  obligatorias; sin secretos).
+- **Plan de migración post-cuántica documentado** (threat-model.md,
+  ES y EN, §G6): estado real y tres fases; la firma híbrida
+  Ed25519+ML-DSA queda como OBJETIVO, no como "vigente" — ni el kernel ni
+  el calendario cambian (cambio de capa de firma, versión menor).
+- `__init__.py`: `__version__` alineado con pyproject (2.5.0b1; antes
+  quedaba 2.4.0 tras el salto de beta).
+
+### Formato y verificación rápida
+
+- **`quick_verify` O(1) sin red** (Cap 13.8 v1.2): `format.py` (Python,
+  exportado en el paquete), `quickVerify` (JS) y `gus_quick_verify` (C).
+  Valida sintaxis, rangos, letra Nuvid estricta y ciclo exacto, y rechaza
+  correcciones silenciosas (era asumida, ciclo declarado equivocado): una
+  entrada dudosa se rechaza, NUNCA se normaliza a válido. Filtro barato
+  para logs e IoT; no sustituye a `parse` + verificación de firma.
+- **Vector compartido NUEVO** `vectors/gus-quickverify-001.json` (6 casos
+  válidos, 8 tampering) consumido por `tests/test_quick_verify.py`,
+  `web/tests.mjs` y la nueva categoría **10ª** del runner de conformancia
+  de impl-c.
+
+### Roadmap
+
+- Nota exploratoria sobre la verificación astronómica TSLR con quorum
+  3-de-4 (propuesta externa Cap 13.4.1): NO condición de RC/1.0, no altera
+  el kernel ni el formato; puntos de extensión en docs/papers/.
+
 ## 2.5.0b1 — BETA inicial (formats + release; 2026-11-17)
 
 Equivalencia de versiones: `2.5.0b1` (PEP 440; pyproject, CITATION, sbom) =

@@ -16,6 +16,15 @@ slh-dsa (https://pypi.org/project/slh-dsa/)
   como paquete separado por el usuario. El código fuente de este
   repositorio (MIT OR Apache-2.0) no redistribuye ningún fragmento suyo.
 
+cryptography (https://pypi.org/project/cryptography/)
+  Versión: >= 47 (dependencia OPCIONAL; pip install 'gerarion[pqc]')
+  Licencia: Apache-2.0 OR BSD-3-Clause
+  Uso: adaptador ML-DSA (FIPS 204) para sellos de producción (firma pura
+  con contexto GUS2-TS).
+  Nota: NO está incluido ni vendorizado en este repositorio; se instala
+  como paquete separado por el usuario. El código fuente de este
+  repositorio (MIT OR Apache-2.0) no redistribuye ningún fragmento suyo.
+
 Atkinson Hyperlegible (fuentes tipográficas)
   Archivos: web/fonts/AtkinsonHyperlegible-{Regular,Bold,Italic,BoldItalic}.woff2
   Autor: Braille Institute of America, Inc. (type.brailleinstitute.org)

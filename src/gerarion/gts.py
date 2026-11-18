@@ -122,24 +122,32 @@ def verify(doc: GtsDocument) -> dict:
     if date.day_index != doc.day:
         errors.append("índice de día divergente del formato canónico")
     if doc.alg != ALG_REFERENCE:
-        # Despacho por algoritmo: SLH-DSA (FIPS 205) se verifica vía adaptador;
-        # otros esquemas requieren su biblioteca.
+        # Despacho por algoritmo: SLH-DSA (FIPS 205) y ML-DSA (FIPS 204) se
+        # verifican vía adaptadores; otros esquemas requieren su biblioteca.
         message = fmt.canonical_bytes(doc.ts, doc.instant, doc.ctx)
         if not isinstance(doc.sig, str):
             errors.append("firma de tipo incompatible con el algoritmo")
             return {"ok": False, "errors": errors, "flags": parsed.flags}
         try:
-            ok = _adapters.SlhDsaSigner.verify(doc.pub, message, doc.sig, doc.alg)
+            if doc.alg.startswith("ML-DSA"):
+                ok = _adapters.MlDsaSigner.verify(doc.pub, message, doc.sig, doc.alg)
+            else:
+                ok = _adapters.SlhDsaSigner.verify(doc.pub, message, doc.sig, doc.alg)
         except ImportError:
+            pkg = (
+                "el paquete PyPI 'cryptography' (>= 47)"
+                if doc.alg.startswith("ML-DSA")
+                else "el paquete PyPI 'slh-dsa'"
+            )
             return {
                 "ok": False,
-                "errors": [f"algoritmo {doc.alg} requiere el paquete PyPI 'slh-dsa'"],
+                "errors": [f"algoritmo {doc.alg} requiere {pkg}"],
                 "flags": parsed.flags,
             }
         except Exception as exc:  # noqa: BLE001 - llave/firma malformada
             return {"ok": False, "errors": [f"firma inválida: {exc}"], "flags": parsed.flags}
         if not ok:
-            errors.append("firma SLH-DSA inválida")
+            errors.append(f"firma {doc.alg} inválida")
         return {"ok": not errors, "errors": errors, "flags": parsed.flags}
     message = fmt.canonical_bytes(doc.ts, doc.instant, doc.ctx)
     digest = hashots.digest_message(message)

@@ -44,7 +44,7 @@ with sync_playwright() as p:
     # 2. Self-test de vectores en el navegador
     page.eval_on_selector("#verificacion details", "el => el.setAttribute('open', 'open')")
     st = page.text_content("#selftest") or ""
-    check("self-test: 22 vectores pasan", "22 pasan, 0 fallan" in st, st[:120])
+    check("self-test: 22 vectores + 14 quickVerify = 36 pasan", "36 pasan, 0 fallan" in st, st[:120])
 
     # 3. El traductor es la primera sección de <main>
     first_section = page.evaluate("document.querySelector('main section').id") if page.evaluate(

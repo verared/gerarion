@@ -15,11 +15,17 @@ Algoritmos disponibles:
     SLH-DSA-SHA2-128F          FIPS 205 vía el paquete PyPI `slh-dsa`
                                (implementación pura de referencia del estándar).
     SLH-DSA-SHA2-128S          idem, firma pequeña / firma lenta.
+    ML-DSA-44/-65/-87          FIPS 204 vía el paquete PyPI `cryptography`
+                               (>= 47, extra `pqc`): adaptador opcional;
+                               firma pura con contexto GUS2-TS.
 
 Regla del proyecto: *producción exige bibliotecas auditadas*. El esquema de
 referencia WOTS valida la semántica y genera vectores; el despliegue real usa
-SLH-DSA (o ML-DSA/LMS/XMSS desplegados con auditoría). El despacho por `alg`
-hace que ambas coexistan y sean verificables con el mismo documento GST.
+SLH-DSA o ML-DSA (o LMS/XMSS desplegados con auditoría). El despacho por `alg`
+hace que coexistan y sean verificables con el mismo documento GST. La firma
+híbrida (Ed25519 + ML-DSA en el mismo documento) queda como objetivo del plan
+post-cuántico (docs/spec/threat-model.md §G6); no está implementada
+en esta versión.
 """
 
 from __future__ import annotations
@@ -117,6 +123,70 @@ class SlhDsaSigner(SigningAdapter):
             return False
         try:
             return pub.verify_pure(message, bytes.fromhex(signature_hex), ctx=SlhDsaSigner.CTX)
+        except Exception:  # noqa: BLE001 - firma malformada = inválida
+            return False
+
+
+class MlDsaSigner(SigningAdapter):
+    """Adaptador ML-DSA (FIPS 204) vía el paquete `cryptography` (>= 47).
+
+    Firma "pura" (pure ML-DSA) con el contexto de dominio canónico GUS2-TS,
+    obligatorio tanto al firmar como al verificar. La semilla opcional
+    (32 bytes) permite reproducir claves deterministas en tests vía
+    `from_seed_bytes`; en producción, `seed=None` genera claves aleatorias.
+    """
+
+    PARAM_ALIASES = {
+        "ML-DSA-44": "MLDSA44PrivateKey",
+        "ML-DSA-65": "MLDSA65PrivateKey",
+        "ML-DSA-87": "MLDSA87PrivateKey",
+    }
+    CTX = CANONICAL_CTX.encode("utf-8")
+
+    def __init__(self, param_name: str = "ML-DSA-65", seed: Optional[bytes] = None):
+        if param_name not in self.PARAM_ALIASES:
+            raise ValueError(
+                f"Parámetro desconocido: {param_name}. Disponibles: {sorted(self.PARAM_ALIASES)}"
+            )
+        try:
+            from cryptography.hazmat.primitives.asymmetric import mldsa
+        except ImportError as exc:  # pragma: no cover - depende del entorno
+            raise ImportError(
+                "ML-DSA requiere el paquete 'cryptography' (>= 47): "
+                "pip install 'gerarion[pqc]' (o 'pip install cryptography>=47')"
+            ) from exc
+        self._cls = getattr(mldsa, self.PARAM_ALIASES[param_name])
+        self._mldsa = mldsa
+        if seed is not None:
+            if len(seed) != 32:
+                raise ValueError("la semilla ML-DSA requiere exactamente 32 bytes")
+            self._kp = self._cls.from_seed_bytes(seed)
+        else:
+            self._kp = self._cls.generate()
+        self.alg = param_name
+        self.public_key_hex = self._kp.public_key().public_bytes_raw().hex()
+
+    def sign_payload(self, message: bytes) -> str:
+        return self._kp.sign(message, self.CTX).hex()
+
+    @staticmethod
+    def verify(pub_hex: str, message: bytes, signature_hex: str, param_name: str) -> bool:
+        try:
+            from cryptography.hazmat.primitives.asymmetric import mldsa
+        except ImportError:  # pragma: no cover
+            raise ImportError("verificación ML-DSA requiere el paquete 'cryptography' (>= 47)")
+        param = MlDsaSigner.PARAM_ALIASES.get(param_name)
+        if param is None:
+            return False
+        try:
+            pub = getattr(mldsa, param.replace("PrivateKey", "PublicKey")).from_public_bytes(
+                bytes.fromhex(pub_hex)
+            )
+        except Exception:  # noqa: BLE001 - llave malformada = firma inválida
+            return False
+        try:
+            pub.verify(bytes.fromhex(signature_hex), message, MlDsaSigner.CTX)
+            return True
         except Exception:  # noqa: BLE001 - firma malformada = inválida
             return False
 

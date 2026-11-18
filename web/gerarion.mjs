@@ -207,6 +207,19 @@ export function parse(raw, { strictWeekday = false } = {}) {
   return { ...gdate, hour, minute, second, cycle, offset, flags };
 }
 
+/** Verificación rápida de consistencia interna, O(1) y sin red (Cap 13.8 v1.2).
+ *  true solo si la marca es válida tal cual, sin correcciones silenciosas
+ *  (era asumida, letra Nuvid o ciclo declarados equivocados). Filtro barato
+ *  para logs e IoT; no sustituye a parse + verificación de firma. */
+export function quickVerify(raw) {
+  try {
+    const p = parse(raw, { strictWeekday: true });
+    return p.flags.length === 0;
+  } catch {
+    return false;
+  }
+}
+
 export function cycleOf(hour) {
   if (hour < 0 || hour > 23) throw new GeroError("GERO_EINVAL: hora fuera de rango 0..23");
   return hour >= 6 && hour < 18 ? "SC" : "LC";

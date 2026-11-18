@@ -269,6 +269,38 @@ def verify_slhdsa(public_key_hex: str, message: bytes, sig_b64: str, alg: str):
         return False
 
 
+def verify_mldsa(public_key_hex: str, message: bytes, sig_b64: str, alg: str):
+    """Verificación ML-DSA (FIPS 204) con el paquete `cryptography` (>= 47)
+    (extra `gerarion[pqc]`), firma pura con contexto GUS2-TS.
+
+    La firma viaja en hex (formato del adaptador de referencia); se acepta
+    también base64. Sin el paquete instalado: GERO_ENOALG — nunca un
+    resultado ambiguo.
+    """
+    try:
+        from cryptography.hazmat.primitives.asymmetric import mldsa
+    except ImportError:
+        raise RuntimeError("GERO_ENOALG: algoritmo %s requiere el paquete 'cryptography' (>= 47)" % alg)
+    alias = {
+        "ML-DSA-44": "MLDSA44PublicKey",
+        "ML-DSA-65": "MLDSA65PublicKey",
+        "ML-DSA-87": "MLDSA87PublicKey",
+    }
+    cls = alias.get(alg)
+    if cls is None:
+        raise RuntimeError("GERO_ENOALG: parameter set desconocido para 'cryptography': %s" % alg)
+    try:
+        pub = getattr(mldsa, cls).from_public_bytes(bytes.fromhex(public_key_hex))
+    except Exception:  # noqa: BLE001 - llave malformada = firma inválida
+        return False
+    raw = bytes.fromhex(sig_b64) if _is_hex(sig_b64) else base64.b64decode(sig_b64)
+    try:
+        pub.verify(raw, message, b"GUS2-TS")
+        return True
+    except Exception:  # noqa: BLE001 - firma malformada = inválida
+        return False
+
+
 def _is_hex(s: str) -> bool:
     try:
         bytes.fromhex(s)
@@ -348,6 +380,14 @@ def verify_document(doc: dict) -> dict:
         try:
             if not verify_slhdsa(pub, message, sig, alg):
                 errors.append("firma SLH-DSA inválida")
+        except RuntimeError as exc:
+            errors.append(str(exc))
+        except Exception as exc:  # noqa: BLE001
+            errors.append("firma inválida: %s" % exc)
+    elif isinstance(alg, str) and alg.startswith("ML-DSA"):
+        try:
+            if not verify_mldsa(pub, message, sig, alg):
+                errors.append("firma ML-DSA inválida")
         except RuntimeError as exc:
             errors.append(str(exc))
         except Exception as exc:  # noqa: BLE001
