@@ -1,5 +1,55 @@
 # Changelog — GUS
 
+## 3.0.0 — Versión estable del endurecimiento (2026-11-18)
+
+Equivalencia de versiones: `3.0.0` (PEP 440 y semver) unifica
+`3.0.0a1` / `3.0.0-alpha.1`. Promoción a estable del paquete de
+endurecimiento derivado de la revisión técnica: la aritmética entera
+O(1) del calendario (AY/DY), la coordenada `TCJ = TAI + 8,400 s` y los
+vectores normativos `gus-normative-003.json` quedan intactos.
+
+### Kernel
+
+- **Precisión sub-segundo separada**: campo `nanos` (0..999_999_999,
+  validado estrictamente, sin normalización silenciosa) junto al
+  `instant` en segundos int64, en Python (`calendar`, `gts`, `format`),
+  C11 (`impl-c/gus.h`/`gus.c`) y JS (`web/gerarion.mjs`). La marca
+  canónica no emite la fracción; viaja como dato de precisión.
+- **Puente TAI − UTC versionado** en los tres lenguajes:
+  `table_version: IERS-C-2026.1`, `valid_until_unix: 2027-11-18`
+  (transición al UTC continuo aprobada por la CGPM), `smear_policy:
+  reject` y advertencia de extrapolación pasada la vigencia.
+- **Máquina de estados de reloj (Cap 6.3)**: `src/gerarion/clock.py` y
+  equivalentes C. Estados VERIFIED/HOLDOVER/UNVERIFIED/REJECTED;
+  duraciones SIEMPRE con reloj monotónico, tiempo absoluto solo de
+  fuente autenticada; ancla persistida con detección de rollback.
+
+### Seguridad (GST)
+
+- **GST v2**: canonicalización determinista RFC 8785 (JCS, stdlib puro,
+  `src/gerarion/jcs.py`); firma híbrida simultánea Ed25519 + ML-DSA con
+  el descriptor de algoritmos dentro del payload firmado (anti-downgrade
+  estructural); `event_hash` obligatorio (`sha256:`/`sha512:`);
+  `ReplayGuard` anti-replay/anti-rollback persistente. Lectura de
+  sellos v1 compatible; los sellos nuevos se emiten en v2. CLI de
+  verificación (`tools/verify_gus.py`) actualizada.
+
+### Documentación
+
+- spec 3.0.0 (ES/EN) y threat-model (ES/EN): nodo metrológico del BIPM
+  en Sèvres; garantías verificables en lugar de afirmaciones absolutas;
+  TSLR/GCERTS marcados como perfiles experimentales separados del
+  núcleo; GUS no sustituye controles de SO, aislamiento de hardware ni
+  mitigaciones de red.
+- Defecto corregido: `verify_v2` rechazaba todo sobre GST v2 con
+  `nanos != 0` al contraste contra la marca canónica.
+
+### CI y distribución
+
+- Matriz de Python instala `[dev,slh,pqc]` y ejecuta las suites
+  `test_jcs_gstv2.py` (41) y `test_clock_state.py` (15) explícitamente.
+- Job de `reuse lint` (REUSE 3.3) en cada push/PR.
+
 ## 3.0.0-alpha.1 — GUS 3.0.0 (base TAI + TCJ = TAI + 8,400 s; CIERRA D-001 y TODO-004)
 
 Equivalencia de versiones: `3.0.0a1` (PEP 440; pyproject, CITATION, sbom) =
