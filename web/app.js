@@ -1256,3 +1256,16 @@ if (failed) document.body.classList.add("test-failed");
 readRoute();
 updateClock();
 setInterval(updateClock, 1000);
+
+// PWA (fase GUTI-1): registrar el Service Worker sin dependencias.
+// El activo precacheado permite abrir la vista completa en modo avión;
+// el cálculo de los diez calendarios ya era JavaScript local.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").then(
+    () => {
+      const line = document.getElementById("offline-line");
+      if (line) line.hidden = false;
+    },
+    () => {},
+  );
+}

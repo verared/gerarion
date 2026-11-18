@@ -32,6 +32,7 @@
       crossorigin
     />
     <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <script type="module" src="app.js"></script>
   </head>
   <body>
@@ -125,6 +126,10 @@
           <p class="engine-line">
             <i class="status-dot" aria-hidden="true"></i>
             <span id="engine-status">Cálculo verificado</span>
+          </p>
+          <p class="engine-line" id="offline-line" hidden>
+            <i class="status-dot" aria-hidden="true"></i>
+            <span id="offline-status">Modo Offline Listo</span>
           </p>
           <p class="fineprint">GUS 3.0.0 · TCJ+0</p>
         </div>

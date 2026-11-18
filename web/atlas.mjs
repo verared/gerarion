@@ -33,6 +33,7 @@ import {
   intlCalendar,
   isHebrewLeap,
 } from "./calendars.mjs";
+import { gutiFromDayIndex } from "./guti.mjs";
 
 import { REFERENCE, observe } from "./zonas-tcj.mjs";
 
@@ -219,43 +220,75 @@ export function equivalent(id, j, stamp = null) {
         : "Naw-Rúz determinado por la tabla UHJ del núcleo Gerarion.",
     );
   }
-  const calendarId = {
-    hebrew: "hebrew",
-    islamicCivil: "islamic-civil",
-    islamicUmalqura: "islamic-umalqura",
-    chinese: "chinese",
-  }[id];
-  try {
-    if (
-      new Intl.DateTimeFormat("en", { calendar: calendarId }).resolvedOptions()
-        .calendar !== calendarId
-    )
-      return unavailable("Este navegador no ofrece este calendario.");
-  } catch {
-    return unavailable("Este calendario no está disponible en Intl.");
+  if (id === "hebrew") {
+    let r;
+    try {
+      r = gutiFromDayIndex(j - ORIGIN_JDN, "hebrew");
+    } catch (e) {
+      return unavailable(e.message);
+    }
+    const d = r.fields;
+    const name =
+      d.month === 12 && isHebrewLeap(d.year)
+        ? "Adar I"
+        : d.month === 13
+          ? "Adar II"
+          : HEBREW[d.month];
+    return row(
+      `${d.day} ${name} ${d.year}`,
+      `${d.year} ${d.month} ${d.day}`,
+      "Año Anno Mundi. Motor aritmético determinista (molad BaHaRaD + dehiyot), sin dependencia del navegador; las fechas anteriores a su uso histórico son prolépticas.",
+    );
   }
-  const d = intlCalendar(j, id);
-  if (!d.ok) return unavailable(d.note);
-  const raw = `${d.year} ${d.month} ${d.day}${d.leapMonth ? " bis" : ""}`;
-  if (id === "hebrew")
+  if (id === "chinese") {
+    let r;
+    try {
+      r = gutiFromDayIndex(j - ORIGIN_JDN, "chinese");
+    } catch {
+      return unavailable(
+        "Fuera del rango validado del motor chino (1645–2650 d.C.).",
+      );
+    }
+    const d = r.fields;
     return row(
-      `${d.day} ${d.month === 12 && isHebrewLeap(d.year) ? "Adar I" : HEBREW[d.month]} ${d.year}`,
-      raw,
-      "Año Anno Mundi. Cálculo de ICU; las fechas anteriores a su uso histórico son prolépticas.",
+      `${d.day}/${d.month}${d.leap ? " bis" : ""} · ${d.year}`,
+      `${d.year} ${d.month} ${d.day}${d.leap ? " bis" : ""}`,
+      "Año lunar relacionado; el mes intercalar (runyue) se marca «bis». Motor computacional determinista sobre tabla SHUO/ZHONGQI (1645–2650 d.C.), 100 % sin conexión.",
     );
-  if (id === "chinese")
+  }
+  if (id === "islamicCivil") {
+    let r;
+    try {
+      r = gutiFromDayIndex(j - ORIGIN_JDN, "islamic");
+    } catch (e) {
+      return unavailable(e.message);
+    }
+    const d = r.fields;
     return row(
-      `${d.day}/${d.month}${d.leapMonth ? " bis" : ""} · ${d.year}`,
-      raw,
-      "Día / mes · año relacionado. Aproximación astronómica de ICU; cobertura histórica orientativa: 1900–2100.",
+      `${d.day}/${d.month}/${d.year} AH`,
+      `${d.year} ${d.month} ${d.day}`,
+      "Variante civil tabular (ciclo de 30 años) del motor determinista. No representa una observación local de la luna.",
     );
-  return row(
-    `${d.day}/${d.month}/${d.year} AH`,
-    raw,
-    id === "islamicCivil"
-      ? "Variante civil tabular calculada por Intl/ICU. No representa una observación local de la luna."
-      : "Tablas Umm al-Qura de ICU, aproximadamente 1900–2074. Fuera del intervalo, el resultado es aproximado.",
-  );
+  }
+  if (id === "islamicUmalqura") {
+    try {
+      if (
+        new Intl.DateTimeFormat("en", { calendar: "islamic-umalqura" })
+          .resolvedOptions().calendar !== "islamic-umalqura"
+      )
+        return unavailable("Este navegador no ofrece este calendario.");
+    } catch {
+      return unavailable("Este calendario no está disponible en Intl.");
+    }
+    const d = intlCalendar(j, "islamicUmalqura");
+    if (!d.ok) return unavailable(d.note);
+    return row(
+      `${d.day}/${d.month}/${d.year} AH`,
+      `${d.year} ${d.month} ${d.day}`,
+      "Tablas Umm al-Qura del navegador, aproximadamente 1900–2074. Fuera del intervalo, el resultado es aproximado.",
+    );
+  }
+  return unavailable("Vista no soportada.");
 }
 export const equivalents = (j, stamp = null) =>
   modes.map((id) => equivalent(id, j, stamp));

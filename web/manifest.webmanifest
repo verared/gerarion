@@ -1,0 +1,19 @@
+{
+  "name": "Gerarion · Atlas del tiempo",
+  "short_name": "Gerarion",
+  "description": "Calendario universal Gerarion, traductor entre diez calendarios deterministas, reloj TCJ e hitos. Sin cuentas, sin red.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbfaf7",
+  "theme_color": "#fbfaf7",
+  "icons": [
+    {
+      "src": "assets/atlas.svg#sun",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

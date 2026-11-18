@@ -12,6 +12,7 @@ The suite installs a fixed clock, so it does not depend on wall time.
 """
 
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
@@ -156,8 +157,9 @@ with sync_playwright() as pw:
     )
     p.locator('[data-detail="hebrew"]').click()
     check(
-        "la correspondencia abre una ficha con notas de precisión ICU",
-        p.locator("#dialog").is_visible() and "ICU" in t("dialog"),
+        "la correspondencia abre una ficha con notas de precisión",
+        p.locator("#dialog").is_visible()
+        and ("prolépticas" in t("dialog") or "determinista" in t("dialog")),
     )
     p.locator('dialog [data-origin="hebrew"]').click()
     check(
@@ -426,6 +428,54 @@ with sync_playwright() as pw:
         not errors,
         "; ".join(errors[:3]),
     )
+    # ── PWA: modo avión (fase GUTI-1) ───────────────────────────────────
+    # El Service Worker precachea el activo local; toda la interfaz operará
+    # con la red cortada: recarga completa, reloj TCJ, traducción entre
+    # calendarios y sin errores.
+    p.wait_for_function(
+        "navigator.serviceWorker.getRegistration()"
+        ".then(r => !!r && !!r.active)",
+        timeout=15000,
+    )
+    ctx.set_offline(True)
+    p.reload(wait_until="load")
+    p.wait_for_timeout(500)
+    check(
+        "modo avión: la página recarga completa desde la caché "
+        "(conserva la región elegida)",
+        t("#header-zone") in ("TCJ+0", "TCJ−5")
+        and t("#header-city") in ("Jerusalén", "Santiago"),
+        f"{t('#header-zone')} {t('#header-city')}",
+    )
+    check(
+        "modo avión: indicador «Modo Offline Listo» visible",
+        p.locator("#offline-line").is_visible()
+        and "Offline" in t("#offline-status"),
+    )
+    check(
+        "modo avión: el reloj TCJ sigue en marcha",
+        re.match(r"^\d{2}:\d{2}:\d{2}$", t("#header-time")),
+        t("#header-time"),
+    )
+    nav("traductor")
+    p.wait_for_selector("#translator-form", state="visible")
+    p.select_option("#source-mode", "greg")
+    p.fill("#source-date", "2026-11-18")
+    ok = submit_until(
+        "document.querySelector('#bridge-stamp') && "
+        "document.querySelector('#bridge-stamp').innerText.includes('2031DY-09-07-L')",
+    )
+    check(
+        "modo avión: traducción gregoriano → Gerarion funciona",
+        ok and "2031DY-09-07-L" in t("#bridge-stamp"),
+        t("#bridge-stamp")[:80],
+    )
+    check("modo avión: sin errores de JavaScript", not errors,
+          "; ".join(errors[:3]))
+    check("modo avión: cero peticiones externas", not external,
+          "; ".join(external[:3]))
+    ctx.set_offline(False)
+
     browser.close()
 
 print(f"\n{checks} comprobaciones correctas del rediseño · 0 fallos")
