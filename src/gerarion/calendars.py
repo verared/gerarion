@@ -254,9 +254,25 @@ def _greg_from_di(di: int) -> CalendarDate:
     return CalendarDate("greg", (y, m, d), f"{y:04d}-{m:02d}-{d:02d}")
 
 
+_GREG_MONTH_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
+
+def _greg_validate(y: int, m: int, d: int) -> None:
+    """Validación estricta: una fecha civil imposible se rechaza, jamás se
+    normaliza a otra fecha (Cap 4 GUS 3.0.0)."""
+    if not 1 <= m <= 12:
+        raise ValueError("GERO_EINVAL: mes gregoriano fuera de 1..12")
+    maxd = _GREG_MONTH_DAYS[m - 1]
+    if m == 2 and (y % 4 == 0) and (y % 100 != 0 or y % 400 == 0):
+        maxd = 29
+    if not 1 <= d <= maxd:
+        raise ValueError("GERO_EINVAL: fecha gregoriana imposible")
+
+
 def _greg_to_di(f):
-    jdn = cal.day_index_from_gregorian(f["year"], f["month"], f["day"])
-    return jdn
+    y, m, d = f["year"], f["month"], f["day"]
+    _greg_validate(y, m, d)
+    return cal.day_index_from_gregorian(y, m, d)
 
 
 # =========================================================================
@@ -278,6 +294,14 @@ def _julian_from_di(di: int) -> CalendarDate:
 
 def _julian_to_di(f):
     y, m, d = f["year"], f["month"], f["day"]
+    if not 1 <= m <= 12:
+        raise ValueError("GERO_EINVAL: mes juliano fuera de 1..12")
+    _MONTH_DAYS_JULIAN = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    maxd = _MONTH_DAYS_JULIAN[m - 1]
+    if m == 2 and y % 4 == 0:  # bisiesto juliano (Python: % con floor)
+        maxd = 29
+    if not 1 <= d <= maxd:
+        raise ValueError("GERO_EINVAL: día juliano inválido para el mes")
     a = (14 - m) // 12
     yy = y + 4800 - a
     mm = m + 12 * a - 3
@@ -608,8 +632,13 @@ def _heb_month_lengths(year: int) -> List[int]:
     return months
 
 
+_HEB_YEAR_LIMIT = 900_000_000_000  # horizonte del molad en int64 (C y Python)
+
+
 def _heb_from_di(di: int) -> CalendarDate:
     jdn = di + 1719313
+    if abs(jdn - 347998) // 365 + 2 > _HEB_YEAR_LIMIT:
+        raise ValueError("GERO_ERANGE: año hebreo fuera del horizonte del molad int64")
     year_est = (jdn - _HEBREW_EPOCH) * 19 // 6940 + 1  # 6939.75 ≈ días/mes AM medio
     while _heb_rosh_hashanah(year_est) > jdn:
         year_est -= 1
@@ -632,6 +661,8 @@ def _heb_from_di(di: int) -> CalendarDate:
 
 def _heb_to_di(f):
     y, m, d = f["year"], f["month"], f["day"]
+    if not -_HEB_YEAR_LIMIT <= y <= _HEB_YEAR_LIMIT:
+        raise ValueError("GERO_ERANGE: año hebreo fuera del horizonte del molad int64")
     months = _heb_month_lengths(y)
     if not 1 <= m <= len(months):
         raise ValueError(

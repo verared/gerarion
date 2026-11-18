@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2026 verared contributors
 // Tabla china generada (determinista, CC0): SHUO/ZHONGQI 1640..2655.
 // Regenerar con: python3 tools/generate_china_table.py
-// ZQ[k] = cruce de la longitud solar 270° + 30·k (k ≡ 0 mod 12 ⇒ Dongzhi).
+// ZQ[k] = cruce de la longitud solar 270° + 30·(k−3) (k ≡ 3 (mod 12) ⇒ Dongzhi).
 
 export const SHUO = [2319991, 2320021, 2320050, 2320080, 2320110, 2320139, 2320169, 2320199, 2320228, 2320258, 2320287, 2320317,
   2320346, 2320375, 2320405, 2320434, 2320464, 2320493, 2320523, 2320553, 2320582, 2320612, 2320642, 2320671,

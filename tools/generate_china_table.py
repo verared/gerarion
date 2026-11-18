@@ -17,7 +17,7 @@ Modelo astronómico (Meeus, Astronomical Algorithms, 2.ª ed.):
 Meridiano de referencia: Pekín (UTC+8, 120°E), como exige la reforma
 Shixian. Los días se redondean al día civil de Pekín del fenómeno.
 Convención de ZQ: ZQ[k] = JDN del instant en que la longitud aparente
-solar cruza 270° + 30·k (k ≡ 0 mod 12 ⇒ Dongzhi/solsticio de invierno).
+solar cruza 270° + 30·(k−3) (k ≡ 3 (mod 12) ⇒ Dongzhi/solsticio de invierno).
 
 Uso: python3 tools/generate_china_table.py [--out-dir .] [--check]
 """
@@ -310,7 +310,7 @@ def header_py() -> str:
 
 REGENERAR con: python3 tools/generate_china_table.py
 Numerales: día civil JULIANO ENTERO (JDN) del fenómeno en Pekín (UTC+8);
-ZQ[k] = cruce de la longitud solar aparente 270° + 30·k (k ≡ 0 mod 12
+ZQ[k] = cruce de la longitud solar aparente 270° + 30·(k−3) (k ≡ 3 (mod 12)
 ⇒ Dongzhi). CC0-1.0: datos factuales, sin autoría.
 """
 
@@ -322,7 +322,7 @@ def header_mjs() -> str:
 // SPDX-FileCopyrightText: 2026 verared contributors
 // Tabla china generada (determinista, CC0): SHUO/ZHONGQI 1640..2655.
 // Regenerar con: python3 tools/generate_china_table.py
-// ZQ[k] = cruce de la longitud solar 270° + 30·k (k ≡ 0 mod 12 ⇒ Dongzhi).
+// ZQ[k] = cruce de la longitud solar 270° + 30·(k−3) (k ≡ 3 (mod 12) ⇒ Dongzhi).
 
 '''
 
@@ -335,7 +335,7 @@ def header_c_h(ns: int, nz: int) -> str:
 
 /* Tabla china generada (determinista, CC0): SHUO/ZHONGQI 1640..2655.
  * Regenerar con: python3 tools/generate_china_table.py
- * ZQ[k] = cruce de la longitud solar 270° + 30·k (k ≡ 0 mod 12 ⇒ Dongzhi). */
+ * ZQ[k] = cruce de la longitud solar 270° + 30·(k−3) (k ≡ 3 (mod 12) ⇒ Dongzhi). */
 
 #ifndef GUS_CHINA_TABLE_H
 #define GUS_CHINA_TABLE_H

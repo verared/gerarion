@@ -1,0 +1,10 @@
+# pkg-config: libgerarion — núcleo GUS + motor multi-calendario (GUTI-1)
+prefix=@PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: gerarion
+Description: libgerarion — núcleo GUS 3.x (int64 + nanos) y motor multi-calendario determinista (10 sistemas, C11, sin dependencias)
+Version: @VERSION@
+Libs: -L${libdir} -lgerarion
+Cflags: -I${includedir}/gerarion

@@ -4,7 +4,7 @@
 
 REGENERAR con: python3 tools/generate_china_table.py
 Numerales: día civil JULIANO ENTERO (JDN) del fenómeno en Pekín (UTC+8);
-ZQ[k] = cruce de la longitud solar aparente 270° + 30·k (k ≡ 0 mod 12
+ZQ[k] = cruce de la longitud solar aparente 270° + 30·(k−3) (k ≡ 3 (mod 12)
 ⇒ Dongzhi). CC0-1.0: datos factuales, sin autoría.
 """
 

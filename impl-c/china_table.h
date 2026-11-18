@@ -5,7 +5,7 @@
 
 /* Tabla china generada (determinista, CC0): SHUO/ZHONGQI 1640..2655.
  * Regenerar con: python3 tools/generate_china_table.py
- * ZQ[k] = cruce de la longitud solar 270° + 30·k (k ≡ 0 mod 12 ⇒ Dongzhi). */
+ * ZQ[k] = cruce de la longitud solar 270° + 30·(k−3) (k ≡ 3 (mod 12) ⇒ Dongzhi). */
 
 #ifndef GUS_CHINA_TABLE_H
 #define GUS_CHINA_TABLE_H
