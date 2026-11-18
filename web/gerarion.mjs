@@ -173,8 +173,67 @@ export function normalize(raw) {
   return raw.trim().toUpperCase().replace(/\s+/g, "-").replace(/\./g, "-");
 }
 
+// ---------------------------------------------------------------------------
+// Precisión sub-segundo (GUS 3.0.0): campo `nanos` SEPARADO del instante.
+// El instante sigue siendo BigInt de segundos; la fracción viaja aparte
+// (0..999_999_999) y NUNCA se fusiona con los segundos en un único entero
+// (preserva el horizonte ±292e9 años). Validación estricta: los valores
+// inválidos se rechazan, jamás se normalizan en silencio.
+// ---------------------------------------------------------------------------
+
+/** Límite superior de la fracción: 999_999_999 ns (menos de un segundo). */
+export const NANOS_MAX = 999999999;
+
+/** Valida la fracción sub-segundo; lanza GeroError si está fuera de rango. */
+export function validateNanos(nanos) {
+  if (!Number.isInteger(nanos) || nanos < 0 || nanos > NANOS_MAX) {
+    throw new GeroError(
+      `GERO_EINVAL: nanos fuera de rango 0..${NANOS_MAX}: ${nanos}`,
+    );
+  }
+  return nanos;
+}
+
+/** Fracción decimal de entrada (1-9 dígitos) → nanosegundos exactos. */
+export function nanosFromFraction(digits) {
+  const s = String(digits);
+  if (!/^\d{1,9}$/.test(s)) {
+    throw new GeroError(
+      `GERO_EINVAL: fracción sub-segundo inválida (1-9 dígitos): ${digits}`,
+    );
+  }
+  return validateNanos(Number(s) * 10 ** (9 - s.length));
+}
+
+/** Constructor de instante con fracción: devuelve { instant, nanos }. */
+export function instantFromPartsNanos(
+  dayIndex,
+  hour = 0,
+  minute = 0,
+  second = 0,
+  nanos = 0,
+  offsetSeconds = 0,
+) {
+  validateNanos(nanos);
+  return {
+    instant: instantFromParts(dayIndex, hour, minute, second, offsetSeconds),
+    nanos,
+  };
+}
+
 export function parse(raw, { strictWeekday = false } = {}) {
-  const clean = normalize(raw);
+  // Fracción sub-segundo OPCIONAL (`.f{1,9}` entre el segundo y el ciclo):
+  // se extrae del texto CRUDO (el normalizador convierte '.' en '-' y la
+  // destruiría), se escala exacta a nanosegundos y se valida estricta.
+  // La forma canónica NUNCA la emite (queda como dato de precisión).
+  let nanos = 0;
+  let work = String(raw);
+  const mFraction = /\d\.(\d{1,9})(?=-SC-|-LC-|-TCJ)/i.exec(work);
+  if (mFraction) {
+    nanos = nanosFromFraction(mFraction[1]);
+    work = work.slice(0, mFraction.index + 1) + work.slice(mFraction.index + mFraction[0].length);
+  }
+  const clean = normalize(work);
   let m = TS_RE.exec(clean);
   let compact = false;
   if (!m) { m = TS_COMPACT_RE.exec(clean); compact = true; }
@@ -232,7 +291,7 @@ export function parse(raw, { strictWeekday = false } = {}) {
       cycle = expected;
     }
   }
-  return { ...gdate, hour, minute, second, cycle, offset, offsetSeconds, hasTime: m[6] !== undefined, compact, flags };
+  return { ...gdate, hour, minute, second, nanos, cycle, offset, offsetSeconds, hasTime: m[6] !== undefined, compact, flags };
 }
 
 /** Verificación rápida de consistencia interna, O(1) y sin red (Cap 13.8 v1.2).
@@ -354,6 +413,33 @@ export const TAI_MINUS_UTC_TABLE = [
   [867715200, 31], [915148800, 32], [1136073600, 33], [1230768000, 34],
   [1341100800, 35], [1435708800, 36], [1483228800, 37],
 ];
+
+// ---------------------------------------------------------------------------
+// Puente TAI − UTC versionado (horizonte CGPM 2027): la tabla es un DATO
+// con vigencia. Tras valid_until (2027-05-01, transición aprobada por la
+// CGPM a UTC continuo) toda lectura es EXTRAPOLACIÓN, no hecho medido.
+// ---------------------------------------------------------------------------
+
+export const TAI_UTC_TABLE_VERSION = "IERS-C-2026.1";
+export const TAI_UTC_VALID_UNTIL_UNIX = 1799808000;
+export const TAI_UTC_SMEAR_POLICY = "reject";
+
+export function taiUtcTableInfo() {
+  return {
+    tableVersion: TAI_UTC_TABLE_VERSION,
+    validUntilUnix: TAI_UTC_VALID_UNTIL_UNIX,
+    smearPolicy: TAI_UTC_SMEAR_POLICY,
+  };
+}
+
+/** Offset + indicador de extrapolación tras valid_until. */
+export function taiMinusUTCChecked(unixSeconds) {
+  const s = BigInt(unixSeconds);
+  return {
+    offset: taiMinusUTC(s),
+    extrapolated: s > BigInt(TAI_UTC_VALID_UNTIL_UNIX),
+  };
+}
 
 /** Offset TAI − UTC vigente para un segundo Unix UTC (pre-1958: 0 s). */
 export function taiMinusUTC(unixSeconds) {

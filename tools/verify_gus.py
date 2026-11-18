@@ -339,6 +339,10 @@ def verify_inclusion(leaf: bytes, path, index: int, root: bytes) -> bool:
 
 
 def verify_document(doc: dict) -> dict:
+    # GST v2 (sobre JCS/híbrido): dominio y esquema distintos de los
+    # documentos v1; se despacha a su verificador dedicado.
+    if doc.get("gst_version") == "2.0":
+        return verify_document_v2(doc)
     errors = []
     flags = []
     ts = doc.get("ts")
@@ -412,6 +416,208 @@ def verify_document(doc: dict) -> dict:
     return {"ok": not errors, "errors": errors, "flags": flags}
 
 
+# ---------------------------------------------------------------------------
+# GST v2: canonicalización JCS (RFC 8785) compacta + verificación híbrida
+# ---------------------------------------------------------------------------
+
+_JCS_ESCAPES = {0x08: "\\b", 0x09: "\\t", 0x0A: "\\n", 0x0C: "\\f", 0x0D: "\\r"}
+
+
+def _jcs_string(s: str) -> str:
+    out = ['"']
+    for ch in s:
+        code = ord(ch)
+        if ch == '"':
+            out.append('\\"')
+        elif ch == "\\":
+            out.append("\\\\")
+        elif 0x20 <= code < 0x7F:
+            out.append(ch)
+        elif code in _JCS_ESCAPES:
+            out.append(_JCS_ESCAPES[code])
+        elif code < 0x20:
+            out.append("\\u%04x" % code)
+        elif 0xD800 <= code <= 0xDFFF:
+            raise ValueError("GERO_EINVAL: sustituto huérfano no canonizable")
+        else:
+            out.append(ch)
+    out.append('"')
+    return "".join(out)
+
+
+def _jcs_number(x: float) -> str:
+    """Formato numérico ECMAScript determinista (RFC 8785, Appendix B)."""
+    if x != x or x in (float("inf"), float("-inf")):
+        raise ValueError("GERO_EINVAL: NaN/Infinity no es JCS")
+    if x == 0:
+        return "0"
+    sign = "-" if x < 0 else ""
+    rep = repr(abs(x))
+    if "e" in rep or "E" in rep:
+        mant, exp_s = rep.replace("E", "e").split("e")
+        exp = int(exp_s)
+    else:
+        mant, exp = rep, 0
+    int_part, _, frac = mant.partition(".")
+    digits_raw = int_part + frac
+    stripped = digits_raw.lstrip("0")
+    first = len(digits_raw) - len(stripped)
+    s = stripped.rstrip("0") or "0"
+    k = len(s)
+    n = len(int_part) - first + exp
+    if k <= n <= 21:
+        return sign + s + "0" * (n - k)
+    if 0 < n <= 21:
+        return sign + s[:n] + "." + s[n:]
+    if -6 < n <= 0:
+        return sign + "0." + "0" * (-n) + s
+    e = n - 1
+    mant_part = s[0] if k == 1 else s[0] + "." + s[1:]
+    return "%s%se%s%d" % (sign, mant_part, "+" if e >= 0 else "-", abs(e))
+
+
+def _jcs_dump(value, out: list) -> None:
+    if value is None:
+        out.append("null")
+    elif value is True:
+        out.append("true")
+    elif value is False:
+        out.append("false")
+    elif isinstance(value, int):
+        out.append(str(value))
+    elif isinstance(value, float):
+        out.append(_jcs_number(value))
+    elif isinstance(value, str):
+        out.append(_jcs_string(value))
+    elif isinstance(value, (list, tuple)):
+        out.append("[")
+        for i, item in enumerate(value):
+            if i:
+                out.append(",")
+            _jcs_dump(item, out)
+        out.append("]")
+    elif isinstance(value, dict):
+        keys = sorted(value.keys(), key=lambda k: k.encode("utf-16-be"))
+        out.append("{")
+        for i, k in enumerate(keys):
+            if i:
+                out.append(",")
+            if not isinstance(k, str):
+                raise ValueError("GERO_EINVAL: clave no textual")
+            out.append(_jcs_string(k))
+            out.append(":")
+            _jcs_dump(value[k], out)
+        out.append("}")
+    else:
+        raise ValueError("GERO_EINVAL: tipo no serializable en JCS")
+
+
+def jcs_bytes(value) -> bytes:
+    """Serialización canónica RFC 8785 en UTF-8 sin BOM."""
+    out: list = []
+    _jcs_dump(value, out)
+    return "".join(out).encode("utf-8")
+
+
+def verify_ed25519(pub_hex: str, message: bytes, sig_hex: str) -> bool:
+    """Ed25519 (RFC 8032) vía `cryptography`; False si falta o falla."""
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+            Ed25519PublicKey,
+        )
+        pub = Ed25519PublicKey.from_public_bytes(bytes.fromhex(pub_hex))
+        pub.verify(bytes.fromhex(sig_hex), message)
+        return True
+    except Exception:  # noqa: BLE001 - ausencia o invalidez = no verificado
+        return False
+
+
+_GST_V2_DOMAIN = b"GUS3-GST-V2\x00"
+_EVENT_HASH_RE = re.compile(r"^sha(256|512):[0-9a-f]{64,128}$")
+_NONCE_RE = re.compile(r"^[0-9a-f]{32}$")
+
+
+def verify_document_v2(doc: dict) -> dict:
+    """Verificador GST v2: esquema estricto + firma híbrida todo-o-nada.
+
+    Exige `event_hash` válido, metadatos de custodia completos y que AMBAS
+    firmas (Ed25519 y ML-DSA) verifiquen sobre b"GUS3-GST-V2\\0" + JCS(payload).
+    Sin el paquete `cryptography` el resultado es GERO_ENOALG (NUNCA un
+    falso OK). La guardia anti-replay es estado del verificador: este CLI
+    es apátrida y LO SEÑALA, no la simula.
+    """
+    errors = []
+    payload = {k: v for k, v in doc.items() if k != "sigs"}
+    if doc.get("gst_version") != "2.0":
+        errors.append("gst_version debe ser '2.0'")
+    if doc.get("scale") not in ("TCJ", "TAI"):
+        errors.append("scale debe ser 'TCJ' o 'TAI' explícito")
+    if not isinstance(doc.get("event_hash"), str) or not _EVENT_HASH_RE.match(
+        doc.get("event_hash", "")
+    ):
+        errors.append("event_hash obligatorio (sha256:/sha512:<hex>)")
+    for field in ("kid", "issuer", "policy_version", "kid_classical", "kid_pqc"):
+        if not isinstance(doc.get(field), str) or not doc.get(field):
+            errors.append(f"{field} obligatorio")
+    if not isinstance(doc.get("nonce"), str) or not _NONCE_RE.match(doc.get("nonce", "")):
+        errors.append("nonce debe ser hex de 16 bytes")
+    seq, ins = doc.get("seq"), doc.get("ins")
+    if isinstance(seq, bool) or not isinstance(seq, int) or seq < 0:
+        errors.append("seq debe ser entero >= 0")
+    if isinstance(ins, bool) or not isinstance(ins, int):
+        errors.append("ins debe ser entero (segundos)")
+    nanos = doc.get("nanos")
+    if isinstance(nanos, bool) or not isinstance(nanos, int) or not 0 <= nanos <= 999_999_999:
+        errors.append("nanos fuera de rango 0..999_999_999")
+    alg = doc.get("alg", "")
+    if not isinstance(alg, str) or not alg.startswith("HYBRID-ED25519-ML-DSA-"):
+        errors.append("alg debe ser HYBRID-ED25519-ML-DSA-*")
+    sigs = doc.get("sigs")
+    if not isinstance(sigs, dict) or sigs.get("alg") != alg or not isinstance(sigs.get("sigs"), dict):
+        errors.append("bloque de firmas ausente o inconsistente con el alg del payload")
+    if errors:
+        return {"ok": False, "errors": errors, "flags": []}
+
+    # Coherencia de la marca: la marca canónica manda.
+    try:
+        year, month, day, declared, hour, minute, second, offset = parse_canonical(
+            doc["ts"]
+        )
+        day_index = from_gerarion(year, month, day)
+    except (BadTimestamp, ValueError) as exc:
+        return {"ok": False, "errors": [str(exc)], "flags": []}
+    expected_wd = WEEKDAY_ABBREVS[day_index % 7]
+    if declared != expected_wd:
+        errors.append("GERO_EWEEK: letra de día inconsistente")
+    instant = day_index * SECS_PER_DAY + hour * 3600 + minute * 60 + second
+    if ins != instant:
+        errors.append("instante divergente del formato canónico")
+
+    message = _GST_V2_DOMAIN + jcs_bytes(payload)
+    pair = sigs["sigs"]
+    ed, ml = pair.get("ed25519"), pair.get("mldsa")
+    if not isinstance(ed, str) or not isinstance(ml, str):
+        errors.append("REJECTED: faltan firmas del par híbrido (todo-o-nada)")
+        return {"ok": False, "errors": errors, "flags": []}
+    alg_pqc = alg.removeprefix("HYBRID-ED25519-")
+    if not verify_ed25519(payload["pub_classical"], message, ed):
+        errors.append("firma Ed25519 inválida")
+    try:
+        if not verify_mldsa(payload["pub_pqc"], message, ml, alg_pqc):
+            errors.append("firma ML-DSA inválida")
+    except RuntimeError as exc:
+        errors.append(str(exc))
+    except Exception as exc:  # noqa: BLE001
+        errors.append("firma inválida: %s" % exc)
+    return {
+        "ok": not errors,
+        "errors": errors,
+        "flags": [],
+        "state": "VALID" if not errors else "REJECTED",
+        "note": "anti-replay: requiere estado del verificador (guardia persistente); este CLI es apátrida",
+    }
+
+
 def anchor_status(doc) -> str:
     """Estado del anclaje declarado: ANCLA_AUSENTE / ANCLA_PENDIENTE /
     ANCLA_INCOMPLETA / ANCLA_CONSISTENTE (la consistencia interna de la raíz
@@ -442,6 +648,14 @@ def main(argv=None) -> int:
     with open(args.gst, "r", encoding="utf-8") as fh:
         doc = json.load(fh)
     res = verify_document(doc)
+    if res["ok"] and doc.get("gst_version") == "2.0":
+        # GST v2: sin anclaje de notario (esquema distinto); la nota de
+        # anti-replay viaja en el resultado.
+        print("FIRMA_VALIDA %s | GST v2 híbrida (%s)" % (doc.get("ts"), doc.get("alg")))
+        for note in res.get("note", "").splitlines():
+            if note:
+                print("nota: %s" % note, file=sys.stderr)
+        return 0
     status = anchor_status(doc)
     if res["ok"]:
         sig_line = "FIRMA_VALIDA"

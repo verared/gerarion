@@ -241,22 +241,9 @@ GusError gus_canonical(const GusParsed *p, char *buf, size_t buflen)
 }
 
 /* Normalización REGLAS 1-6: recortar extremos, mayúsculas, separadores. */
-static void normalize(const char *raw, char *out, size_t outlen)
-{
-    size_t start = 0, len = strlen(raw);
-    while (start < len && (raw[start] == ' ' || raw[start] == '\t' ||
-                           raw[start] == '\r' || raw[start] == '\n')) start++;
-    size_t end = len;
-    while (end > start && (raw[end - 1] == ' ' || raw[end - 1] == '\t' ||
-                           raw[end - 1] == '\r' || raw[end - 1] == '\n')) end--;
-    size_t j = 0;
-    for (size_t i = start; i < end && j + 1 < outlen; i++) {
-        char ch = (char)toupper((unsigned char)raw[i]);
-        if (ch == ' ' || ch == '.' || ch == '\t') ch = '-';
-        out[j++] = ch;
-    }
-    out[j] = '\0';
-}
+/* normalize() fue absorbido por gus_parse: la extracción de la fracción
+ * sub-segundo exige normalizar sobre una copia con la franja '.fff'
+ * eliminada, así que el antiguo auxiliar estático perdió su único uso. */
 
 static bool is_digits(const char *s, size_t min, size_t max, size_t *count)
 {
@@ -283,7 +270,52 @@ static bool parse_int(const char *s, size_t n, long long *out)
 GusError gus_parse(const char *raw, bool strict, GusParsed *out)
 {
     char s[128];
-    normalize(raw, s, sizeof(s));
+    /* Fracción sub-segundo OPCIONAL (GUS 3.0.0): '.f{1,9}' entre el segundo
+     * y el ciclo/TCJ. Se extrae del CRUDO (normalize convertiría '.' en '-')
+     * con escala exacta a nanosegundos y validación estricta; la forma
+     * canónica NUNCA la emite. */
+    uint32_t nanos = 0;
+    long long frac_from = -1, frac_to = -1;
+    {
+        for (const char *p = raw; *p; p++) {
+            if (p[0] != '.' || p[1] < '0' || p[1] > '9') continue;
+            const char *q = p + 1;
+            int nd = 0;
+            while (q[nd] >= '0' && q[nd] <= '9' && nd < 10) nd++;
+            if (nd < 1 || nd > 9) continue; /* >9 dígitos: fuera de perfil */
+            int is_cycle = q[nd] == '-' &&
+                ((q[nd + 1] == 'S' && q[nd + 2] == 'C') ||
+                 (q[nd + 1] == 'L' && q[nd + 2] == 'C' &&
+                  (q[nd + 3] == '-' || q[nd + 3] == '\0')));
+            /* Nota: 'SC'/'LC' van seguidos de '-TCJ'; con la forma
+             * minimalista basta exigir el par y el guion previo. */
+            int is_tcj = q[nd] == '-' && q[nd + 1] == 'T' &&
+                         q[nd + 2] == 'C' && q[nd + 3] == 'J';
+            if (is_cycle || is_tcj) {
+                unsigned long long v = 0;
+                for (int i = 0; i < nd; i++)
+                    v = v * 10 + (unsigned long long)(q[i] - '0');
+                for (int i = nd; i < 9; i++) v *= 10;
+                if (v > (unsigned long long)GUS_NANOS_MAX) return GUS_EINVAL;
+                nanos = (uint32_t)v;
+                frac_from = p - raw;             /* incluye el '.' */
+                frac_to = (q - raw) + nd;        /* tras los dígitos */
+                break;
+            }
+        }
+    }
+    {
+        size_t o = 0;
+        for (size_t i = 0; raw[i] != '\0'; i++) {
+            if (frac_from >= 0 && (long long)i >= frac_from &&
+                (long long)i < frac_to)
+                continue; /* franja '.fff' eliminada del texto normalizado */
+            char ch = (char)toupper((unsigned char)raw[i]);
+            if (ch == ' ' || ch == '.' || ch == '\t') ch = '-';
+            if (o + 1 < sizeof(s)) s[o++] = ch;
+        }
+        s[o] = '\0';
+    }
     memset(out, 0, sizeof(*out));
 
     const char *cur = s;
@@ -421,6 +453,7 @@ GusError gus_parse(const char *raw, bool strict, GusParsed *out)
 
     out->date = date;
     out->hour = hour; out->minute = minute; out->second = second;
+    out->nanos = has_time ? nanos : 0;
     out->has_time = has_time;
     out->compact = compact_time;
     out->era_assumed = era_assumed;
@@ -541,4 +574,103 @@ int gus_tai_minus_utc(long long unix_seconds)
         else break;
     }
     return result;
+}
+
+/* ------------------------------------------------------------------ */
+/* Precisión sub-segundo: campo nanos SEPARADO (GUS 3.0.0)             */
+/* ------------------------------------------------------------------ */
+
+GusError gus_validate_nanos(uint32_t nanos)
+{
+    if (nanos > GUS_NANOS_MAX) return GUS_EINVAL;
+    return GUS_OK;
+}
+
+GusError gus_instant_from_parts_nanos(long long day_index, int hour,
+                                      int minute, int second,
+                                      uint32_t nanos, int offset_seconds,
+                                      GusInstant *out)
+{
+    long long seconds = 0;
+    GusError err = gus_instant_from_parts(day_index, hour, minute, second,
+                                          offset_seconds, &seconds);
+    if (err != GUS_OK) return err;
+    if (gus_validate_nanos(nanos) != GUS_OK) return GUS_EINVAL;
+    if (!out) return GUS_EINVAL;
+    out->seconds = seconds;
+    out->nanos = nanos;
+    return GUS_OK;
+}
+
+/* ------------------------------------------------------------------ */
+/* Máquina de estados de reloj (§6.3): medir con reloj monotónico,     */
+/* afirmar tiempo absoluto solo con estado explícito.                  */
+/* ------------------------------------------------------------------ */
+
+GusClockState gus_clock_classify(const GusClockReading *reading,
+                                 const GusClockPolicy *policy,
+                                 const GusClockReading *last_anchor)
+{
+    if (!reading || !policy) return GUS_CLOCK_REJECTED;
+
+    /* Anti-rollback: retroceso respecto del último ancla persistido. */
+    if (last_anchor && last_anchor->monotonic_ns > 0 &&
+        reading->monotonic_ns >= last_anchor->monotonic_ns &&
+        reading->seconds < last_anchor->seconds)
+        return GUS_CLOCK_REJECTED;
+
+    /* Con fuente autenticada y cota cumplida: VERIFIED. */
+    if (reading->uncertainty_ns >= 0 &&
+        reading->uncertainty_ns <= policy->max_uncertainty_ns)
+        return GUS_CLOCK_VERIFIED;
+
+    /* Sin cota válida: solo hay HOLDOVER si existe un ancla previa dentro
+     * de la ventana y la lectura es coherente con el delta monotónico. */
+    if (last_anchor && last_anchor->monotonic_ns > 0 &&
+        reading->monotonic_ns >= last_anchor->monotonic_ns &&
+        policy->max_holdover_s > 0) {
+        long long dt_ns = reading->monotonic_ns - last_anchor->monotonic_ns;
+        if (dt_ns / 1000000000LL <= policy->max_holdover_s) {
+            /* Coherencia: |lectura − (ancla + Δmono redondeado)| <= 2 s
+             * (tolerancia de granularidad); si el reloj se desvía del
+             * ancla más allá de la deriva máxima declarada, no hay
+             * extrapolación Honesta: UNVERIFIED. */
+            long long expected = last_anchor->seconds + dt_ns / 1000000000LL;
+            long long drift = reading->seconds - expected;
+            if (drift < 0) drift = -drift;
+            long long max_drift_s = 2 + (policy->drift_ppm > 0
+                                             ? (dt_ns / 1000000000LL) * policy->drift_ppm / 1000000LL
+                                             : 0);
+            if (drift <= max_drift_s) return GUS_CLOCK_HOLDOVER;
+        }
+    }
+
+    /* Política estricta: REJECTED; normal: UNVERIFIED (incertidumbre
+     * desconocida; JAMÁS un VERIFIED silencioso). */
+    return policy->strict ? GUS_CLOCK_REJECTED : GUS_CLOCK_UNVERIFIED;
+}
+
+/* ------------------------------------------------------------------ */
+/* Puente TAI − UTC versionado (horizonte CGPM 2027)                   */
+/* ------------------------------------------------------------------ */
+
+GusTaiTableInfo gus_tai_table_info(void)
+{
+    GusTaiTableInfo info;
+    info.table_version = "IERS-C-2026.1";
+    /* Vigencia verificada de la tabla: 2027-05-01T00:00:00Z. La CGPM aprobó
+     * la transición a UTC continuo (sin intercalares) a partir de mayo de
+     * 2027: después de esa fecha la tabla exige revisión. */
+    info.valid_until_unix = 1799808000LL;
+    info.smear_policy = "reject"; /* el leap smear no es una escala física TAI */
+    return info;
+}
+
+int gus_tai_minus_utc_checked(long long unix_seconds, int *extrapolated)
+{
+    if (extrapolated) {
+        GusTaiTableInfo info = gus_tai_table_info();
+        *extrapolated = (unix_seconds > info.valid_until_unix) ? 1 : 0;
+    }
+    return gus_tai_minus_utc(unix_seconds);
 }

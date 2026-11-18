@@ -62,6 +62,7 @@ class ParsedTimestamp:
     hour: int = 0
     minute: int = 0
     second: int = 0
+    nanos: int = 0           # fracción sub-segundo 0..999_999_999 (campo separado)
     autocycle: bool = True   # ciclo inferido de la hora
     cycle: str | None = None  # si el emisor declaró SC/LC explícito
     offset: int = 0           # TCJ±O en horas (compatibilidad 2.x)
@@ -85,7 +86,17 @@ def parse(raw: str, *, strict_weekday: bool = False) -> ParsedTimestamp:
     calculada siempre prevalece sobre la declarada (REGLA 4). Con
     `strict_weekday=True` el conflicto eleva GERO_EWEEK en lugar de corregir.
     """
-    cleaned = normalize(raw)
+    # Fracción sub-segundo OPCIONAL (`.f{1,9}` entre el segundo y el ciclo):
+    # se extrae del texto CRUDO (el normalizador convierte '.' en '-' y la
+    # destruiría), se escala exacta a nanosegundos y se valida estricta.
+    # La forma canónica NUNCA la emite (queda como dato de precisión).
+    nanos = 0
+    work = raw
+    m_frac = re.search(r"\.(\d{1,9})(?=-[Ss][Cc]-|-[Ll][Cc]-|-[Tt][Cc][Jj])", raw)
+    if m_frac:
+        nanos = int(m_frac.group(1)) * 10 ** (9 - len(m_frac.group(1)))
+        work = raw[: m_frac.start()] + raw[m_frac.end():]
+    cleaned = normalize(work)
     m = TIMESTAMP_RE.match(cleaned)
     compact = False
     if not m:
@@ -138,6 +149,7 @@ def parse(raw: str, *, strict_weekday: bool = False) -> ParsedTimestamp:
         )
         if hour > 23 or minute > 59 or second > 59:
             raise GeroEinval("Hora fuera de rango")
+        cal.validate_nanos(nanos)  # defensa en profundidad: 0..999_999_999
         cycle = m.group("cycle").upper() if m.group("cycle") else None
         offset_seconds = _offset_seconds_from_match(m, compact)
         offset = offset_seconds // 3600 if offset_seconds % 3600 == 0 else 0
@@ -157,6 +169,7 @@ def parse(raw: str, *, strict_weekday: bool = False) -> ParsedTimestamp:
         hour=hour,
         minute=minute,
         second=second,
+        nanos=nanos,
         cycle=cycle,
         offset=offset,
         offset_seconds=offset_seconds,

@@ -17,9 +17,14 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
-      - run: python -m pip install pytest
-      - run: python -m pip install -e .[slh]
-      - run: python -m pytest tests/ -q
+      - run: python -m pip install -e .[dev,slh,pqc]
+      # En frío (sin red/carne de ancla), la lectura de reloj del SO queda
+      # UNVERIFIED: es un estado esperado del ciclo §6.3, no un fallo.
+      - run: python -m pytest tests/ -q -rs
+      - name: Suites de endurecimiento aisladas (JCS/GST v2 y reloj §6.3)
+        run: |
+          python -m pytest tests/test_jcs_gstv2.py -v
+          python -m pytest tests/test_clock_state.py -v
       - name: Conformance JS (normative vectors)
         run: |
           node web/tests.mjs
@@ -44,6 +49,17 @@ jobs:
           python tools/fuzz_diff.py --n 500
         # Manual runs use --n 1500 (CI keeps 500 for a ~15 min job budget);
         # the CI run is statistical coverage, the vector set is the hard proof.
+
+  reuse:
+    # Conformidad REUSE 3.3 al 100 %: cada archivo con SPDX y copyright.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install reuse
+      - run: python -m reuse lint
 
   web-e2e:
     # E2E del portal web (Playwright + Chromium): sin errores JS, cero

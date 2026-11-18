@@ -326,13 +326,20 @@ válido es |TCJ±O| ≤ 24 h en múltiplos de 60 s.
 
 ### 9.6 Perfil forense TSLR (opcional, Capa 3)
 
+> **CARÁCTER EXPERIMENTAL.** TSLR (Capa 3) y GCERTS (Cap 13.4) son perfiles
+> EXPERIMENTALES, separados del núcleo normativo: no forman parte de la
+> garantía de conformidad del calendario ni de la marca canónica. GUS no
+> sustituye los controles de seguridad del sistema operativo, el aislamiento
+> de hardware ni las mitigaciones de red: los cubre por fuera, nunca en su
+> lugar.
+
 Verificación astronómica opcional para evidencia de Nivel 3:
 
 - Posición solar (altitud/azimut) calculada con efemérides (DE440) y
   fijada por `ephemeris_hash` obligatorio: una actualización futura de la
   efeméride nunca invalida retroactivamente una firma anterior.
 - **Quorum 3-de-4 Nodos Maestros** (Jerusalén 31.7683°N/35.2137°E,
-  Ginebra 46.2044°N/6.1432°E, Santiago 33.4489°S/70.6693°O, Sídney
+  Sèvres (BIPM) 48.8292°N/2.2203°E, Santiago 33.4489°S/70.6693°O, Sídney
   33.8688°S/151.2093°E): sin punto único de falla de verificación.
 - **Protocolo polar** (latitud |φ| > 66.5°): el cálculo TSLR por
   altura/azimut es degenerado en noches o días polares; en ese caso el
