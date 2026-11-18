@@ -5,7 +5,7 @@ version = 1
 # -----------------------------------------------------------
 [[annotations]]
 precedence = "override"
-path = [".github/dependabot.yml", ".github/workflows/ci.yml", ".github/workflows/codeql.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml", "deploy/Dockerfile", "deploy/docker-compose.yml", "deploy/systemd/gus-notary@.service", "e2e_web_test.py", "impl-c/Makefile", "impl-c/README.md", "impl-c/conformance.c", "impl-c/gus-cli.c", "impl-c/gus.c", "impl-c/gus.h", "src/gerarion/__init__.py", "src/gerarion/adapters.py", "src/gerarion/calendar.py", "src/gerarion/cli.py", "src/gerarion/format.py", "src/gerarion/gts.py", "src/gerarion/hashots.py", "src/gerarion/notary.py", "src/gerarion/notary_cluster.py", "src/gerarion/notary_service.py", "src/gerarion/profiles.py", "src/gerarion/profiles_roughtime.py", "src/gerarion/profiles_tsa.py", "tests/conftest.py", "tests/test_adapters.py", "tests/test_beta_security.py", "tests/test_calendar.py", "tests/test_cli.py", "tests/test_conformance.py", "tests/test_crypto.py", "tests/test_format.py", "tests/test_fuzz.py", "tests/test_gus_regression_ay.py", "tests/test_notary_cluster.py", "tests/test_profiles.py", "tests/test_profiles_negative.py", "tests/test_profiles_roughtime.py", "tests/test_profiles_tsa.py", "tests/test_verify_gus.py", "tools/conformance.py", "tools/fuzz_diff.py", "tools/generate_vectors.py", "tools/ots_bridge.py", "tools/trust_root.py", "tools/verify_gus.py", "web/README.md", "web/app.js", "web/calendars.mjs", "web/calendars.test.mjs", "web/conformance.mjs", "web/gerarion.mjs", "web/index.html", "web/profiles-conformance.mjs", "web/regression-conformance.mjs", "web/style.css", "web/tests.mjs"]
+path = [".github/dependabot.yml", ".github/workflows/ci.yml", ".github/workflows/codeql.yml", ".github/workflows/pages.yml", ".github/workflows/release.yml", "deploy/Dockerfile", "deploy/docker-compose.yml", "deploy/systemd/gus-notary@.service", "e2e_web_test.py", "impl-c/Makefile", "impl-c/README.md", "impl-c/conformance.c", "impl-c/gus-cli.c", "impl-c/gus.c", "impl-c/gus.h", "src/gerarion/__init__.py", "src/gerarion/adapters.py", "src/gerarion/calendar.py", "src/gerarion/cli.py", "src/gerarion/format.py", "src/gerarion/gts.py", "src/gerarion/hashots.py", "src/gerarion/notary.py", "src/gerarion/notary_cluster.py", "src/gerarion/notary_service.py", "src/gerarion/profiles.py", "src/gerarion/profiles_roughtime.py", "src/gerarion/profiles_tsa.py", "tests/conftest.py", "tests/test_adapters.py", "tests/test_adapters_mldsa.py", "tests/test_beta_security.py", "tests/test_calendar.py", "tests/test_cli.py", "tests/test_conformance.py", "tests/test_crypto.py", "tests/test_format.py", "tests/test_fuzz.py", "tests/test_gus_regression_ay.py", "tests/test_notary_cluster.py", "tests/test_profiles.py", "tests/test_profiles_negative.py", "tests/test_profiles_roughtime.py", "tests/test_profiles_tsa.py", "tests/test_quick_verify.py", "tests/test_verify_gus.py", "tools/conformance.py", "tools/fuzz_diff.py", "tools/generate_vectors.py", "tools/ots_bridge.py", "tools/trust_root.py", "tools/verify_gus.py", "web/README.md", "web/app.js", "web/calendars.mjs", "web/calendars.test.mjs", "web/conformance.mjs", "web/gerarion.mjs", "web/index.html", "web/profiles-conformance.mjs", "web/regression-conformance.mjs", "web/style.css", "web/tests.mjs"]
 SPDX-License-Identifier = "MIT OR Apache-2.0"
 SPDX-FileCopyrightText = "2026 verared contributors"
 
@@ -19,11 +19,11 @@ SPDX-License-Identifier = "CC-BY-4.0"
 SPDX-FileCopyrightText = "2026 verared contributors"
 
 # -----------------------------------------------------------
-# vectors (6 archivos) — CC0-1.0
+# vectors (7 archivos) — CC0-1.0
 # -----------------------------------------------------------
 [[annotations]]
 precedence = "override"
-path = ["vectors/README.md", "vectors/archive/gus-normative-001.json", "vectors/gus-3339-001.json", "vectors/gus-3339-negative-001.json", "vectors/gus-normative-002.json", "vectors/gus-regression-001.json"]
+path = ["vectors/README.md", "vectors/archive/gus-normative-001.json", "vectors/gus-3339-001.json", "vectors/gus-3339-negative-001.json", "vectors/gus-normative-002.json", "vectors/gus-quickverify-001.json", "vectors/gus-regression-001.json"]
 SPDX-License-Identifier = "CC0-1.0"
 SPDX-FileCopyrightText = "2026 verared contributors"
 

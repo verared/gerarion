@@ -97,6 +97,20 @@
    ]
   },
   {
+   "bom-ref": "pkg:pypi/cryptography@>=47",
+   "type": "library",
+   "name": "cryptography",
+   "version": ">=47",
+   "purl": "pkg:pypi/cryptography@>=47",
+   "description": "Adaptador ML-DSA (FIPS 204) para firmas GST - dependencia Python opcional (extra 'pqc'), no vendorizada",
+   "scope": "optional",
+   "licenses": [
+    {
+     "expression": "Apache-2.0 OR BSD-3-Clause"
+    }
+   ]
+  },
+  {
    "type": "file",
    "bom-ref": "font:atkinson-hyperlegible@2020.1",
    "name": "Atkinson Hyperlegible",
@@ -163,7 +177,8 @@
   {
    "ref": "pkg:pypi/gerarion@2.5.0b1",
    "dependsOn": [
-    "pkg:pypi/slh-dsa@0.2.5"
+    "pkg:pypi/slh-dsa@0.2.5",
+    "pkg:pypi/cryptography@>=47"
    ]
   },
   {

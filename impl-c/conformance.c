@@ -543,11 +543,33 @@ static void check_ay_regression(JNode *v)
     }
 }
 
+/* Cap 13.8 v1.2: verificación rápida O(1) (gus-quickverify-001.json).
+ * Consumido también por tests/test_quick_verify.py (Python) y
+ * web/tests.mjs (JS quickVerify); mismos casos, mismas decisiones:
+ * una entrada dudosa se rechaza (false), nunca se normaliza a válido. */
+static void check_quick_verify(JNode *v)
+{
+    const char *cat = "quick_verify";
+    JNode *vals = jo(v, "valid");
+    for (int i = 0; i < vals->count; i++) {
+        JNode *row = vals->items[i];
+        if (row->type != J_OBJ) { fail(cat, "vector valid[i] no es objeto"); continue; }
+        if (!gus_quick_verify(js(row, "ts"))) fail(cat, js(row, "ts"));
+    }
+    JNode *invs = jo(v, "invalid");
+    for (int i = 0; i < invs->count; i++) {
+        JNode *row = invs->items[i];
+        if (row->type != J_OBJ) { fail(cat, "vector invalid[i] no es objeto"); continue; }
+        if (gus_quick_verify(js(row, "ts"))) fail(cat, js(row, "ts"));
+    }
+}
+
 int main(int argc, char **argv)
 {
     const char *path = argc > 1 ? argv[1] : "../vectors/gus-normative-002.json";
     const char *negPath = argc > 2 ? argv[2] : NULL;
     const char *ayPath = argc > 3 ? argv[3] : NULL;
+    const char *quickPath = argc > 4 ? argv[4] : NULL;
     JNode *v = jload(path);
     if (!v) return 2;
     printf("gus-normative conformance (C): %s\n", path);
@@ -574,6 +596,14 @@ int main(int argc, char **argv)
         g_checks++;
         check_ay_regression(ay);
         cats = 9;
+    }
+    if (quickPath) {
+        JNode *qv = jload(quickPath);
+        if (!qv) return 2;
+        printf("gus-quickverify conformance (C): %s\n", quickPath);
+        g_checks++;
+        check_quick_verify(qv);
+        cats = 10;
     }
     if (g_failures == 0) {
         printf("CONFORME (núcleo GUS en C): %d categorías, 0 fallos\n", cats);

@@ -416,3 +416,12 @@ GusError gus_instant_parts(long long instant, GusDate *date,
     *hour = (int)h; *minute = (int)m; *second = (int)s;
     return GUS_OK;
 }
+
+/* ---------------- verificación rápida (Cap 13.8 v1.2) ---------------- */
+
+bool gus_quick_verify(const char *raw)
+{
+    GusParsed p;
+    if (gus_parse(raw, true, &p) != GUS_OK) return false;
+    return !p.era_assumed && !p.weekday_corrected && !p.cycle_corrected;
+}

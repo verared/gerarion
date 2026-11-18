@@ -141,6 +141,22 @@ def parse(raw: str, *, strict_weekday: bool = False) -> ParsedTimestamp:
     )
 
 
+def quick_verify(raw: str) -> bool:
+    """Verificación rápida de consistencia interna, O(1) y sin red.
+
+    Comprueba sintaxis, rangos, letra Nuvid en modo estricto y ciclo exacto,
+    y rechaza además cualquier corrección silenciosa (era asumida, ciclo
+    declarado equivocado): la entrada debe ser válida tal cual, sin
+    normalización que la rescate. Filtro barato para logs e IoT; no
+    sustituye a `parse` + verificación de firma.
+    """
+    try:
+        parsed = parse(raw, strict_weekday=True)
+    except Exception:  # noqa: BLE001 - cualquier fallo = marca no verificada
+        return False
+    return not parsed.flags
+
+
 def to_canonical(parsed: ParsedTimestamp) -> str:
     """Serializa a formato canónico completo."""
     era = "DY" if parsed.year >= 0 else "AY"

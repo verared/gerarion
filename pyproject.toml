@@ -37,6 +37,7 @@ gero = "gerarion.cli:main"
 [project.optional-dependencies]
 dev = ["pytest>=7"]
 slh = ["slh-dsa==0.2.5"]
+pqc = ["cryptography>=47"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

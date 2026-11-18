@@ -71,6 +71,26 @@ decide the degree of trust according to the anchoring.
 lying about its internal clock; the notary prevents that lie from being
 sustained against third parties.
 
+### G6 — Post-quantum migration plan (phased, no promised dates)
+
+Actual state in 2.5.0b1 and candidate path to RC/1.0:
+
+- **Today:** Ed25519 only in the network-anchoring profile (Roughtime);
+  SLH-DSA (FIPS 205) optional adapter (`gerarion[slh]`); ML-DSA (FIPS 204)
+  optional adapter (`gerarion[pqc]`, `cryptography>=47`). The hash-only
+  reference signature remains deprecated and blocked by default.
+- **Phase 1 (goal):** dual or hybrid signing (classical + ML-DSA) in the
+  same GST document, delegable to the `alg` field; **not implemented yet**
+  in this version.
+- **Phase 2 (goal):** high-level verifiers require the post-quantum
+  component; a classical-only signature is reported as degraded.
+- **Phase 3 (goal):** new anchoring exclusively post-quantum; Ed25519
+  remains only for reading historical evidence (re-signing with chain
+  preservation, without rewriting the past — see G4).
+
+**Premise:** the migration is a signing-layer change (minor version; G4),
+not a kernel change; the normative calendar vectors do not change.
+
 ## 4. Concrete attacks and mitigations
 
 | Attack | Outcome |

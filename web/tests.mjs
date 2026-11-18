@@ -10,6 +10,7 @@ import {
   gregorianFromDayIndex,
   isGranTempalum,
   parse,
+  quickVerify,
   canonicalOf,
   cycleOf,
   toGerarion,
@@ -173,6 +174,50 @@ check("GUS-3339: origen fuera de dominio RFC 3339", () => {
     threw = e.message.startsWith("GERO_E3339");
   }
   if (!threw) throw new Error("el origen GUS (año -5) no puede salir como RFC 3339");
+});
+
+// --- quickVerify (Cap 13.8 v1.2: verificación rápida O(1), vector gus-quickverify-001)
+check("quickVerify: canónico pleno", () => {
+  if (quickVerify("2031DY-03-08-T-09:30:00-SC-TCJ+0") !== true) throw new Error("canónico válido");
+});
+check("quickVerify: fecha sin hora", () => {
+  if (quickVerify("2031DY-03-08-T") !== true) throw new Error("fecha de día");
+});
+check("quickVerify: Tempalum normal con letra V", () => {
+  if (quickVerify("0031DY-00-03-V") !== true) throw new Error("Tempalum 00-03 = V");
+});
+check("quickVerify: AY con Tempalum GT", () => {
+  if (quickVerify("0001AY-00-11-B") !== true) throw new Error("0001AY-00-11-B");
+});
+check("quickVerify: ciclo LC correcto con offset", () => {
+  if (quickVerify("2031DY-03-08-T-21:45:10-LC-TCJ+3") !== true) throw new Error("21:45 LC");
+});
+check("quickVerify: tolerancia de espacios", () => {
+  if (quickVerify("2031DY-03-08 T 09:30:00 SC TCJ+0") !== true) throw new Error("REGLA 1");
+});
+check("quickVerify detecta letra manipulada", () => {
+  if (quickVerify("2031DY-03-08-S-09:30:00-SC-TCJ+0") !== false) throw new Error("letra S != T");
+});
+check("quickVerify detecta ciclo manipulado", () => {
+  if (quickVerify("2031DY-03-08-T-21:45:10-SC-TCJ+0") !== false) throw new Error("21:45 declarado SC");
+});
+check("quickVerify detecta hora 25", () => {
+  if (quickVerify("2031DY-03-08-T-25:00:00-SC-TCJ+0") !== false) throw new Error("hora 25");
+});
+check("quickVerify detecta :60", () => {
+  if (quickVerify("2031DY-03-08-T-09:30:60-SC-TCJ+0") !== false) throw new Error("segundo intercalar");
+});
+check("quickVerify detecta día 31", () => {
+  if (quickVerify("2031DY-02-31-A") !== false) throw new Error("todos los meses tienen 30 días");
+});
+check("quickVerify detecta Tempalum fantasma", () => {
+  if (quickVerify("2031DY-00-05-S") !== false) throw new Error("año normal: Tempalum 1-4");
+});
+check("quickVerify rechaza era asumida", () => {
+  if (quickVerify("31-03-08-T") !== false) throw new Error("era DY asumida");
+});
+check("quickVerify detecta mes 13", () => {
+  if (quickVerify("2031DY-13-01-S") !== false) throw new Error("mes fuera de rango");
 });
 
 // --- reporte --------------------------------------------------------------

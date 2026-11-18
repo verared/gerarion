@@ -23,6 +23,19 @@
 5. **Un caso de uso real** documentado de extremo a extremo (creación,
    anclaje, verificación y rotación de claves en un despliegue que no sea
    de prueba).
+6. **Plan de migración post-cuántica** cerrado (threat-model.md §G6):
+   firma dual/híbrida Clásica+ML-DSA verificado por un tercero, con política
+   de re-firma y preservación de cadena.
+
+## Notas exploratorias (no condiciones)
+
+- **Verificación astronómica TSLR con quorum 3-de-4** (propuesta externa,
+  "Cap 13.4.1 v1.2" del documento canónico de GeroTime Foundation): capa de
+  evidencia de alto nivel que combinaría posición solar (DE440/ephemeris_hash),
+  GPS firmado y quorum geográfico de nodos. Exigiría infraestructura nueva
+  (nodos, efemérides versionadas, política de tolerancia) y una auditoría
+  propia; NO es condición de RC ni de 1.0 y no altera el kernel ni el formato.
+  Los puntos de extensión están descritos en docs/papers/lib-c-referencia.md.
 
 ## 1.0 (condiciones)
 

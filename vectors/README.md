@@ -81,8 +81,13 @@ núcleo para que la conformancia del núcleo no dependa de perfiles opcionales:
 |---|---|---|
 | `gus-normative-002.json` | Núcleo calendario/formato/instantes/GST/notario (arriba) | obligatorio toda implementación |
 | `gus-3339-001.json` | **GUS-3339**: instante GUS ↔ RFC 3339 UTC (perfil estricto Z) | obligatoria solo para implementaciones que declaren el perfil |
+| `gus-3339-negative-001.json` | **GUS-3339 negativo**: entradas inválidas que deben RECHAZARSE (F1) | obligatoria para implementaciones que declaren GUS-3339 |
+| `gus-regression-001.json` | **Regresión AY** (F2): `0001AY-00-11-B` y vecinos tras el GT simétrico | obligatoria toda implementación |
+| `gus-quickverify-001.json` | **Verificación rápida O(1)** (Cap 13.8 v1.2): consistencia sin red, tampering detectado sin normalizar | opcional para implementaciones que expongan `quick_verify`/`quickVerify`/`gus_quick_verify` |
 
 Regla: el núcleo nunca cambia por añadir un perfil. Runners del perfil
 GUS-3339: `python3 -m pytest tests/test_profiles.py` (Python) y
 `node web/profiles-conformance.mjs` (JavaScript). La C de referencia no
-implementa perfiles.
+implementa perfiles. Runners del vector quick-verify:
+`python3 -m pytest tests/test_quick_verify.py`, `node web/tests.mjs`
+y la 10ª categoría de `make -C impl-c conformance`.

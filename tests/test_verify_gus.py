@@ -103,3 +103,39 @@ def test_bad_weekday_letter_flagged(good_doc):
     proc = _run(json.dumps(bad))
     assert proc.returncode != 0
     assert "GERO_EWEEK" in proc.stderr
+
+
+# --- ML-DSA (FIPS 204): despacho por `alg` en el monolítico -----------------
+
+
+def _mldsa_doc():
+    pytest.importorskip("cryptography.hazmat.primitives.asymmetric.mldsa")
+    from gerarion.adapters import MlDsaSigner
+
+    signer = MlDsaSigner("ML-DSA-65", seed=bytes(range(32)))
+    return gtsmod.create(fmt.parse("0001DY-02-06-S-09:30:12-SC-TCJ+0"), signer)
+
+
+def test_verify_gus_ml_dsa_valid():
+    doc = _mldsa_doc()
+    proc = _run(doc.to_json())
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.startswith("FIRMA_VALIDA " + doc.ts)
+
+
+def test_verify_gus_ml_dsa_tampered_time_rejected():
+    doc = _mldsa_doc()
+    bad = json.loads(doc.to_json())
+    bad["ts"] = bad["ts"].replace("09:30:12", "09:30:13")
+    proc = _run(json.dumps(bad))
+    assert proc.returncode != 0
+    assert "GERO_" in proc.stderr or "inválida" in proc.stderr
+
+
+def test_verify_gus_ml_dsa_tampered_signature_rejected():
+    doc = _mldsa_doc()
+    bad = json.loads(doc.to_json())
+    bad["sig"] = "00" * 64
+    proc = _run(json.dumps(bad))
+    assert proc.returncode != 0
+    assert "GERO_" in proc.stderr or "inválida" in proc.stderr

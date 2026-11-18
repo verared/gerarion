@@ -70,6 +70,26 @@ deciden el grado de confianza según el anclaje.
 sistema mienta sobre su reloj interno; el notario impide sostener esa mentira
 frente a terceros.
 
+### G6 — Plan de migración post-cuántica (por fases, sin fechas prometidas)
+
+Estado real en 2.5.0b1 y ruta candidata a RC/1.0:
+
+- **Hoy:** Ed25519 solo en el perfil de anclaje de red (Roughtime); SLH-DSA
+  (FIPS 205) adaptador opcional (`gerarion[slh]`); ML-DSA (FIPS 204)
+  adaptador opcional (`gerarion[pqc]`, `cryptography>=47`). La firma
+  hash-only de referencia sigue deprecada y bloqueada por defecto.
+- **Fase 1 (objetivo):** firma dual u híbrida (clásica + ML-DSA) en el mismo
+  documento GST, delegable al campo `alg`; **no está implementada todavía**
+  en esta versión.
+- **Fase 2 (objetivo):** los verificadores de alto nivel exigen el
+  componente post-cuántico; una firma solo-clásica se reporta como degradada.
+- **Fase 3 (objetivo):** nuevo anclaje exclusivamente post-cuántico;
+  Ed25519 queda solo para leer evidencia histórica (re-firma con preservación
+  de cadena, sin reescritura del pasado — ver G4).
+
+**Premisa:** la migración es un cambio de capa de firma (versión menor;
+G4), no del kernel; los vectores normativos del calendario no cambian.
+
 ## 4. Ataques concretos y mitigaciones
 
 | Ataque | Resultado |

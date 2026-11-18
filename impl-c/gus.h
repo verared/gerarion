@@ -100,6 +100,12 @@ GusError gus_canonical(const GusParsed *p, char *buf, size_t buflen);
  * Con strict=true, la letra de día inconsistente devuelve GUS_EWEEK. */
 GusError gus_parse(const char *raw, bool strict, GusParsed *out);
 
+/* Verificación rápida de consistencia interna, O(1) y sin red (Cap 13.8
+ * v1.2): true solo si la marca es válida tal cual, sin correcciones
+ * silenciosas (era asumida, letra Nuvid o ciclo declarados equivocados).
+ * Filtro barato para logs e IoT; no sustituye la verificación de firma. */
+bool gus_quick_verify(const char *raw);
+
 /* ---------------- instante continuo ---------------- */
 
 GusError gus_instant_from_parts(long long day_index, int hour, int minute,
