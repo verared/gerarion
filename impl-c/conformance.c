@@ -1,4 +1,9 @@
 /*
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ * SPDX-FileCopyrightText: 2026 verared contributors
+ */
+
+/*
  * conformance.c — Runner de conformancia GUS (núcleo) para impl-c.
  *
  * Lee vectors/gus-normative-002.json con un parser JSON mínimo incluido

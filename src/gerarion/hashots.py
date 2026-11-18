@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Firma hash pura de referencia (Winternitz OTS + árbol Merkle, SHA-256).
 
 ADVERTENCIA DE ALCANCE: es una *implementación de referencia educativa*,

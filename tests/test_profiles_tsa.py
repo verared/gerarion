@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 # -*- coding: utf-8 -*-
 """Perfil GUS-3161: la marca GUS anclada dentro de un sello RFC 3161.
 

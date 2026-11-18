@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Trust root del clúster notarial GUS: creación, firma y verificación.
 
 El trust root es el archivo arrancable único desde el que los consumidores

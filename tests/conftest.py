@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Configuración global de la suite de pruebas Python.
 
 GUS_ALLOW_INSECURE_REF=1: la suite de tests firma con el esquema hash-only

@@ -1,4 +1,9 @@
 /*
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ * SPDX-FileCopyrightText: 2026 verared contributors
+ */
+
+/*
  * gus.c — Núcleo GUS 2.1 en C (segunda implementación independiente).
  *
  * Aritmética entera exacta; sin punto flotante. El acumulador solar

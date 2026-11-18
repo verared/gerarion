@@ -6,7 +6,7 @@
      category="std" docName="draft-gerarion-gus-00" ipr="trust200902"
      submissionType="independent">
   <front>
-    <title abbrev="GUS 2.1">Gerarion Universal Standard (GUS) 2.1: Regular Calendar, Continuous Instant and Non-Forgeable Signed Time</title>
+    <title abbrev="GUS 2.1">Gerarion Universal Standard (GUS) 2.1: Regular Calendar, Continuous Instant and Post-Quantum Verifiable Signed Time</title>
 
     <author fullname="verared">
       <organization>verared</organization>

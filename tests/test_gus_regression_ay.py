@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 # -*- coding: utf-8 -*-
 """Regresión F2: el Gran Tempalum opera simétricamente en la era AY.
 

@@ -1,29 +1,25 @@
-MIT License
+Licenciamiento dual del código: MIT OR Apache-2.0
+==========================================
 
-Copyright (c) 2026 verared contributors
+Este proyecto distribuye su CÓDIGO bajo la doble licencia
+MIT OR Apache-2.0 (SPDX-License-Identifier: MIT OR Apache-2.0): puedes
+usarlo, a tu elección, bajo los términos de la licencia MIT o de la
+Apache License 2.0. Esta doble licencia PRESERVA ÍNTEGRAMENTE los derechos
+MIT ya otorgados en releases previos (la opción MIT sigue disponible con
+los mismos términos de siempre).
 
-Original calendar, Nuvid language and research by Gerardo Loyola
-(github.com/geroiloyola).
+Copia completa de ambas opciones:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+- LICENSES/MIT.txt          (MIT)
+- LICENSES/Apache-2.0.txt   (Apache-2.0)
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Otras capas del repositorio NO se rigen por este archivo:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+- Documentación y especificación (docs/**, README*.md, GOVERNANCE.md,
+  SECURITY.md, CHANGELOG.md, CONTRIBUTING.md):  CC-BY-4.0
+- Vectores de prueba de datos (vectors/**/*.json):  CC0-1.0
+- Fuentes tipográficas (web/fonts/):  OFL-1.1 (c) Braille Institute of
+  America, Inc. — incluida en LICENSES/OFL-1.1.txt
 
----
-
-Documentation files under docs/ are additionally available under
-Creative Commons Attribution 4.0 International (CC-BY-4.0).
+La tabla completa por capa, con el detalle de terceros, vive en
+LICENSING.md.

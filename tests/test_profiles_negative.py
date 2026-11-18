@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 # -*- coding: utf-8 -*-
 """Regresión F1: entradas inválidas del perfil GUS-3339 nunca se normalizan.
 

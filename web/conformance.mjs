@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * Runner de conformancia GUS — consume vectors/gus-normative-002.json (núcleo).
  *

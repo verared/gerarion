@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Perfil GUS-Roughtime: testigos externos ligados al campo anchor de la GST.
 
 Documento normativo: docs/profiles/gus-roughtime-perfil.md (ES espejo) /

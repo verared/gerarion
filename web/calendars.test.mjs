@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // tests-calendars.mjs — pruebas unitarias del traductor multi-calendario.
 // Uso: node web/calendars.test.mjs  (exit 1 si algo falla). 100% local.
 

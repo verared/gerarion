@@ -38,7 +38,7 @@ el output del calendario y de los instantes:
   el documento)
 - El formato canónico GTS y sus reglas de normalización 1–7
 - La semántica de instantes (escala continua sin segundos intercalares
-  sobre TAI) y la cota de oscilación solar del ancla (|Δ| < 7 días; la
+  análoga a TAI[1], con el día GUS rodando a medianoche UTC — spec §9) y la cota de oscilación solar del ancla (|Δ| < 7 días; la
   ventana concreta de fechas de inicio es una medición observada y
   desplazable con los milenios, no una propiedad del kernel)
 - Los códigos de error `GERO_*` y el ABNF del formato
@@ -254,3 +254,11 @@ Si en el futuro se registra la marca, esta sección se actualiza primero
 - Runbook del notario: `docs/notary-runbook.md`.
 - Vectores y cláusula de conformancia: `vectors/README.md`.
 - Erratas históricas: `docs/errata-v1.2.md`.
+
+---
+
+[1] Semántica de "análoga a TAI": la escala de instantes es lineal en
+etiquetas (sin tabla TAI−UTC) con el día GUS rodando a medianoche UTC — texto normativo
+en spec §9 y sección «Escala de tiempo» del README. La propuesta de
+frontera alternativa (instante sobre TAI con tabla explícita) queda como
+DECISIÓN DEL AUTOR en docs/decisions/D-001-frontera-utc-tai.md.

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // calendars.mjs — Motor de traducción multi-calendario del portal Gerarion.
 //
 // Pivote matemático: JDN (número de día juliano entero) y day_index GUS,

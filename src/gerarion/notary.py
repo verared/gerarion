@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Notario temporal encadenado por día Gerarion.
 
 Mecanismo de obviación objetiva: nadie puede sostener una marca falsificada

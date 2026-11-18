@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Marca temporal Geroriana firmada (GST, *Gerarion Signed Timestamp*).
 
 AVISO DE BETA: el esquema hash-only de referencia en este módulo es

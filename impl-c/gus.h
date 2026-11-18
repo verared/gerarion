@@ -1,4 +1,9 @@
 /*
+ * SPDX-License-Identifier: MIT OR Apache-2.0
+ * SPDX-FileCopyrightText: 2026 verared contributors
+ */
+
+/*
  * gus.h — Núcleo GUS 2.x en C (segunda implementación independiente).
  *
  * Implementa el núcleo normativo: calendario regular (12x30 + Tempalum),

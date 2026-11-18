@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
 """Tests de los adaptadores de firma (hash-only de referencia + SLH-DSA FIPS 205)."""
 
 from __future__ import annotations

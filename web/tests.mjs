@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * Suite de vectores normativos — misma matriz que tests/test_calendar.py (Python).
  * Ejecutar: node web/tests.mjs  (y también corre auto en el navegador, index.html)

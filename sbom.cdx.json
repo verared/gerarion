@@ -1,111 +1,179 @@
 {
-  "bomFormat": "CycloneDX",
-  "specVersion": "1.5",
-  "version": 1,
-  "metadata": {
-    "component": {
-      "bom-ref": "pkg:generic/gerarion@2.5.0b1",
-      "type": "library",
-      "name": "gerarion",
-      "version": "2.5.0b1",
-      "description": "Gerarion Universal Standard (GUS 2.1.0): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables; funciones de seguridad en revisión",
-      "licenses": [
-        {
-          "expression": "MIT"
-        },
-        {
-          "expression": "CC-BY-4.0"
-        }
-      ]
+ "bomFormat": "CycloneDX",
+ "specVersion": "1.5",
+ "version": 1,
+ "metadata": {
+  "component": {
+   "bom-ref": "pkg:github/verared/gerarion@v2.5.0b1",
+   "type": "library",
+   "name": "gerarion",
+   "version": "2.5.0b1",
+   "description": "Gerarion Universal Standard (GUS 2.1.0): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables; funciones de seguridad en revisión",
+   "licenses": [
+    {
+     "expression": "MIT OR Apache-2.0"
     },
-    "properties": [
-      {
-        "name": "gus:vector-set",
-        "value": "gus-normative-002 (vectors/, SHA-256 anclado en vectors/README)"
-      },
-      {
-        "name": "gus:conformance",
-        "value": "Python, JavaScript y C conforme al vector set 001"
-      }
-    ]
+    {
+     "expression": "CC-BY-4.0"
+    }
+   ],
+   "purl": "pkg:github/verared/gerarion@v2.5.0b1"
   },
-  "components": [
-    {
-      "bom-ref": "pkg:pypi/gerarion@2.5.0b1",
-      "type": "library",
-      "name": "gerarion",
-      "version": "2.5.0b1",
-      "purl": "pkg:pypi/gerarion@2.5.0b1",
-      "description": "Kernel Python: GTS, GST, notario diario Merkle, adaptadores criptograficos",
-      "licenses": [
-        {
-          "expression": "MIT"
-        },
-        {
-          "expression": "CC-BY-4.0"
-        }
-      ]
-    },
-    {
-      "bom-ref": "pkg:npm/gerarion-kernel@2.5.0b1",
-      "type": "library",
-      "name": "gerarion-kernel",
-      "version": "2.5.0b1",
-      "purl": "pkg:npm/gerarion-kernel@2.5.0b1",
-      "description": "Kernel JavaScript ESM (web/gerarion.mjs): cero dependencias, mismo vector set",
-      "licenses": [
-        {
-          "expression": "MIT"
-        },
-        {
-          "expression": "CC-BY-4.0"
-        }
-      ]
-    },
-    {
-      "bom-ref": "pkg:generic/gerarion-c@2.5.0b1",
-      "type": "library",
-      "name": "gerarion-c",
-      "version": "2.5.0b1",
-      "description": "Segunda implementacion independiente en C (impl-c/): cero dependencias, cero red",
-      "licenses": [
-        {
-          "expression": "MIT"
-        },
-        {
-          "expression": "CC-BY-4.0"
-        }
-      ]
-    },
-    {
-      "bom-ref": "pkg:pypi/slh-dsa@0.2.5",
-      "type": "library",
-      "name": "slh-dsa",
-      "version": "0.2.5",
-      "purl": "pkg:pypi/slh-dsa@0.2.5",
-      "description": "Adaptador SLH-DSA (FIPS 205) para firmas GTS/GST y trust root - dependencia Python opcional",
-      "scope": "optional",
-      "licenses": [
-        {
-          "expression": "LGPL-3.0-or-later"
-        }
-      ]
-    }
+  "properties": [
+   {
+    "name": "gus:vector-set",
+    "value": "gus-normative-002 (vectors/gus-normative-002.json; negativos y regresión complementarios en vectors/)"
+   },
+   {
+    "name": "gus:conformance",
+    "value": "Python, JavaScript y C conforme al vector set 001"
+   },
+   {
+    "name": "gus:licensing-map",
+    "value": "REUSE.toml + LICENSING.md (REUSE 3.3 compliant, reuse lint OK)"
+   },
+   {
+    "name": "gus:fonts-third-party",
+    "value": "Atkinson Hyperlegible OFL-1.1 vendorizado en web/fonts/ (ver NOTICE)"
+   }
   ],
-  "dependencies": [
+  "timestamp": "2026-11-18T00:38:54Z"
+ },
+ "components": [
+  {
+   "bom-ref": "pkg:pypi/gerarion@2.5.0b1",
+   "type": "library",
+   "name": "gerarion",
+   "version": "2.5.0b1",
+   "purl": "pkg:github/verared/gerarion@v2.5.0b1",
+   "description": "Kernel Python: GTS, GST, notario diario Merkle, adaptadores criptograficos",
+   "licenses": [
     {
-      "ref": "pkg:pypi/gerarion@2.5.0b1",
-      "dependsOn": [
-        "pkg:pypi/slh-dsa@0.2.5"
-      ]
+     "expression": "MIT OR Apache-2.0"
     },
     {
-      "ref": "pkg:npm/gerarion-kernel@2.5.0b1",
-      "dependsOn": []
-    },
-    {
-      "ref": "pkg:generic/gerarion-c@2.5.0b1",
-      "dependsOn": []
+     "expression": "CC-BY-4.0"
     }
-  ]
+   ]
+  },
+  {
+   "bom-ref": "pkg:npm/gerarion-kernel@2.5.0b1",
+   "type": "library",
+   "name": "gerarion-kernel",
+   "version": "2.5.0-beta.1",
+   "purl": "pkg:npm/gerarion-kernel@2.5.0-beta.1",
+   "description": "Kernel JavaScript ESM (web/gerarion.mjs): cero dependencias, mismo vector set",
+   "licenses": [
+    {
+     "expression": "MIT OR Apache-2.0"
+    }
+   ],
+   "note": "distribuido como tarball en GitHub Releases (sin registro npm)"
+  },
+  {
+   "bom-ref": "pkg:generic/gerarion-c@2.5.0b1",
+   "type": "library",
+   "name": "gerarion-c",
+   "version": "2.5.0b1",
+   "description": "Segunda implementacion independiente en C (impl-c/): cero dependencias, cero red",
+   "licenses": [
+    {
+     "expression": "MIT OR Apache-2.0"
+    }
+   ]
+  },
+  {
+   "bom-ref": "pkg:pypi/slh-dsa@0.2.5",
+   "type": "library",
+   "name": "slh-dsa",
+   "version": "0.2.5",
+   "purl": "pkg:pypi/slh-dsa@0.2.5",
+   "description": "Adaptador SLH-DSA (FIPS 205) para firmas GTS/GST y trust root - dependencia Python opcional",
+   "scope": "optional",
+   "licenses": [
+    {
+     "expression": "LGPL-3.0-or-later"
+    }
+   ]
+  },
+  {
+   "type": "file",
+   "bom-ref": "font:atkinson-hyperlegible@2020.1",
+   "name": "Atkinson Hyperlegible",
+   "version": "2020.1",
+   "publisher": "Braille Institute of America, Inc.",
+   "description": "Fuentes tipográficas de alta legibilidad vendorizadas (4 archivos .woff2 en web/fonts/)",
+   "purl": "pkg:generic/atkinson-hyperlegible@2020.1",
+   "licenses": [
+    {
+     "license": {
+      "id": "OFL-1.1"
+     }
+    }
+   ],
+   "scope": "required"
+  },
+  {
+   "type": "library",
+   "bom-ref": "dev:pytest",
+   "name": "pytest",
+   "version": ">=7",
+   "description": "Herramienta de desarrollo/CI — no se distribuye con el paquete. solo tests (extra dev)",
+   "scope": "excluded",
+   "licenses": []
+  },
+  {
+   "type": "application",
+   "bom-ref": "dev:playwright",
+   "name": "playwright",
+   "version": "CI",
+   "description": "Herramienta de desarrollo/CI — no se distribuye con el paquete. solo e2e en CI (pip install playwright)",
+   "scope": "excluded",
+   "licenses": []
+  },
+  {
+   "type": "application",
+   "bom-ref": "dev:pip-audit",
+   "name": "pip-audit",
+   "version": "CI",
+   "description": "Herramienta de desarrollo/CI — no se distribuye con el paquete. solo auditoría en CI",
+   "scope": "excluded",
+   "licenses": []
+  },
+  {
+   "type": "library",
+   "bom-ref": "dev:build",
+   "name": "build",
+   "version": ">=1",
+   "description": "Herramienta de desarrollo/CI — no se distribuye con el paquete. solo build sdist/wheel (no se distribuye)",
+   "scope": "excluded",
+   "licenses": []
+  },
+  {
+   "type": "library",
+   "bom-ref": "dev:twine",
+   "name": "twine",
+   "version": ">=5",
+   "description": "Herramienta de desarrollo/CI — no se distribuye con el paquete. solo verificación de dist (no se distribuye)",
+   "scope": "excluded",
+   "licenses": []
+  }
+ ],
+ "dependencies": [
+  {
+   "ref": "pkg:pypi/gerarion@2.5.0b1",
+   "dependsOn": [
+    "pkg:pypi/slh-dsa@0.2.5"
+   ]
+  },
+  {
+   "ref": "pkg:npm/gerarion-kernel@2.5.0b1",
+   "dependsOn": []
+  },
+  {
+   "ref": "pkg:generic/gerarion-c@2.5.0b1",
+   "dependsOn": []
+  }
+ ],
+ "serialNumber": "urn:uuid:b7b3b374-4bf1-4868-b32a-4ea0f15ce815"
 }
