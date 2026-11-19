@@ -35,16 +35,54 @@ from __future__ import annotations
 import argparse
 import ast
 import dataclasses
+import hashlib
+import json
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-GERARION_VERSION = "3.2.0"
 SOURCE_REPO = "verared/gerarion"
+COMPAT_RANGE = ">=3.2.0,<4.0.0"
+MANIFEST_FILENAME = "EXPORT-MANIFEST.json"
+MANIFEST_SCHEMA = "gerarion-export-manifest/1"
+
+
+def _read_project_version() -> str:
+    pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    m = re.search(r'(?m)^version\s*=\s*"([^"]+)"', pyproject)
+    if not m:
+        raise RuntimeError("No se pudo leer version de pyproject.toml")
+    return m.group(1)
+
+
+def _resolve_source_commit(override: Optional[str] = None) -> str:
+    if override:
+        return override.strip()
+    proc = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    if proc.returncode != 0 or not proc.stdout.strip():
+        raise RuntimeError(
+            "No se pudo determinar source_commit vía git rev-parse HEAD: "
+            + (proc.stderr or proc.stdout).strip()
+        )
+    return proc.stdout.strip()
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+GERARION_VERSION = _read_project_version()
 
 # ---------------------------------------------------------------------------
 # Especificación de módulos
@@ -58,7 +96,8 @@ class ModuleSpec:
     title_en: str
     purpose_es: str
     purpose_en: str
-    status: str                    # "Estable" | "EXPERIMENTAL"
+    status: str                    # "Estable" | "EXPERIMENTAL" | ...
+    maturity: str                  # "stable" | "stable-core/experimental-roughtime" | "experimental"
     deps: Tuple[str, ...]          # módulos gt-* de los que depende
     files: Tuple[str, ...] = ()    # archivos individuales (ruta exacta)
     dirs: Tuple[str, ...] = ()     # directorios copiados enteros
@@ -93,6 +132,7 @@ MODULES: Dict[str, ModuleSpec] = {
                 "dependencies."
             ),
             status="Estable",
+            maturity="stable",
             deps=(),
             dirs=(
                 "impl-c/core",
@@ -130,6 +170,7 @@ MODULES: Dict[str, ModuleSpec] = {
                 "geographic index of civil offsets against TCJ."
             ),
             status="Estable",
+            maturity="stable",
             deps=("gt-core",),
             dirs=(
                 "impl-c/tai",
@@ -162,6 +203,7 @@ MODULES: Dict[str, ModuleSpec] = {
                 "(int64 seconds + separate nanos)."
             ),
             status="Estable",
+            maturity="stable",
             deps=(),
             dirs=("src/gerarion/core",),
             files=("impl-c/core/gus_core.h", "impl-c/core/gus_core.c",
@@ -193,6 +235,7 @@ MODULES: Dict[str, ModuleSpec] = {
                 "with pure integer arithmetic."
             ),
             status="Estable",
+            maturity="stable",
             deps=("gt-core",),
             dirs=(
                 "impl-c/calendars",
@@ -227,6 +270,7 @@ MODULES: Dict[str, ModuleSpec] = {
                 "and the experimental Roughtime profile."
             ),
             status="Estable (núcleo) / Experimental (Roughtime)",
+            maturity="stable-core/experimental-roughtime",
             deps=("gt-core",),
             dirs=(
                 "impl-c/clock",
@@ -258,7 +302,8 @@ MODULES: Dict[str, ModuleSpec] = {
                 "anti-downgrade protection, persistent ReplayGuard, and "
                 "the daily Merkle notary with quorum."
             ),
-            status="Estable (GST v2)",
+            status="Estable (GST v2; auditoría criptográfica externa requerida para producción)",
+            maturity="stable",
             deps=("gt-core",),
             dirs=("src/gerarion/gst",),
             docs=(
@@ -286,6 +331,7 @@ MODULES: Dict[str, ModuleSpec] = {
                 "coordinate."
             ),
             status="Estable (RFC 3339) / Experimental (RFC 3161)",
+            maturity="stable",
             deps=("gt-core", "gt-tcj"),
             dirs=("src/gerarion/interop",),
             vectors=(
@@ -316,6 +362,7 @@ MODULES: Dict[str, ModuleSpec] = {
                 "initial structure is ready for independent development."
             ),
             status="EXPERIMENTAL",
+            maturity="experimental",
             deps=("gt-core",),
             docs=(
                 "docs/specs/TSLR.es.md",
@@ -342,6 +389,7 @@ MODULES: Dict[str, ModuleSpec] = {
                 "initial structure is ready for independent development."
             ),
             status="EXPERIMENTAL",
+            maturity="experimental",
             deps=("gt-core", "gt-gst"),
             docs=(
                 "docs/specs/GCERTS.es.md",
@@ -504,10 +552,12 @@ base para componer módulos.
 
 ## Estado normativo
 
-- **{status}** — línea base `v{version}` (aritmética y vectores
+- **{status}** (`maturity: {maturity}`) — línea base `v{version}` (aritmética y vectores
   congelados: GUS v3.0.0).
 - Especificación(es) incluida(s): {spec_list}
-
+- Manifiesto de integridad verificable: [`EXPORT-MANIFEST.json`](EXPORT-MANIFEST.json)
+- Matriz oficial de compatibilidad: [`COMPATIBILITY.md`](https://github.com/{source}/blob/v{version}/COMPATIBILITY.md)
+{crypto_section_es}
 ## Dependencias
 
 {deps_es}
@@ -529,6 +579,12 @@ Con Python ≥ 3.9 y `reuse` instalado:
 ```bash
 reuse lint                                    # licencias al 100 %
 {verify_extra}
+```
+
+Desde `{source}`, la integridad completa contra `EXPORT-MANIFEST.json` se verifica con:
+
+```bash
+python3 tools/export_module.py --verify-existing /ruta/a/{name}
 ```
 
 ## Contrato de sincronización con `{source}`
@@ -558,10 +614,12 @@ compose cleanly.
 
 ## Normative status
 
-- **{status}** — baseline `v{version}` (frozen arithmetic and vectors:
+- **{status}** (`maturity: {maturity}`) — baseline `v{version}` (frozen arithmetic and vectors:
   GUS v3.0.0).
 - Included specification(s): {spec_list}
-
+- Verifiable integrity manifest: [`EXPORT-MANIFEST.json`](EXPORT-MANIFEST.json)
+- Official compatibility matrix: [`COMPATIBILITY.md`](https://github.com/{source}/blob/v{version}/COMPATIBILITY.md)
+{crypto_section_en}
 ## Dependencies
 
 {deps_en}
@@ -585,6 +643,12 @@ reuse lint                                    # licensing 100 %
 {verify_extra}
 ```
 
+From `{source}`, full integrity against `EXPORT-MANIFEST.json` is verified with:
+
+```bash
+python3 tools/export_module.py --verify-existing /path/to/{name}
+```
+
 ## Synchronisation contract with `{source}`
 
 This package is **generated, never hand-edited**: it is regenerated
@@ -595,6 +659,26 @@ cores for the three platforms, and the full test suite) stays in
 `{source}`; `verared/{name}` satellites consume it and never fork the
 arithmetic. Updates flow by regenerating the export from a tag of the
 base repository — never by editing exported files.
+"""
+
+GST_CRYPTO_SECTION_ES = """
+### Perfil criptográfico normativo (`GST v2`)
+
+| Aspecto | Declaración normativa |
+|---|---|
+| **Algoritmo normativo (`GST v2`)** | Firma híbrida **Ed25519 + ML-DSA** sobre payload canonicalizado con **RFC 8785 (JCS)** (enteros estrictamente dentro de IEEE-754 `binary64` `±(2^53 - 1)`), separación de dominio `GUS3-GST-V2`, descriptor de algoritmos y claves incluido en los bytes firmados (protección **anti-downgrade**), contador monotónico `seq` + `nonce` con `ReplayGuard` *fail-closed* y notario Merkle diario opcional. |
+| **Algoritmo deprecado / educativo** | `WOTS+` / `WotsMerkleSigner`, aislado en `src/gerarion/deprecated/hashots.py` de `verared/gerarion` con `DeprecationWarning` explícito; **fuera** del perfil normativo `GST v2`. |
+| **Cobertura y límite de auditoría** | Cubierto por vectores y pruebas (JCS, verificación dual, anti-downgrade, `ReplayGuard`, integración de satélites). Pendiente de **auditoría criptográfica externa independiente** y **custodia TPM/HSM** antes de producción. |
+"""
+
+GST_CRYPTO_SECTION_EN = """
+### Normative Cryptographic Profile (`GST v2`)
+
+| Aspect | Normative declaration |
+|---|---|
+| **Normative algorithm (`GST v2`)** | Hybrid **Ed25519 + ML-DSA** over **RFC 8785 (JCS)** canonicalised payload (integers strictly within IEEE-754 `binary64` `±(2^53 - 1)`), domain separation `GUS3-GST-V2`, algorithm and key descriptors included in signed bytes (**anti-downgrade**), monotonic counter `seq` + `nonce` with fail-closed `ReplayGuard`, and optional daily Merkle notary. |
+| **Deprecated / educational algorithm** | `WOTS+` / `WotsMerkleSigner`, isolated in `src/gerarion/deprecated/hashots.py` of `verared/gerarion` with explicit `DeprecationWarning`; **outside** the normative `GST v2` profile. |
+| **Test coverage & audit boundary** | Covered by vectors and tests (JCS, dual verification, anti-downgrade, `ReplayGuard`, satellite integration). **Independent third-party cryptographic audit** and **TPM/HSM key custody** are required before production security decisions. |
 """
 
 
@@ -714,19 +798,77 @@ def _external_import_roots(export_dir: Path) -> List[str]:
 # ---------------------------------------------------------------------------
 
 
+def _is_git_internal(rel: Path) -> bool:
+    return ".git" in rel.parts
+
+
+def _clear_export_dir_preserving_git(export: Path) -> None:
+    if not export.exists():
+        export.mkdir(parents=True)
+        return
+    for child in list(export.iterdir()):
+        if child.name == ".git":
+            continue
+        if child.is_dir() and not child.is_symlink():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
+
+
 def _copy_file(src: Path, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(src, dest)
 
 
+def _format_gt_core_makefile(version: str) -> str:
+    parts = version.split(".")
+    major = parts[0] if len(parts) > 0 else "3"
+    minor = parts[1] if len(parts) > 1 else "2"
+    patch = parts[2] if len(parts) > 2 else "0"
+    text = GT_CORE_MAKEFILE
+    text = text.replace("{source}", SOURCE_REPO)
+    text = text.replace("{version}", version)
+    text = text.replace("{date}", "2026-11-19")
+    text = re.sub(r"(?m)^MAJOR = \d+$", f"MAJOR = {major}", text)
+    text = re.sub(r"(?m)^MINOR = \d+$", f"MINOR = {minor}", text)
+    text = re.sub(r"(?m)^PATCH = \d+$", f"PATCH = {patch}", text)
+    return text
+
+
+def _format_gt_core_smoke_c(version: str) -> str:
+    return (
+        GT_CORE_SMOKE_C
+        .replace("{source}", SOURCE_REPO)
+        .replace("{version}", version)
+    )
+
+
+def _collect_export_hashes(export: Path) -> Dict[str, str]:
+    """Mapa ordenado alfabéticamente ruta_relativa -> sha256 de todos los
+    archivos exportados (excluyendo EXPORT-MANIFEST.json y .git/**)."""
+    hashes: Dict[str, str] = {}
+    for p in sorted(export.rglob("*")):
+        if not p.is_file():
+            continue
+        rel = p.relative_to(export)
+        if _is_git_internal(rel):
+            continue
+        posix = rel.as_posix()
+        if posix == MANIFEST_FILENAME:
+            continue
+        hashes[posix] = _sha256_file(p)
+    return dict(sorted(hashes.items()))
+
+
 def export_module(spec: ModuleSpec, out_dir: Path,
-                  include_large_vectors: bool = True) -> List[str]:
+                  include_large_vectors: bool = True,
+                  source_commit: Optional[str] = None) -> List[str]:
     """Exporta `spec` a `<out_dir>/<spec.name>`; devuelve la lista de
     archivos escritos (rutas relativas al export)."""
+    version = _read_project_version()
+    commit = _resolve_source_commit(source_commit)
     export = out_dir / spec.name
-    if export.exists():
-        shutil.rmtree(export)
-    export.mkdir(parents=True)
+    _clear_export_dir_preserving_git(export)
     written: List[str] = []
 
     def rel_add(p: Path) -> None:
@@ -765,10 +907,16 @@ def export_module(spec: ModuleSpec, out_dir: Path,
 
     # 5. extras específicos de gt-core (Makefile standalone)
     if spec.name == "gt-core":
-        date = "2026-11-19"
-        (export / "impl-c" / "Makefile").write_text(GT_CORE_MAKEFILE)
-        (export / "impl-c" / "gerarion-core.pc.in").write_text(GT_CORE_PC_IN)
-        (export / "impl-c" / "smoke.c").write_text(GT_CORE_SMOKE_C)
+        (export / "impl-c" / "Makefile").write_text(
+            _format_gt_core_makefile(version), encoding="utf-8"
+        )
+        (export / "impl-c" / "gerarion-core.pc.in").write_text(
+            GT_CORE_PC_IN.replace("${{", "${").replace("}}", "}"),
+            encoding="utf-8",
+        )
+        (export / "impl-c" / "smoke.c").write_text(
+            _format_gt_core_smoke_c(version), encoding="utf-8"
+        )
         for extra in ("impl-c/Makefile", "impl-c/gerarion-core.pc.in", "impl-c/smoke.c"):
             rel_add(export / extra)
 
@@ -777,6 +925,7 @@ def export_module(spec: ModuleSpec, out_dir: Path,
     rel_add(export / "LICENSE")
     _copy_file(REPO_ROOT / "NOTICE", export / "NOTICE")
     rel_add(export / "NOTICE")
+
     # 7. README bilingüe de entrada (antes del REUSE.toml: debe quedar cubierto)
     specs = ", ".join(f"`{d}`" for d in spec.docs) or "—"
     verify_extra = (
@@ -792,15 +941,19 @@ def export_module(spec: ModuleSpec, out_dir: Path,
     if any(w.startswith("src/") for w in written):
         usage += 'python3 -c \'import sys; sys.path.insert(0, "src"); import gerarion\'\n'
     usage += "```"
-    files_desc = "\n".join(_tree_lines(written))
+    files_desc = "\n".join(_tree_lines(written + [MANIFEST_FILENAME]))
+    crypto_es = GST_CRYPTO_SECTION_ES if spec.name == "gt-gst" else ""
+    crypto_en = GST_CRYPTO_SECTION_EN if spec.name == "gt-gst" else ""
     readme_es = README_TMPL_ES.format(
         title=spec.title_es,
         source=SOURCE_REPO,
-        version=GERARION_VERSION,
+        version=version,
         name=spec.name,
         purpose=spec.purpose_es,
         status=spec.status,
+        maturity=spec.maturity,
         spec_list=specs,
+        crypto_section_es=crypto_es,
         deps_es=_deps_text(spec, "es"),
         content_es=files_desc,
         usage_es=usage,
@@ -809,23 +962,25 @@ def export_module(spec: ModuleSpec, out_dir: Path,
     readme_en = README_TMPL_EN.format(
         title=spec.title_en,
         source=SOURCE_REPO,
-        version=GERARION_VERSION,
+        version=version,
         name=spec.name,
         purpose=spec.purpose_en,
         status=spec.status,
+        maturity=spec.maturity,
         spec_list=specs,
+        crypto_section_en=crypto_en,
         deps_en=_deps_text(spec, "en"),
         content_en=files_desc,
         usage_en=usage,
         verify_extra=verify_extra,
     )
-    (export / "README.md").write_text(readme_en)
-    (export / "README.es.md").write_text(readme_es)
+    (export / "README.md").write_text(readme_en, encoding="utf-8")
+    (export / "README.es.md").write_text(readme_es, encoding="utf-8")
     written.extend(["README.md", "README.es.md"])
 
-    # 8. (último) REUSE.toml del export: cubre el 100 % de los archivos;
+    # 8. REUSE.toml del export (incluyendo EXPORT-MANIFEST.json bajo CC0-1.0);
     # después, solo los textos de licencia realmente referenciados.
-    used = _write_export_reuse(export)
+    used = _write_export_reuse(export, version=version)
     rel_add(export / "REUSE.toml")
     texts = set()
     for lic in used:
@@ -833,10 +988,27 @@ def export_module(spec: ModuleSpec, out_dir: Path,
             texts.update({"MIT", "Apache-2.0"})  # dual: exige ambos textos
         else:
             texts.add(lic)
-    (export / "LICENSES").mkdir()
+    (export / "LICENSES").mkdir(exist_ok=True)
     for name in sorted(texts):
         _copy_file(REPO_ROOT / "LICENSES" / f"{name}.txt", export / "LICENSES" / f"{name}.txt")
         rel_add(export / "LICENSES" / f"{name}.txt")
+
+    # 9. (último) EXPORT-MANIFEST.json con SHA-256 de todos los demás archivos
+    manifest = {
+        "schema": MANIFEST_SCHEMA,
+        "module": spec.name,
+        "version": version,
+        "maturity": spec.maturity,
+        "source_repo": SOURCE_REPO,
+        "source_tag": f"v{version}",
+        "source_commit": commit,
+        "dependencies": {d: COMPAT_RANGE for d in sorted(spec.deps)},
+        "files": _collect_export_hashes(export),
+    }
+    (export / MANIFEST_FILENAME).write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    rel_add(export / MANIFEST_FILENAME)
 
     return written
 
@@ -857,31 +1029,43 @@ def _tree_lines(rel_files: List[str]) -> List[str]:
     return lines
 
 
-def _write_export_reuse(export: Path) -> None:
+def _write_export_reuse(export: Path, version: Optional[str] = None) -> Set[str]:
     """Escribe un REUSE.toml con anotaciones override que cubren cada
-    archivo del export agrupado por licencia."""
+    archivo del export agrupado por licencia (incluyendo EXPORT-MANIFEST.json)."""
+    ver = version or _read_project_version()
     by_license: Dict[str, List[str]] = {}
     for p in sorted(export.rglob("*")):
-        if not p.is_file() or p.name == "REUSE.toml":
+        if not p.is_file():
+            continue
+        rel = p.relative_to(export)
+        if _is_git_internal(rel):
+            continue
+        if p.name == "REUSE.toml":
             continue
         if p.parent.name == "LICENSES" or p.name in ("LICENSE", "LICENSES"):
             # textos de licencia: autodetectados por reuse
             continue
-        lic = classify_license(p.relative_to(export))
+        lic = classify_license(rel)
         if lic:
-            by_license.setdefault(lic, []).append(p.relative_to(export).as_posix())
+            by_license.setdefault(lic, []).append(rel.as_posix())
+
+    # EXPORT-MANIFEST.json se genera inmediatamente después y queda bajo CC0-1.0
+    vec_paths = by_license.setdefault(LICENSE_VECTOR, [])
+    if MANIFEST_FILENAME not in vec_paths:
+        vec_paths.append(MANIFEST_FILENAME)
+        vec_paths.sort()
 
     blocks = [
         "version = 1",
         "",
-        f"# Export generado por tools/export_module.py (fuente: verared/gerarion v{GERARION_VERSION}).",
+        f"# Export generado por tools/export_module.py (fuente: verared/gerarion v{ver}).",
         "# Cobertura completa del paquete (precedencia override).",
     ]
-    used_licenses = set()
+    used_licenses: Set[str] = set()
     header_by_lic = {
         LICENSE_CODE: "code",
         LICENSE_DOC: "docs",
-        LICENSE_VECTOR: "vectors + andamiaje",
+        LICENSE_VECTOR: "vectors + manifest + andamiaje",
     }
     for lic in (LICENSE_CODE, LICENSE_DOC, LICENSE_VECTOR):
         paths = by_license.get(lic)
@@ -894,7 +1078,7 @@ def _write_export_reuse(export: Path) -> None:
         blocks.append(f'SPDX-License-Identifier = "{lic}"')
         blocks.append('SPDX-FileCopyrightText = "2026 verared contributors"')
         used_licenses.add(lic)
-    (export / "REUSE.toml").write_text("\n".join(blocks) + "\n")
+    (export / "REUSE.toml").write_text("\n".join(blocks) + "\n", encoding="utf-8")
     return used_licenses
 
 
@@ -903,11 +1087,58 @@ def _write_export_reuse(export: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+def verify_manifest(export_dir: Path) -> Tuple[bool, str, Optional[dict]]:
+    """Valida EXPORT-MANIFEST.json: existencia, esquema, ausencia de archivos
+    faltantes o sobrantes y coincidencia exacta SHA-256."""
+    manifest_path = export_dir / MANIFEST_FILENAME
+    if not manifest_path.is_file():
+        return False, f"falta {MANIFEST_FILENAME} en {export_dir}", None
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return False, f"{MANIFEST_FILENAME} inválido: {exc}", None
+
+    if manifest.get("schema") != MANIFEST_SCHEMA:
+        return False, f"schema inesperado en {MANIFEST_FILENAME}: {manifest.get('schema')!r}", manifest
+    expected_files = manifest.get("files")
+    if not isinstance(expected_files, dict) or not expected_files:
+        return False, f"{MANIFEST_FILENAME} sin mapa 'files' válido", manifest
+
+    actual_files = _collect_export_hashes(export_dir)
+    expected_keys = set(expected_files.keys())
+    actual_keys = set(actual_files.keys())
+
+    missing = sorted(expected_keys - actual_keys)
+    extra = sorted(actual_keys - expected_keys)
+    mismatched = sorted(
+        k for k in (expected_keys & actual_keys)
+        if actual_files[k] != expected_files[k]
+    )
+
+    errors = []
+    if missing:
+        errors.append(f"archivos faltantes ({len(missing)}): {missing}")
+    if extra:
+        errors.append(f"archivos sobrantes ({len(extra)}): {extra}")
+    if mismatched:
+        errors.append(f"SHA-256 distinto ({len(mismatched)}): {mismatched}")
+
+    if errors:
+        return False, "EXPORT-MANIFEST.json falló: " + "; ".join(errors), manifest
+    return True, f"EXPORT-MANIFEST.json: OK ({len(actual_files)} archivos verificados)", manifest
+
+
 def verify_module(export_dir: Path) -> Tuple[bool, str]:
-    """reuse lint al 100 % dentro del export y, para gt-core, compilación
-    limpia del núcleo standalone. Devuelve (ok, mensaje)."""
+    """Verifica EXPORT-MANIFEST.json (SHA-256 + sin faltantes/sobrantes),
+    reuse lint al 100 % dentro del export y, para gt-core, compilación limpia
+    del núcleo standalone. Devuelve (ok, mensaje)."""
     messages = []
     ok = True
+
+    m_ok, m_msg, manifest = verify_manifest(export_dir)
+    messages.append(m_msg)
+    if not m_ok:
+        ok = False
 
     lint = subprocess.run(
         [sys.executable, "-m", "reuse", "lint", "--quiet"],
@@ -925,7 +1156,8 @@ def verify_module(export_dir: Path) -> Tuple[bool, str]:
     else:
         messages.append("reuse lint: 100 % conforme")
 
-    if export_dir.name == "gt-core":
+    mod_name = (manifest or {}).get("module") or export_dir.name
+    if mod_name == "gt-core":
         make = shutil.which("make")
         cc = shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
         if not make or not cc:
@@ -972,13 +1204,34 @@ def main(argv: Optional[List[str]] = None) -> int:
                        help="módulo a exportar")
     group.add_argument("--all", action="store_true",
                        help="exportar los 9 módulos")
-    ap.add_argument("--out", required=True,
-                    help="directorio base de los exports (uno por módulo)")
+    group.add_argument("--verify-existing", metavar="DIR",
+                       help="verificar un directorio satélite ya exportado (manifest + reuse + core)")
+    ap.add_argument("--out",
+                    help="directorio base de los exports (requerido con --module o --all)")
     ap.add_argument("--verify", action="store_true",
-                    help="verificar cada export (reuse lint + compilación del núcleo)")
+                    help="verificar cada export (EXPORT-MANIFEST.json + reuse lint + compilación del núcleo)")
     ap.add_argument("--no-large-vectors", action="store_true",
                     help="omitir vectores grandes (p. ej. guti-calendars-001.json, ~8 MB)")
+    ap.add_argument("--source-commit",
+                    help="hash SHA-1 de origen para EXPORT-MANIFEST.json (por defecto git rev-parse HEAD)")
     args = ap.parse_args(argv)
+
+    if args.verify_existing:
+        target = Path(args.verify_existing).resolve()
+        if not target.is_dir():
+            print(f"ERROR: no existe el directorio {target}", file=sys.stderr)
+            return 2
+        ok, msg = verify_module(target)
+        print(f"verify {target.name}:")
+        for line in msg.splitlines():
+            print(f"  {line}")
+        if not ok:
+            print("VERIFICACIÓN FALLIDA", file=sys.stderr)
+            return 2
+        return 0
+
+    if not args.out:
+        ap.error("--out es obligatorio con --module o --all")
 
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -988,8 +1241,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     for name in names:
         spec = MODULES[name]
         target = out_dir / name
-        files = export_module(spec, out_dir,
-                              include_large_vectors=not args.no_large_vectors)
+        files = export_module(
+            spec,
+            out_dir,
+            include_large_vectors=not args.no_large_vectors,
+            source_commit=args.source_commit,
+        )
         print(f"export {name} -> {target} ({len(files)} archivos)")
         if args.verify:
             ok, msg = verify_module(target)

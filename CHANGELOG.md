@@ -1,5 +1,32 @@
 # Changelog — GUS
 
+## 3.2.2 — Consolidación del ecosistema Gerarion Time (2026-11-19)
+
+Consolidación documental, contrato de versiones verificable, integración
+cruzada de los 9 repositorios satélite `verared/gt-*` y gate obligatorio en
+CI (sin cambios en aritmética congelada `GUS v3.0.0`, motores ni vectores):
+
+- **Coherencia criptográfica y madurez en tres ejes**: `README.md`,
+  `README.es.md`, `docs/specs/GST.{en,es}.md` y las plantillas de
+  `tools/export_module.py` unifican el perfil normativo `GST v2` (híbrido
+  Ed25519 + ML-DSA sobre RFC 8785 JCS, `GUS3-GST-V2`, anti-downgrade,
+  `ReplayGuard` *fail-closed*, notario Merkle opcional), marcan `WOTS+`
+  (`src/gerarion/deprecated/hashots.py`) como deprecado/educativo fuera de
+  `GST v2` y sustituyen el cartel ambiguo de beta por la Tabla de Madurez
+  en Tres Ejes.
+- **Contrato de versiones y manifiesto verificable**: añadidos
+  `COMPATIBILITY.md` y `compatibility.json` con la matriz oficial de los 9
+  satélites (`>=3.2.0,<4.0.0`); `tools/export_module.py` genera
+  `EXPORT-MANIFEST.json` (`gerarion-export-manifest/1`, SHA-256 de cada
+  archivo, `source_commit`, `maturity`, `dependencies`), añade
+  `--verify-existing <dir>` y `--source-commit <sha>`, y preserva `.git/`
+  al sincronizar satélites existentes.
+- **Integración cruzada y gate CI**: añadido
+  `tests/test_satellite_integration.py` (determinismo e integridad de los 9
+  manifiestos + ensamblado limpio de los 7 satélites de código probado en
+  C11, Python y JavaScript) y job `satellites` obligatorio en
+  `.github/workflows/ci.yml`.
+
 ## 3.2.1 — Exportador modular a repositorios satélite gt-* (2026-11-19)
 
 Herramienta de empaquetado (sin cambios en aritmética, motores, vectores

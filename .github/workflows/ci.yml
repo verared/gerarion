@@ -64,6 +64,20 @@ jobs:
       - run: python -m pip install reuse
       - run: python -m reuse lint
 
+  satellites:
+    # Gate obligatorio: exportación y verificación de los 9 satélites + integración cruzada.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e .[dev,pqc] reuse
+      - name: Exportar y verificar los 9 satélites (manifest + reuse + core)
+        run: python3 tools/export_module.py --all --out /tmp/ci-satellites --verify
+      - name: Pruebas de exportador e integración cruzada de satélites ensamblados
+        run: python -m pytest tests/test_export_module.py tests/test_satellite_integration.py -v
+
   web-e2e:
     # E2E del portal web (Playwright + Chromium): sin errores JS, cero
     # peticiones externas, round-trip de enlaces compartibles, teclado.
