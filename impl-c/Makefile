@@ -44,11 +44,11 @@ libs: libgerarion.a libgerarion.so.$(MAJOR) \
 # --- binarios de verificación -------------------------------------------------
 # (compilan contra la suite completa vía el paraguas gus.h)
 
-gus-conformance: conformance.c $(ALL_SRC) $(HDRS)
-	$(CC) $(CFLAGS) -o $@ conformance.c $(ALL_SRC)
+gus-conformance: conformance.c test_jsonmin.c $(ALL_SRC) $(HDRS)
+	$(CC) $(CFLAGS) -o $@ conformance.c test_jsonmin.c $(ALL_SRC)
 
-guti-conformance: guti_conformance.c $(ALL_SRC) $(HDRS)
-	$(CC) $(CFLAGS) -o $@ guti_conformance.c $(ALL_SRC)
+guti-conformance: guti_conformance.c test_jsonmin.c $(ALL_SRC) $(HDRS)
+	$(CC) $(CFLAGS) -o $@ guti_conformance.c test_jsonmin.c $(ALL_SRC)
 
 gus-cli: gus-cli.c $(ALL_SRC) $(HDRS)
 	$(CC) $(CFLAGS) -o $@ gus-cli.c $(ALL_SRC)
@@ -106,8 +106,8 @@ audit: gus-audit-stress cal-audit
 		../vectors/gus-regression-001.json \
 		../vectors/gus-quickverify-001.json
 
-gus-audit-stress: audit_stress.c $(CORE_SRC) $(TAI_SRC) $(CLOCK_SRC) $(HDRS)
-	$(CC) -std=c11 -O2 -g -Wall -Wextra -Werror -pedantic $(SANFLAGS) -o $@ audit_stress.c $(CORE_SRC) $(TAI_SRC) $(CLOCK_SRC)
+gus-audit-stress: audit_stress.c test_jsonmin.c $(CORE_SRC) $(TAI_SRC) $(CLOCK_SRC) $(HDRS)
+	$(CC) -std=c11 -O2 -g -Wall -Wextra -Werror -pedantic $(SANFLAGS) -o $@ audit_stress.c test_jsonmin.c $(CORE_SRC) $(TAI_SRC) $(CLOCK_SRC)
 
 cal-audit: cal_audit_stress.c $(ALL_SRC) $(HDRS)
 	$(CC) -std=c11 -O2 -g -Wall -Wextra -Werror -pedantic $(SANFLAGS) -o $@ cal_audit_stress.c $(ALL_SRC)
