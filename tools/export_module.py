@@ -903,7 +903,7 @@ def _external_import_roots(export_dir: Path) -> List[str]:
 
 
 def _is_git_internal(rel: Path) -> bool:
-    return ".git" in rel.parts
+    return ".git" in rel.parts or "__pycache__" in rel.parts or rel.suffix in (".pyc", ".pyo")
 
 
 def _clear_export_dir_preserving_git(export: Path) -> None:
@@ -1075,9 +1075,13 @@ def export_module(spec: ModuleSpec, out_dir: Path,
         _copy_file(REPO_ROOT / f, export / f)
         rel_add(export / f)
     for d in spec.dirs:
-        shutil.copytree(REPO_ROOT / d, export / d)
+        shutil.copytree(
+            REPO_ROOT / d,
+            export / d,
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo", ".DS_Store"),
+        )
         for chain in sorted((export / d).rglob("*")):
-            if chain.is_file():
+            if chain.is_file() and not _is_git_internal(chain.relative_to(export)):
                 rel_add(chain)
 
     # 2. vectores
