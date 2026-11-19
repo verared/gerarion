@@ -259,6 +259,7 @@ def test_frozen_sources_untouched_by_export(tmp_path: Path) -> None:
 
 
 def _generate_ed25519_keypair_pems(tmp_dir: Path, prefix: str = "k") -> tuple[Path, Path]:
+    pytest.importorskip("cryptography.hazmat.primitives.asymmetric.ed25519")
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 

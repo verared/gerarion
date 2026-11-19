@@ -37,6 +37,7 @@ EVENT_HASH = "sha256:" + hashlib.sha256(b"cms-event-payload-v3.3.0").hexdigest()
 
 @pytest.fixture()
 def signer_a() -> HybridSigner:
+    pytest.importorskip("cryptography.hazmat.primitives.asymmetric.mldsa")
     return HybridSigner(
         seed_classical=bytes(range(32)),
         seed_pqc=bytes(range(32, 64)),
@@ -45,6 +46,7 @@ def signer_a() -> HybridSigner:
 
 @pytest.fixture()
 def signer_b() -> HybridSigner:
+    pytest.importorskip("cryptography.hazmat.primitives.asymmetric.mldsa")
     return HybridSigner(
         seed_classical=bytes(range(64, 96)),
         seed_pqc=bytes(range(96, 128)),
@@ -447,6 +449,7 @@ def test_legacy_v1_emits_deprecation_warning_while_v2_is_clean(
 def test_readme_cms_1_minute_quickstart_executes_verbatim() -> None:
     """Extrae y ejecuta el bloque Python de «Integrate gt-core + gt-gst in 1 Minute»
     directamente desde README.md para garantizar que el ejemplo nunca se desincronice."""
+    pytest.importorskip("cryptography.hazmat.primitives.asymmetric.mldsa")
     readme = (REPO / "README.md").read_text(encoding="utf-8")
     m = re.search(
         r"## Integrate `gt-core` \+ `gt-gst` in 1 Minute.*?```python\n(.*?)```",
