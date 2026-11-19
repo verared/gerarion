@@ -41,9 +41,21 @@ jobs:
       - name: Compilar núcleo C y suite de conformancia
         run: make -C impl-c conformance
 
+      - name: Empaquetar libgerarion (estática y compartida, linux x86_64)
+        run: |
+          make -C impl-c libgerarion.a libgerarion.so.3 gerarion.pc
+          mkdir -p stage/lib stage/include/gerarion stage/lib/pkgconfig
+          cp impl-c/libgerarion.a impl-c/libgerarion.so.3 stage/lib/
+          cp impl-c/gus.h impl-c/china_table.h impl-c/gerarion_calendars.h \
+             impl-c/gerarion.h stage/include/gerarion/
+          cp impl-c/gerarion.pc stage/lib/pkgconfig/
+          tar czf libgerarion-3.1.0-linux-x86_64.tar.gz -C stage .
+          rm -rf stage
+
       - name: Generar SHA256SUMS.txt
         run: |
-          sha256sum dist/gerarion-*.whl dist/gerarion-*.tar.gz web/gerarion-kernel-*.tgz > SHA256SUMS.txt
+          sha256sum dist/gerarion-*.whl dist/gerarion-*.tar.gz web/gerarion-kernel-*.tgz \
+            libgerarion-3.1.0-linux-x86_64.tar.gz > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Subir artefactos del workflow (workflow_dispatch, sin tag)
@@ -55,6 +67,7 @@ jobs:
             dist/gerarion-*.whl
             dist/gerarion-*.tar.gz
             web/gerarion-kernel-*.tgz
+            libgerarion-3.1.0-linux-x86_64.tar.gz
             SHA256SUMS.txt
           if-no-files-found: error
 
@@ -71,4 +84,5 @@ jobs:
             Verificación de integridad: \`sha256sum -c SHA256SUMS.txt\` (desde una carpeta con dist/ y el tarball JS, o recorta las rutas del fichero)."
           gh release upload "$GITHUB_REF_NAME" \
             dist/gerarion-*.whl dist/gerarion-*.tar.gz \
-            web/gerarion-kernel-*.tgz SHA256SUMS.txt
+            web/gerarion-kernel-*.tgz \
+            libgerarion-3.1.0-linux-x86_64.tar.gz SHA256SUMS.txt
