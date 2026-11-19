@@ -331,13 +331,20 @@ def test_detached_manifest_signature_roundtrip_and_tamper_rejection(
 
 
 def test_documentation_anti_regression_no_legacy_strings(tmp_path: Path) -> None:
-    """Ni los README de la raíz ni ninguno de los 9 README exportados puede
-    contener 'EARLY BETA', 'SLH-DSA' ni menciones obsoletas a 'v3.2.0'."""
-    forbidden = ("EARLY BETA", "SLH-DSA", "v3.2.0")
+    """Ni los README de la raíz, ni SECURITY.md, ni los threat-models vigentes,
+    ni ninguno de los 9 README exportados puede contener cadenas obsoletas del
+    estado previo ('EARLY BETA', 'SLH-DSA', 'v3.2.0', 'GUS 2.1.0', 'GUS 2.0', '2.5.0b1')."""
+    forbidden_readme = ("EARLY BETA", "SLH-DSA", "v3.2.0")
     for root_readme in ("README.md", "README.es.md"):
         text = (REPO / root_readme).read_text(encoding="utf-8")
-        for bad in forbidden:
+        for bad in forbidden_readme:
             assert bad not in text, f"{root_readme} contiene cadena obsoleta prohibida: {bad!r}"
+
+    forbidden_security = ("GUS 2.1.0", "GUS 2.0", "2.5.0b1", "EARLY BETA", "SLH-DSA")
+    for sec_doc in ("SECURITY.md", "docs/en/threat-model.md", "docs/spec/threat-model.md"):
+        text = (REPO / sec_doc).read_text(encoding="utf-8")
+        for bad in forbidden_security:
+            assert bad not in text, f"{sec_doc} contiene cadena obsoleta prohibida: {bad!r}"
 
     rc = _run_tool("--all", "--out", str(tmp_path), "--no-large-vectors")
     assert rc.returncode == 0, rc.stderr
@@ -345,6 +352,6 @@ def test_documentation_anti_regression_no_legacy_strings(tmp_path: Path) -> None
     for name in ALL_MODULES:
         for doc_name in ("README.md", "README.es.md"):
             text = (tmp_path / name / doc_name).read_text(encoding="utf-8")
-            for bad in forbidden:
+            for bad in forbidden_readme:
                 assert bad not in text, f"{name}/{doc_name} contiene cadena obsoleta: {bad!r}"
             assert f"v{current_version}" in text

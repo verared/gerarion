@@ -98,7 +98,13 @@ TemporalLevel = TemporalAssurance
 
 @dataclass(frozen=True)
 class VerificationResult:
-    """Resultado estructurado en 3 niveles de ``gerarion.gst.v2.verify``."""
+    """Resultado estructurado en 3 niveles de ``gerarion.gst.v2.verify``.
+
+    Los tres niveles son independientes: ``crypto`` (Nivel 1), ``identity``
+    (Nivel 2) y ``temporal`` (Nivel 3). ``overall_trusted`` agrega ÚNICAMENTE
+    los Niveles 1 y 2; el Nivel 3 se informa por separado y no interviene en
+    esa agregación.
+    """
 
     crypto: CryptographicValidity
     identity: IdentityPolicyValidity
@@ -106,7 +112,14 @@ class VerificationResult:
 
     @property
     def overall_trusted(self) -> bool:
-        """True únicamente si Nivel 1 (crypto) y Nivel 2 (identity) son válidos."""
+        """True únicamente si Nivel 1 (crypto) y Nivel 2 (identity) son válidos.
+
+        Cubre SOLO Nivel 1 (``crypto``) + Nivel 2 (``identity``). NO certifica
+        la exactitud física de la hora declarada: un firmante con clave
+        autorizada puede declarar una hora falsa. Los integradores que exijan
+        garantía temporal física deben comprobar además
+        ``result.temporal.clock_state == "VERIFIED"``.
+        """
         return bool(self.crypto.valid and self.identity.valid)
 
     def to_dict(self) -> dict:
