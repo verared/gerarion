@@ -74,7 +74,10 @@ python3 tools/export_module.py --module gt-core --out /tmp/gt --verify
 
 `--verify` runs `reuse lint` inside every export and, for `gt-core`,
 compiles the standalone core with
-`-std=c11 -Wall -Wextra -Werror -pedantic` and runs its smoke test. It
+`-std=gnu11 -Wall -Wextra -Werror` and runs its smoke test (the frozen
+internal guard uses `__int128`, a GNU extension: strict ISO pedantic
+compliance is covered by the base repository's audit battery; GCC/Clang
+compile warning-free in this mode). It
 exits 2 on any error.
 
 ### 4.2 Publish a satellite

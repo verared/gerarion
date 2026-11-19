@@ -73,7 +73,10 @@ python3 tools/export_module.py --module gt-core --out /tmp/gt --verify
 
 `--verify` ejecuta `reuse lint` dentro de cada export y, para
 `gt-core`, compila el núcleo standalone con
-`-std=c11 -Wall -Wextra -Werror -pedantic` y corre su humo. Falla con
+`-std=gnu11 -Wall -Wextra -Werror` y corre su humo (el guardia interno
+congelado usa `__int128`, extensión GNU: la ±pedantic estricta ISO
+queda cubierta por la batería audit del repositorio base; GCC/Clang
+compilan sin avisos en este modo). Falla con
 código 2 ante cualquier error.
 
 ### 4.2 Publicar un satélite

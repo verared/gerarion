@@ -106,7 +106,7 @@ def test_gt_core_compiles_standalone(tmp_path: Path) -> None:
     assert rc.returncode == 0, rc.stderr
     build = subprocess.run(
         ["make", "smoke",
-         "CFLAGS=-std=gnu11 -O2 -Wall -Wextra -Werror -pedantic"],
+         "CFLAGS=-std=gnu11 -O2 -Wall -Wextra -Werror"],
         cwd=out / "gt-core" / "impl-c", capture_output=True, text=True,
     )
     assert build.returncode == 0, build.stdout + build.stderr
