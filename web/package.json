@@ -1,43 +1,6 @@
 {
   "name": "gerarion-kernel",
-  {
-  "name": "gerarion-kernel",
   "version": "3.1.0",
-  "description": "Gerarion Universal Standard (GUS 2.1.0) kernel: calendario computacional con años de 364/371 días, instantes y formato canónico — implementación de referencia en JavaScript (ESM, cero dependencias)",
-  "type": "module",
-  "main": "gerarion.mjs",
-  "exports": {
-    ".": "./gerarion.mjs"
-  },
-  "files": [
-    "gerarion.mjs",
-    "conformance.mjs",
-    "README.md"
-  ],
-  "scripts": {
-    "test": "node tests.mjs",
-    "conformance": "node conformance.mjs",
-    "conformance:cli": "node conformance.mjs --cli"
-  },
-  "keywords": [
-    "calendar",
-    "timestamp",
-    "post-quantum",
-    "cryptography",
-    "merkle",
-    "time",
-    "gus"
-  ],
-  "license": "MIT OR Apache-2.0",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/verared/gerarion.git"
-  },
-  "engines": {
-    "node": ">=18"
-  }
-}
-,
   "description": "Gerarion Universal Standard (GUS 2.1.0) kernel: calendario computacional con años de 364/371 días, instantes y formato canónico — implementación de referencia en JavaScript (ESM, cero dependencias)",
   "type": "module",
   "main": "gerarion.mjs",
