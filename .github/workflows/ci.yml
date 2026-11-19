@@ -27,11 +27,11 @@ jobs:
           python -m pytest tests/test_clock_state.py -v
       - name: Conformance JS (normative vectors)
         run: |
-          node web/tests.mjs
-          node web/conformance.mjs
-          node web/profiles-conformance.mjs
-          node web/regression-conformance.mjs
-          node web/calendars.test.mjs
+          node web/test/tests.mjs
+          node web/test/conformance.mjs
+          node web/test/profiles-conformance.mjs
+          node web/test/regression-conformance.mjs
+          node web/test/calendars.test.mjs
       - name: Conformance C (independent implementation)
         run: make -C impl-c conformance
       # 4.5(c): auditoría de dependencias (requiere red). Los hallazgos

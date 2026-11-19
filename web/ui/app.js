@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 // SPDX-FileCopyrightText: 2026 verared contributors
 // Gerarion · Atlas del tiempo. Native ES modules; no framework, account or remote API.
-import { ORIGIN_JDN, MONTHS, toGerarion, canonicalOf } from "./gerarion.mjs";
-import { passed, failed, report } from "./tests.mjs";
+import { ORIGIN_JDN, MONTHS, toGerarion, canonicalOf } from "../engine/core.mjs";
+import { passed, failed, report } from "../test/tests.mjs";
 import {
   ES_MONTHS,
   pad,
@@ -37,7 +37,7 @@ import {
   observe,
   supportedZone,
   zoneGroups,
-} from "./zonas-tcj.mjs";
+} from "../engine/zonas-tcj.mjs";
 
 const $ = (id) => document.getElementById(id),
   root = $("view"),

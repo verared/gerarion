@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
-import * as g from "./gerarion.mjs";
+import * as g from "../gerarion.mjs";
 
 const CORE = ["constants", "gran_tempalum", "calendar", "year_starts",
   "gregorian_roundtrip", "format", "instant"];
@@ -28,7 +28,7 @@ function resolveVectorsPath() {
     const next = process.argv[idx + 1];
     if (next) return next;
   }
-  return fileURLToPath(new URL("../vectors/gus-normative-003.json", import.meta.url));
+  return fileURLToPath(new URL("../../vectors/gus-normative-003.json", import.meta.url));
 }
 
 // --- verificaciones ------------------------------------------------------

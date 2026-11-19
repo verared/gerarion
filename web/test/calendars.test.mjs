@@ -26,8 +26,8 @@ import {
   civilWeekday,
   gregorianToJdn,
   gusView,
-} from './calendars.mjs';
-import { ORIGIN_JDN, dayIndexFromGregorian, gregorianFromDayIndex, parse, toGerarion, canonicalOf } from './gerarion.mjs';
+} from '../engine/calendars.mjs';
+import { ORIGIN_JDN, dayIndexFromGregorian, gregorianFromDayIndex, parse, toGerarion, canonicalOf } from '../engine/core.mjs';
 
 const failures = [];
 let checks = 0;

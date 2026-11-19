@@ -18,7 +18,7 @@ import {
   GUS_UNIX_OFFSET,
   instantFromRFC3339,
   instantToRFC3339,
-} from "./gerarion.mjs";
+} from "../gerarion.mjs";
 
 let passed = 0;
 let failed = 0;

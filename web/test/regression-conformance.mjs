@@ -11,9 +11,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
   parse, canonicalOf, toGerarion, gregorianFromDayIndex, isGranTempalum,
-} from "./gerarion.mjs";
+} from "../gerarion.mjs";
 
-const path = fileURLToPath(new URL("../vectors/gus-regression-001.json", import.meta.url));
+const path = fileURLToPath(new URL("../../vectors/gus-regression-001.json", import.meta.url));
 const v = JSON.parse(readFileSync(path, "utf8"));
 
 let total = 0;

@@ -12,9 +12,9 @@
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import * as g from "./gerarion.mjs";
+import * as g from "../gerarion.mjs";
 
-const path = fileURLToPath(new URL("../vectors/gus-3339-002.json", import.meta.url));
+const path = fileURLToPath(new URL("../../vectors/gus-3339-002.json", import.meta.url));
 const v = JSON.parse(readFileSync(path, "utf8"));
 
 let total = 0;
@@ -92,7 +92,7 @@ for (const c of v.gus3339_canonical) {
 // F1: casos negativos compartidos — una entrada inválida se rechaza, jamás
 // se normaliza. Archivo nuevo (gus-3339-negative-001.json); no toca el
 // vector normativo gus-3339-002.json.
-const negPath = fileURLToPath(new URL("../vectors/gus-3339-negative-001.json", import.meta.url));
+const negPath = fileURLToPath(new URL("../../vectors/gus-3339-negative-001.json", import.meta.url));
 const neg = JSON.parse(readFileSync(negPath, "utf8"));
 let negTotal = 0;
 

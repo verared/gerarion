@@ -7,8 +7,13 @@ egipcio, etíope, bahá'í, maya/hebreo/islámico/chino vía `Intl`), presets
 históricos, calculadora de distancias entre fechas y autoverificación de los
 vectores normativos ejecutada en el propio navegador.
 
-Módulos: `gerarion.mjs` (kernel), `calendars.mjs` (puentes multi-calendario
-con `day_index`/JDN como pivote), `tests.mjs`, `conformance.mjs`,
+Módulos (reorganización modular v3.2.0): `engine/core.mjs` (núcleo GUS),
+`engine/tcj-tai.mjs` (TCJ + tabla TAI−UTC + perfil 3339),
+`engine/calendars.mjs` (modos de entrada, presentación y rutas Intl
+legadas), `engine/guti.mjs` + `engine/china-table.mjs` (motor GUTI
+determinista), `engine/zonas-tcj.mjs`; `gerarion.mjs` es el
+re-exportador de compatibilidad. Pruebas en `test/` e interfaz en
+`ui/`: `tests.mjs`, `conformance.mjs`,
 `profiles-conformance.mjs`, `calendars.test.mjs` (pruebas unitarias de los
 puentes).
 
@@ -46,14 +51,14 @@ directamente de [GitHub Releases](https://github.com/verared/gerarion/releases),
 con `SHA256SUMS.txt` para verificar integridad. `npm pack` genera el
 tarball (lo automatiza el workflow `release.yml` en cada tag `v*`).
 
-- `gerarion.mjs` — port exacto de `src/gerarion/calendar.py` +
+- `engine/core.mjs` — port exacto de `src/gerarion/core/calendar.py` +
   `format.py`. Aritmética entera; BigInt solo en instantes. Exporta
   `toGerarion`, `fromGerarion`, `parse`, `canonicalOf`, `cycleOf`,
   `dayIndexFromGregorian`, `gregorianFromDayIndex`, `tempalumName`, etc.
-- `tests.mjs` — misma matriz de vectores normativos que `tests/test_calendar.py`.
-  Ejecutable con Node (`node tests.mjs`, salida: N pasan / M fallan, exit 1 en
+- `test/tests.mjs` — misma matriz de vectores normativos que `tests/test_calendar.py`.
+  Ejecutable con Node (`node test/tests.mjs`, salida: N pasan / M fallan, exit 1 en
   fallo) y desde el navegador (sección self-test de la página).
-- `index.html` / `style.css` / `app.js` — interfaz. Regla de seguridad:
+- `index.html` / `style.css` / `ui/app.js` — interfaz. Regla de seguridad:
   todo dato dinámico se inserta vía `textContent`; la página no envía
   ni recibe nada por red.
 

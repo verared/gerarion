@@ -6,13 +6,15 @@
 // The internal delta keeps full-second precision for clock readings.
 import {
   ORIGIN_JDN,
+  jdn,
+  instantParts,
+} from "./core.mjs";
+import {
   UNIX_EPOCH_JDN,
   instantFromUnix,
-  instantParts,
   TCJ_OFFSET_SECONDS,
   taiMinusUTC,
-  jdn,
-} from "./gerarion.mjs";
+} from "./tcj-tai.mjs";
 export const REFERENCE = "TCJ+0";
 export const DIRECTORY_VERSION = "2026f";
 const records = `AD|Andorra|Europe/Andorra

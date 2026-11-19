@@ -8,9 +8,9 @@
 // Con vectores opcionales:      node web/guti_vectors.mjs [ruta.json]
 
 import { readFileSync } from 'node:fs';
-import { gutiFromDayIndex, gutiToDayIndex, gutiMetadata, GUTI_SYSTEM_IDS } from './guti.mjs';
+import { gutiFromDayIndex, gutiToDayIndex, gutiMetadata, GUTI_SYSTEM_IDS } from '../engine/guti.mjs';
 
-const path = process.argv[2] || new URL('../vectors/guti-calendars-001.json', import.meta.url).pathname;
+const path = process.argv[2] || new URL('../../vectors/guti-calendars-001.json', import.meta.url).pathname;
 const doc = JSON.parse(readFileSync(path, 'utf8'));
 
 let pass = 0;

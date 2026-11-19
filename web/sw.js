@@ -9,22 +9,24 @@
 // Toda la interfaz es cálculo JavaScript local; el motor no consulta la
 // red en ningún caso (traductor de diez calendarios, reloj TCJ y
 // autodiagnóstico funcionan en modo avión).
-const CACHE = "gerarion-v1";
+const CACHE = "gerarion-v3-2-0";
 
 const PRECACHE = [
   "/",
   "./index.html",
   "./style.css",
-  "./app.js",
+  "./ui/app.js",
+  "./ui/atlas.mjs",
   "./manifest.webmanifest",
   "./gerarion.mjs",
-  "./calendars.mjs",
-  "./guti.mjs",
-  "./china-table.mjs",
-  "./atlas.mjs",
-  "./zonas-tcj.mjs",
-  "./tests.mjs",
-  "./calendars.test.mjs",
+  "./engine/core.mjs",
+  "./engine/tcj-tai.mjs",
+  "./engine/calendars.mjs",
+  "./engine/guti.mjs",
+  "./engine/china-table.mjs",
+  "./engine/zonas-tcj.mjs",
+  "./test/tests.mjs",
+  "./test/calendars.test.mjs",
   "./fonts/newsreader-latin.woff2",
   "./fonts/dm-sans-latin.woff2",
   "./fonts/AtkinsonHyperlegible-Regular.woff2",

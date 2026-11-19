@@ -22,6 +22,11 @@
 // son extrapolaciones matemáticas fuera de sus tablas históricas (~1900–2100
 // para chino; tablas uyurqura 1900–2074 aprox.); se avisa por tarjeta.
 
+// Estado modular (v3.2.0): el núcleo exacto vive en engine/core.mjs y el
+// motor GUTI en engine/guti.mjs. Este módulo conserva los modos de entrada
+// del atlas, los helpers de presentación y las rutas Intl aún alcanzables
+// (islamicUmalqura e inversas hebreo/islámico-civil/chino), marcadas como
+// legado de la fase GUTI-2: no se usan para conversión normativa.
 import {
   ORIGIN_JDN,
   jdn,
@@ -31,7 +36,7 @@ import {
   canonicalOf,
   tempalumName,
   MONTHS,
-} from './gerarion.mjs';
+} from './core.mjs';
 
 export { ORIGIN_JDN };
 

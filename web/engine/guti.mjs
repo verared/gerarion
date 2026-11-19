@@ -15,7 +15,7 @@
 // arbitrario; C11 = int64_t).
 
 import { ORIGIN_JDN, dayIndexFromGregorian, gregorianFromDayIndex,
-         toGerarion, fromGerarion, GeroError } from './gerarion.mjs';
+         toGerarion, fromGerarion, GeroError } from './core.mjs';
 import { SHUO, ZHONGQI } from './china-table.mjs';
 
 export { ORIGIN_JDN };

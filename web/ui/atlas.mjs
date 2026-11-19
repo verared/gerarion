@@ -14,9 +14,11 @@ import {
   tempalumDays,
   parse,
   canonicalOf,
+} from "../engine/core.mjs";
+import {
   instantFromUnix,
   instantToRFC3339,
-} from "./gerarion.mjs";
+} from "../engine/tcj-tai.mjs";
 import {
   INPUT_MODES,
   gusView,
@@ -32,10 +34,10 @@ import {
   BAHAI_EPOCH_JDN,
   intlCalendar,
   isHebrewLeap,
-} from "./calendars.mjs";
-import { gutiFromDayIndex } from "./guti.mjs";
+} from "../engine/calendars.mjs";
+import { gutiFromDayIndex } from "../engine/guti.mjs";
 
-import { REFERENCE, observe } from "./zonas-tcj.mjs";
+import { REFERENCE, observe } from "../engine/zonas-tcj.mjs";
 
 export const ES_MONTHS = [
   "enero",
