@@ -99,8 +99,7 @@ jobs:
             --notes "Artefactos sellados del tag \`$GITHUB_REF_NAME\` (GUS v3.0.0 / suite $GITHUB_REF_NAME).
             Ver CHANGELOG.md y COMPATIBILITY.md para las notas de versión y las 5 garantías de distribución.
             Verificación de integridad: \`sha256sum -c SHA256SUMS.txt\` y \`python3 tools/export_module.py --verify-existing <satelite>\`."
-          gh release upload "$GITHUB_REF_NAME" \
+          gh release upload "$GITHUB_REF_NAME" --clobber \
             dist/gerarion-*.whl dist/gerarion-*.tar.gz \
             web/gerarion-kernel-*.tgz \
-            libgerarion-*-linux-x86_64.tar.gz \
-            libgerarion-core-*-linux-x86_64.tar.gz SHA256SUMS.txt
+            libgerarion-*-linux-x86_64.tar.gz SHA256SUMS.txt
