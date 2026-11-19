@@ -34,6 +34,9 @@ jobs:
           node web/test/calendars.test.mjs
       - name: Conformance C (independent implementation)
         run: make -C impl-c conformance
+
+      - name: Núcleo standalone (libgerarion-core, humo sin reloj ni TAI)
+        run: make -C impl-c core-smoke
       # 4.5(c): auditoría de dependencias (requiere red). Los hallazgos
       # afectan al toolchain de CI (pip, setuptools, urllib3…), no al kernel
       # (no publicado en PyPI: skip "Dependency not found" esperado), así que

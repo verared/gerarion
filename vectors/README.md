@@ -92,3 +92,18 @@ GUS-3339: `python3 -m pytest tests/test_profiles.py` (Python) y
 implementa perfiles. Runners del vector quick-verify:
 `python3 -m pytest tests/test_quick_verify.py`, `node web/tests.mjs`
 y la 10ª categoría de `make -C impl-c conformance`.
+
+## Mapa por dominio (reorganización modular v3.2.0)
+
+Qué conjunto valida cada especificación independiente de `docs/specs/`:
+
+| Dominio | Vectores | Runner canónico |
+|---|---|---|
+| **TCJ** | `gus-normative-003.json` (bloques `tgs`/`fgs`: tabla TAI−UTC) | `make -C impl-c conformance`, `tools/fuzz_diff.py` |
+| **GUS** | `gus-normative-003.json` (categorías núcleo) + `gus-quickverify-001.json` | `make -C impl-c conformance`, `node web/test/tests.mjs` |
+| **CALENDAR** | `guti-calendars-001.json` (63.545 casos, 10 sistemas) + núcleo AY/DY + `gus-regression-001.json` | `make -C impl-c guti-conformance`, `node web/test/guti_vectors.mjs` |
+| **GTS** | sin vectores fechados; batería de máquina de estados | `tests/test_clock_state.py`, categoría `check_clock_state` en C |
+| **GST** | categorías `hashots`/`slh_dsa`/`notary` de `gus-normative-003.json` (bloque `categories_full`) + suites adversarias | `tests/test_jcs_gstv2.py`, `tests/test_adversarial_security.py` |
+| **TSLR** | — (perfil experimental, sin implementación) | — |
+| **GCERTS** | — (perfil experimental, sin implementación) | — |
+| **INTEROP** | `gus-3339-002.json` + `gus-3339-negative-001.json` | `tests/test_profiles.py`, `node web/test/profiles-conformance.mjs` |

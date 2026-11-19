@@ -31,7 +31,7 @@ else
 SO_LDFLAGS = -shared -Wl,-soname,$(SONAME)
 endif
 
-.PHONY: all conformance audit fuzz clean test install pkgconfig \
+.PHONY: all conformance audit fuzz clean test install pkgconfig core-smoke \
 	libs libs-core libs-clock libs-calendars
 
 all: gus-conformance gus-cli libgerarion.a libgerarion.so.$(MAJOR) \
@@ -117,6 +117,12 @@ conformance: gus-conformance guti-conformance
 	./gus-conformance ../vectors/gus-normative-003.json ../vectors/gus-3339-negative-001.json ../vectors/gus-regression-001.json ../vectors/gus-quickverify-001.json
 	./guti-conformance ../vectors/guti-calendars-001.json
 
+# Humo del núcleo standalone: compila y corre SOLO con core/ (TCJ+GUS),
+# demostrando que libgerarion-core no arrastra reloj ni tabla TAI.
+core-smoke: core_smoke.c core/gus_core.c core/gus_core.h
+	$(CC) $(CFLAGS) -o $@ core_smoke.c core/gus_core.c
+	./core-smoke
+
 fuzz: gus-cli
 	python3 ../tools/fuzz_diff.py
 
@@ -163,4 +169,4 @@ clean:
 		libgerarion-core.a libgerarion-core.so.$(MAJOR) \
 		libgerarion-clock.a libgerarion-calendars.a \
 		gerarion.pc gerarion-core.pc gerarion-clock.pc gerarion-calendars.pc \
-		gerarion.pc.tmp *.o *.a.o
+		core-smoke *.o *.a.o

@@ -34,3 +34,4 @@ impl-c/libgerarion-calendars.*
 impl-c/gerarion-core.pc
 impl-c/gerarion-clock.pc
 impl-c/gerarion-calendars.pc
+impl-c/core-smoke
