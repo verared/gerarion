@@ -1,5 +1,38 @@
 # Changelog — GUS
 
+## 3.1.0 — Fase GUTI-1: motor multi-calendario determinista y portal 100 % offline (2026-11-18)
+
+La aritmética congelada de GUS v3.0.0 no cambia: `TCJ = TAI + 8.400 s`,
+recurrencia simétrica `AY`/`DY`, `ORIGIN_JDN = 1719313`, formatos de
+32/29 caracteres y los vectores `gus-normative-003.json` permanecen
+intactos; los blindajes `A-1..A-6` se conservan.
+
+- **Motor multi-calendario** (`DayIndex` como pivote): diez sistemas
+  completos — `gus`, `greg`, `julian`, `egyptian`, `ethiopic`, `bahai`,
+  `maya`, `islamic`, `hebrew`, `chinese` — con metadatos estructurados,
+  con paridad bit a bit en C11 (`impl-c/gerarion_calendars.c`,
+  `libgerarion`), Python (`src/gerarion/calendars.py`) y JavaScript
+  (`web/guti.mjs`, sin `Intl`, `BigInt` intermedio).
+- **Set de vectores compartido CC0** `vectors/guti-calendars-001.json`
+  (63.545 vectores + 450 cruces palíndromos + inválidos/no
+  soportados/erange), regenerable determinísticamente con
+  `tools/generate_guti_vectors.py`. Corredores: pytest
+  (`tests/test_guti_m0_sandbox.py`, con red bloqueada),
+  `make -C impl-c guti-conformance` (63.850/63.850 CONFORME) y
+  `node web/guti_vectors.mjs` (127.204/127.204).
+- **Correciones de rigor descubiertas por la batería M0**: límite de mes
+  rabínico hebreo (12/13), estimador de año de molad O(1) (el escaneo
+  lineal previo degeneraba a O(años)), baktun maya negativo proléptico,
+  guardias de producto int64.
+- **Portal 100 % offline**: `web/sw.js` + `manifest.webmanifest`
+  precachean el activo local; el panel de equivalencias muestra hebreo,
+  islámico tabular y chino del motor determinista (Umm al-Qura conserva
+  su nota de cobertura); marcador «Modo Offline Listo»; prueba e2e en
+  modo avión incluida (59/59).
+- **Documentación**: `docs/spec/CALENDAR-ENGINE.md` +
+  `docs/en/CALENDAR-ENGINE.md` y `docs/spec/GUS-LIBRARY-API.md` +
+  `docs/en/GUS-LIBRARY-API.md`; `reuse lint` 100 %.
+
 ## 3.0.1 — Parche de seguridad de la auditoría adversarial (2026-11-18)
 
 Publica los hallazgos `A-1..A-6` resueltos en el informe

@@ -20,3 +20,11 @@ impl-c/*.o
 AGENTS.md
 impl-c/gus-audit-stress
 impl-c/gus-audit-stress.dSYM/
+impl-c/cal-audit
+impl-c/cal-audit.dSYM/
+impl-c/guti-conformance
+impl-c/gus-conformance-cal
+impl-c/libgerarion.a
+impl-c/libgerarion.so.*
+impl-c/libgerarion.dylib
+impl-c/gerarion.pc
