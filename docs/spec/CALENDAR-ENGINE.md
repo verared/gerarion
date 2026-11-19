@@ -105,3 +105,28 @@ comprobada sobre 6.805 muestras hasta ±3,3·10¹⁴ días sin un solo fallo.
 | C11 conformance | `make -C impl-c guti-conformance` | 63.850/63.850 |
 | JS runner | `node web/guti_vectors.mjs` | 127.204/127.204 |
 | Regenerar vectores | `PYTHONPATH=src python3 tools/generate_guti_vectors.py` | determinista |
+
+## Verificación astronómica independiente y tolerancia documentada (adenda v3.1.1)
+
+La suite `tests/test_guti_calendars.py` contrasta el calendario chino del
+motor contra fechas de referencia publicadas (Observatorio de la Montaña
+Púrpura / listas lunisolares estándar de la reforma Shixian) en cuatro
+categorías:
+
+1. **Años Nuevos chinos (1900–2100 + época 1645)** — coincidencia EXACTA.
+2. **Primeros días de meses intercalares (runyue)**: 闰五 1952, 闰六 1979,
+   闰二 2004, 闰五 2009, 闰六 2017, 闰四 2020, 闰二 2023, 闰六 2025 — exactos.
+3. **Bordes de lunación** (vísperas de Año Nuevo, días 29/30 de
+   diciembre lunar) — exactos.
+4. **Noches límite** (luna nueva a pocos minutos de la medianoche UTC+8:
+   1700, 1751, 1851, 2050): el motor puede diferir en **1 día** de las
+   listas publicadas de la época; el test FIJA la lectura exacta del
+   motor como regresión (el motor es determinista y nunca desplaza una
+   fecha en silencio) y la divergencia queda registrada aquí.
+
+Margen de tolerancia del motor: **±2 minutos** de las efemérides completas
+(truncamiento polinómico de `tools/generate_china_table.py`), más la
+diferencia con el cálculo histórico Shixian en las noches límite de la
+categoría 4 (≤ 1 día, sólo en lunaciones cuyo instante de luna nueva cae
+a menos de ~30 minutos de las 0:00 UTC+8). Fuera de esos casos, la
+conversión es exacta y reproducible bit a bit en C11, Python y JS.

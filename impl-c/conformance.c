@@ -569,6 +569,36 @@ static void check_quick_verify(JNode *v)
     }
 }
 
+/* Categoría clock (§6.3, adenda v3.1.1): rollback sub-segundo tupla
+ * (seconds, nanos) y compuerta de autenticidad explícita. */
+static void check_clock_state(void)
+{
+    const char *cat = "clock-state";
+    GusClockPolicy pol = { 1000000LL, 3600LL, 500, 0, 1 };
+
+    GusClockReading ancla = { 1000000000LL, 999999999u, GUS_CLOCK_VERIFIED,
+                              "gps", 100000LL, 1000000000LL, 1 };
+    GusClockState s = gus_clock_classify(&ancla, &pol, NULL);
+    if (s != GUS_CLOCK_VERIFIED) fail(cat, "lectura autenticada con cota debe ser VERIFIED");
+
+    /* rollback SOLO sub-segundo: mismo segundo, nanos hacia atrás */
+    GusClockReading retro = { 1000000000LL, 500000000u, GUS_CLOCK_VERIFIED,
+                              "gps", 100000LL, 1000005000LL, 1 };
+    s = gus_clock_classify(&retro, &pol, &ancla);
+    if (s != GUS_CLOCK_REJECTED) fail(cat, "rollback sub-segundo debe ser REJECTED");
+
+    /* cota 0 sin authenticated: NUNCA VERIFIED con la política v3.1.1 */
+    GusClockReading sinAuth = { 1000100000LL, 0u, GUS_CLOCK_VERIFIED,
+                                "so", 0LL, 2000000000LL, 0 };
+    s = gus_clock_classify(&sinAuth, &pol, &ancla);
+    if (s != GUS_CLOCK_UNVERIFIED) fail(cat, "sin autenticidad debe ser UNVERIFIED");
+
+    /* escape hatch legado: require_authenticated = 0 */
+    GusClockPolicy legacy = { 1000000LL, 3600LL, 500, 0, 0 };
+    s = gus_clock_classify(&sinAuth, &legacy, &ancla);
+    if (s != GUS_CLOCK_VERIFIED) fail(cat, "require_authenticated=0 debe reproducir el legado");
+}
+
 int main(int argc, char **argv)
 {
     const char *path = argc > 1 ? argv[1] : "../vectors/gus-normative-003.json";
@@ -585,14 +615,15 @@ int main(int argc, char **argv)
     check_roundtrip(v);
     check_format(v);
     check_instant(v);
-    int cats = 7;
+    check_clock_state();
+    int cats = 8;
     if (negPath) {
         JNode *neg = jload(negPath);
         if (!neg) return 2;
         printf("gus-3339-negative conformance (C): %s\n", negPath);
         g_checks++;
         check_negatives(neg);
-        cats = 8;
+        cats = 9;
     }
     if (ayPath) {
         JNode *ay = jload(ayPath);
@@ -600,7 +631,7 @@ int main(int argc, char **argv)
         printf("gus-regression AY conformance (C): %s\n", ayPath);
         g_checks++;
         check_ay_regression(ay);
-        cats = 9;
+        cats = 10;
     }
     if (quickPath) {
         JNode *qv = jload(quickPath);
@@ -608,7 +639,7 @@ int main(int argc, char **argv)
         printf("gus-quickverify conformance (C): %s\n", quickPath);
         g_checks++;
         check_quick_verify(qv);
-        cats = 10;
+        cats = 11;
     }
     if (g_failures == 0) {
         printf("CONFORME (núcleo GUS en C): %d categorías, 0 fallos\n", cats);

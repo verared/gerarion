@@ -63,7 +63,10 @@ class ClockReading:
     `instant` son segundos GUS (int64) y `nanos` la fracción separada
     (0..999_999_999, validada estricta); `monotonic_ns` es la lectura del
     reloj monotónico del SO en el instante de la medición (nunca una
-    etiqueta de tiempo absoluto).
+    etiqueta de tiempo absoluto). `authenticated` declara EXPLÍCITAMENTE
+    que la lectura proviene de una fuente autenticada (adenda v3.1.1):
+    el reloj de pared del SO y cualquier lectura sin adaptador verificado
+    deben dejarlo en False.
     """
 
     instant: int
@@ -72,6 +75,7 @@ class ClockReading:
     source_id: str = ""
     uncertainty_ns: int = -1  # < 0: desconocida
     monotonic_ns: int = 0
+    authenticated: bool = False
 
     def __post_init__(self):
         validate_nanos(self.nanos)
@@ -87,6 +91,11 @@ class ClockPolicy:
     max_holdover_s: int = 3600           # ventana máxima de extrapolación
     drift_ppm: int = 500                 # deriva máxima declarada del reloj local
     strict: bool = False                 # True: sin fuente → REJECTED
+    # Adenda v3.1.1: nadie asciende a VERIFIED sin autenticidad explícita.
+    require_authenticated: bool = True   # VERIFIED exige reading.authenticated
+    # Lista blanca opcional de fuentes: si no es None, `source_id` de la
+    # lectura debe pertenecer a ella para poder ser VERIFIED.
+    trusted_sources: Optional[frozenset] = None
 
 
 class ClockAnchorStore:
@@ -161,13 +170,15 @@ class TrustedClock:
         self.store = store or ClockAnchorStore()
 
     def classify(self, reading: ClockReading) -> ClockReading:
-        # Última marca votable como tal: state= self.store.anchor.state if...
         anchor = self.store.anchor
-        # 1) Anti-rollback: retroceso respecto del ancla persistido.
+        # 1) Anti-rollback sub-segundo (adenda v3.1.1): retroceso respecto
+        #    del ancla persistido evaluado con la tupla completa
+        #    (instant, nanos); un reloj que retrocede solo dentro del
+        #    mismo segundo también se rechaza.
         if (
             anchor is not None
             and reading.monotonic_ns >= anchor.monotonic_ns > 0
-            and reading.instant < anchor.instant
+            and (reading.instant, reading.nanos) < (anchor.instant, anchor.nanos)
         ):
             rejected = ClockReading(
                 instant=reading.instant,
@@ -176,11 +187,23 @@ class TrustedClock:
                 source_id=reading.source_id,
                 uncertainty_ns=reading.uncertainty_ns,
                 monotonic_ns=reading.monotonic_ns,
+                authenticated=reading.authenticated,
             )
             return rejected
 
         # 2) Fuente autenticada dentro de la cota: VERIFIED (y ancla nueva).
-        if 0 <= reading.uncertainty_ns <= self.policy.max_uncertainty_ns:
+        #    SIN autenticidad explícita NO hay ascenso a VERIFIED nunca
+        #    (adenda v3.1.1), ni siquiera con uncertainty_ns == 0: la
+        #    lectura cae a UNVERIFIED (o REJECTED en estricta).
+        source_allowed = (
+            self.policy.trusted_sources is None
+            or reading.source_id in self.policy.trusted_sources
+        )
+        authentic = reading.authenticated and source_allowed
+        if (
+            0 <= reading.uncertainty_ns <= self.policy.max_uncertainty_ns
+            and (authentic or not self.policy.require_authenticated)
+        ):
             verified = ClockReading(
                 instant=reading.instant,
                 nanos=reading.nanos,
@@ -188,6 +211,7 @@ class TrustedClock:
                 source_id=reading.source_id,
                 uncertainty_ns=reading.uncertainty_ns,
                 monotonic_ns=reading.monotonic_ns,
+                authenticated=reading.authenticated,
             )
             self.store.update(verified)
             return verified

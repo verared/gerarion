@@ -18,7 +18,18 @@ Scheme, RFC 8785) para los sobres GST v2:
   - punto fijo para 1e-6 <= |x| < 1e21, notación `e` fuera de ese rango,
     con el dígito significativo más corto que vuelve a redondear al mismo
     double (dígitos obtenidos de `repr`, que en CPython usa el algoritmo
-    de دلیل más corto de Ryu/Grisu equivalente al de ECMAScript).
+    de dígitos más corto de Ryu/Grisu equivalente al de ECMAScript).
+  - ENTEROS FUERA DE BINARY64 (adenda v3.1.1): RFC 8785 exige que todo
+    número se serialice como un `Number` de ECMAScript (IEEE 754 binary64
+    con el algoritmo de la Appendix B). Un entero Python de precisión
+    arbitraria que supere ±(2^53 − 1) NO es interoperable: dos
+    implementaciones conformantes deben poder reproducir los mismos
+    bytes, y a partir de 2^53 el valor pierde dígitos bajos al convertirse
+    a double. Por consiguiente `dumps()` rechaza tales enteros con
+    `JcsError`; el productor que necesite representar un valor de 64 bits
+    mayor (p. ej. un `ins` de horizonte lejano o un contador de 63 bits)
+    DEBE codificarlo previamente como cadena decimal
+    (``str(value)``), que JCS canonicaliza como texto sin ambigüedad.
 - `true`/`false`/`null` literales; los objetos anidados y los arrays se
   procesan en profundidad. Los bool No son números (chequeo explícito:
   `bool` es subclase de `int` en Python).
@@ -32,7 +43,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
-__all__ = ["dumps", "dumps_bytes", "canonical_bytes", "JcsError"]
+__all__ = ["dumps", "dumps_bytes", "canonical_bytes", "JcsError",
+           "BINARY64_MAX_INT", "BINARY64_MIN_INT"]
 
 _ESCAPES = {
     0x08: "\\b",
@@ -44,7 +56,15 @@ _ESCAPES = {
 
 
 class JcsError(ValueError):
-    """Valor no canonizable (NaN/Inf, sustituto huérfano, tipo ajeno a JSON)."""
+    """Valor no canonizable (NaN/Inf, sustituto huérfano, tipo ajeno a JSON,
+    entero fuera del rango interoperable de IEEE 754 binary64)."""
+
+
+# RFC 8785 §3.2.2.3: un Number de ECMAScript es IEEE 754 binary64; los
+# enteros con |v| > 2^53 − 1 no tienen representación exacta e
+# interoperable y nunca deben serializarse como number (adenda v3.1.1).
+BINARY64_MAX_INT = 2**53 - 1   # 9007199254740991
+BINARY64_MIN_INT = -(2**53 - 1)  # -9007199254740991
 
 
 def _escape_string(s: str) -> str:
@@ -117,6 +137,11 @@ def _serialize(value: Any, out: list) -> None:
     elif value is False:
         out.append("false")
     elif isinstance(value, int):
+        if value > BINARY64_MAX_INT or value < BINARY64_MIN_INT:
+            raise JcsError(
+                f"entero {value} fuera del rango interoperable de "
+                "IEEE 754 binary64 (±(2^53-1)): codifícalo como cadena decimal"
+            )
         out.append(str(value))
     elif isinstance(value, float):
         out.append(_es6_number(value))

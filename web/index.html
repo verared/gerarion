@@ -2,6 +2,14 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
+    <!-- Adenda v3.1.1: CSP restrictiva. Todo el activo es local; 'unsafe-inline'
+         en style-src solo autoriza los atributos style generados por app.js
+         (barras/medidores); connect-src 'none' prohíbe todo fetch/XHR. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'self'; style-src 'self' 'unsafe-inline'"
+    />
+
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#fbfaf7" />

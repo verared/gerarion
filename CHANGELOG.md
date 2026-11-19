@@ -1,5 +1,34 @@
 # Changelog — GUS
 
+## 3.1.1 — Endurecimiento quirúrgico: JCS binary64, reloj autenticado, SW fail-closed, verificación china (2026-11-19)
+
+Parche de seguridad de la cuarta revisión adversarial estática (adenda
+v3.1.1 en `docs/audit/AUDIT-REPORT-v3.0.0.md`, hallazgos `B-1..B-4`).
+Ningún cambio de aritmética congelada ni de vectores normativos.
+
+- **B-1 (JCS/RFC 8785)**: `jcs.dumps` rechaza enteros fuera de
+  ±(2^53−1) — la serialización interoperable exige Number de ECMAScript;
+  los valores de 64 bits viajan como cadena decimal.
+- **B-2 (reloj de confianza)**: anti-rollback por tupla
+  `(instant, nanos)` (un retroceso solo de nanosegundos también se
+  rechaza, incluso contra el ancla persistida en disco); autenticidad
+  EXPLÍCITA de la fuente: `ClockReading.authenticated` +
+  `ClockPolicy.require_authenticated` (por defecto true) y lista blanca
+  opcional `trusted_sources`; sin autenticidad nunca hay `VERIFIED`
+  aunque la cota sea 0. Equivalente C11 (`GusClockReading.authenticated`,
+  `GusClockPolicy.require_authenticated` + categoría `check_clock_state`
+  en conformance).
+- **B-3 (Service Worker fail-closed)**: se elimina el fallback abierto
+  `fetch(req)` — solo se sirve la lista blanca precacheada, con 403
+  explícito para el resto del mismo origen; CSP restrictiva
+  (`connect-src 'none'`, `object-src 'none'`, `base-uri 'self'`).
+- **B-4 (chino verificado)**: `tests/test_guti_calendars.py` — 40
+  pruebas contra fechas publicadas (Años Nuevos, ocho runyue, bordes de
+  lunación, noches límite con tolerancia documentada en
+  `CALENDAR-ENGINE.md` ES/EN).
+- Regresiones exactas de los cuatro hallazgos en `test_jcs_gstv2.py`,
+  `test_clock_state.py` y `e2e_web_test.py` (62/62). `reuse lint` 100 %.
+
 ## 3.1.0 — Fase GUTI-1: motor multi-calendario determinista y portal 100 % offline (2026-11-18)
 
 La aritmética congelada de GUS v3.0.0 no cambia: `TCJ = TAI + 8.400 s`,

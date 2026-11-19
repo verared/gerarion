@@ -202,6 +202,7 @@ typedef struct {
     const char *source_id;    /* identificador de la fuente (estático) */
     long long uncertainty_ns; /* cota de error declarada, ns */
     long long monotonic_ns;   /*_CLOCK_MONOTONIC del sistema en la lectura */
+    uint8_t authenticated;    /* adenda v3.1.1: fuente autenticada EXPLÍCITA */
 } GusClockReading;
 
 /* Parámetros de la máquina de estados (todos en unidades explícitas). */
@@ -210,6 +211,9 @@ typedef struct {
     long long max_holdover_s;     /* ventana máxima de extrapolación */
     long long drift_ppm;          /* deriva máxima declarada (ppm) */
     int strict;                   /* 1: sin fuente → REJECTED (no UNVERIFIED) */
+    int require_authenticated;    /* 1 (por defecto): VERIFIED exige
+                                   * reading->authenticated != 0 (adenda v3.1.1);
+                                   * 0 solo en despliegues controlados. */
 } GusClockPolicy;
 
 /* Estabiliza una lectura contra el último ancla

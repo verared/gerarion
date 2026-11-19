@@ -138,3 +138,23 @@ terceros (`cryptography`), ni hardware, ni temporización (side channels),
 ni un muestreo exhaustivo de todo el espacio de entradas de 64 bits. Las
 garantías formales del calendario (derivación cerrada) están en el
 Apéndice A de la spec; los límites operativos, en su tabla A.5.
+
+---
+
+## Adenda v3.1.1 — cuarta revisión adversarial estática (2026-11-19)
+
+Cuatro hallazgos adicionales de la revisión estática sobre `v3.1.0`
+(`1e30820`), resueltos en el parche `v3.1.1`. La aritmética congelada de
+GUS v3.0.0 y los vectores normativos no cambian.
+
+| id | Gravedad | Hallazgo | Resolución | Regresión |
+|---|---|---|---|---|
+| B-1 | Medio | JCS serializaba enteros Python arbitrarios como `number`; a partir de ±(2^53−1) la serialización no es interoperable (RFC 8785 exige Number de ECMAScript) | `jcs.dumps` rechaza con `JcsError` cualquier entero fuera de ±(2^53−1); los valores de 64 bits deben viajar como cadena decimal (documentado en el docstring) | `tests/test_jcs_gstv2.py::test_jcs_entero_*` (9007199254740991 válido; 9007199254740992/…993 rechazados) |
+| B-2 | Medio | Anti-rollback comparaba solo segundos: un retroceso de nanosegundos dentro del mismo segundo pasaba; y la autenticidad de la fuente era implícita | Comparación por tupla `(instant, nanos)` → `REJECTED`; `ClockReading.authenticated` y `ClockPolicy.require_authenticated` (por defecto `True`, con lista blanca opcional `trusted_sources`): sin autenticidad explícita no hay `VERIFIED` aunque la cota sea 0 | `tests/test_clock_state.py::test_rollback_subsegundo_*`, `test_sin_autenticidad_nunca_verified_*`, `test_lista_blanca_*`; categoría C `check_clock_state` |
+| B-3 | Alto | El Service Worker respondía con `fetch(req)` abierto como fallback: cualquier endpoint del mismo origen (p. ej. `/telemetry?…`) habría canalizado tráfico desde el SW | Política estricta de lista blanca: solo rutas precacheadas se sirven de caché; todo lo demás → 403 *Offline-only strict isolation* (fail-closed, sin red); CSP restrictiva declarada en `index.html` (`connect-src 'none'`) | `e2e_web_test.py`: «SW estricto: /telemetry …», «CSP restrictiva declarada», suite completa 62/62 |
+| B-4 | Bajo | El calendario chino carecía de tabla de contraste astronómico independiente | `tests/test_guti_calendars.py`: 40 pruebas contra fechas publicadas (Años Nuevos 1900–2100 + 1645, ocho runyue, bordes de lunación); noches límite fijadas como regresión con divergencia ≤ 1 día documentada en `docs/spec/CALENDAR-ENGINE.md` | `tests/test_guti_calendars.py` (40/40) |
+
+Batería tras el parche: pytest 310 passed, 1 skipped (incluye las
+nuevas regresiones), runners JS en verde, `make -C impl-c conformance` y
+`make -C impl-c audit` sin errores, Playwright 62/62, `reuse lint`
+100 %.

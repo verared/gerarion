@@ -661,15 +661,24 @@ GusClockState gus_clock_classify(const GusClockReading *reading,
 {
     if (!reading || !policy) return GUS_CLOCK_REJECTED;
 
-    /* Anti-rollback: retroceso respecto del último ancla persistido. */
+    /* Anti-rollback sub-segundo (adenda v3.1.1): retroceso evaluado con
+     * la tupla completa (seconds, nanos) respecto del último ancla
+     * persistido; un retroceso dentro del mismo segundo también se
+     * rechaza. */
     if (last_anchor && last_anchor->monotonic_ns > 0 &&
         reading->monotonic_ns >= last_anchor->monotonic_ns &&
-        reading->seconds < last_anchor->seconds)
+        (reading->seconds < last_anchor->seconds ||
+         (reading->seconds == last_anchor->seconds &&
+          reading->nanos < last_anchor->nanos)))
         return GUS_CLOCK_REJECTED;
 
-    /* Con fuente autenticada y cota cumplida: VERIFIED. */
+    /* VERIFIED exige autenticidad EXPLÍCITA de la fuente (adenda v3.1.1):
+     * ni uncertainty_ns == 0 ni ningún valor de la cota asciende una
+     * lectura sin `authenticated`. `require_authenticated = 0` reproduce
+     * el comportamiento legado solo en despliegues controlados. */
     if (reading->uncertainty_ns >= 0 &&
-        reading->uncertainty_ns <= policy->max_uncertainty_ns)
+        reading->uncertainty_ns <= policy->max_uncertainty_ns &&
+        (!policy->require_authenticated || reading->authenticated))
         return GUS_CLOCK_VERIFIED;
 
     /* Sin cota válida: solo hay HOLDOVER si existe un ancla previa dentro

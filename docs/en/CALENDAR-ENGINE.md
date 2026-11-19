@@ -102,3 +102,29 @@ checked over 6,805 samples up to ±3.3×10¹⁴ days with zero failures.
 | C11 conformance | `make -C impl-c guti-conformance` | 63,850/63,850 |
 | JS runner | `node web/guti_vectors.mjs` | 127,204/127,204 |
 | Regenerate vectors | `PYTHONPATH=src python3 tools/generate_guti_vectors.py` | deterministic |
+
+## Independent astronomical verification and documented tolerance (adenda v3.1.1)
+
+The suite `tests/test_guti_calendars.py` contrasts the engine's Chinese
+calendar against published reference dates (Purple Mountain Observatory /
+standard lunisolar lists derived from the Shixian reform) in four
+categories:
+
+1. **Chinese New Years (1900–2100 + epoch 1645)** — EXACT match.
+2. **First days of intercalary months (runyue)**: 1952 (leap 5th), 1979
+   (leap 6th), 2004 (leap 2nd), 2009 (leap 5th), 2017 (leap 6th),
+   2020 (leap 4th), 2023 (leap 2nd), 2025 (leap 6th) — exact.
+3. **Lunation borders** (New Year eves, 29th/30th days of the 12th lunar
+   month) — exact.
+4. **Boundary nights** (new moon within minutes of midnight UTC+8: 1700,
+   1751, 1851, 2050): the engine may differ by **1 day** from the
+   period-published lists; the test FIXES the engine's exact reading as a
+   regression (the engine is deterministic and never shifts a date
+   silently) and the divergence is recorded here.
+
+Engine tolerance margin: **±2 minutes** from full ephemerides (polynomial
+truncation of `tools/generate_china_table.py`), plus the historical
+Shixian-calculation difference on the category-4 boundary nights
+(≤ 1 day, only for lunations whose new-moon instant falls within ~30
+minutes of 0:00 UTC+8). Otherwise conversion is exact and bit-for-bit
+reproducible in C11, Python and JS.

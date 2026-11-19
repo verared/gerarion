@@ -437,6 +437,35 @@ with sync_playwright() as pw:
         ".then(r => !!r && !!r.active)",
         timeout=15000,
     )
+    # ── Adenda v3.1.1: aislamiento estricto fail-closed del SW ──────────
+    blocked = p.evaluate(
+        "new Promise((res) => { const i = new Image(); "
+        "i.src = '/telemetry?x=1'; i.onload = () => res('loaded'); "
+        "i.onerror = () => res('blocked'); })"
+    )
+    check(
+        "SW estricto: /telemetry fuera de la lista blanca no se sirve",
+        blocked == "blocked",
+        str(blocked),
+    )
+    allowed = p.evaluate(
+        "new Promise((res) => { const i = new Image(); "
+        "i.src = 'assets/atlas.svg'; i.onload = () => res('loaded'); "
+        "i.onerror = () => res('blocked'); })"
+    )
+    check(
+        "SW estricto: un activo permitido sigue cargando",
+        allowed == "loaded",
+        str(allowed),
+    )
+    check(
+        "CSP restrictiva declarada en el documento",
+        "connect-src 'none'" in p.content(),
+    )
+    # el 403 del sondeo deliberado se registra en consola por diseño; se
+    # retira de la lista para que los checks de errores sigan siendo
+    # estrictos con cualquier otro error.
+    errors[:] = [e for e in errors if "403" not in e]
     ctx.set_offline(True)
     p.reload(wait_until="load")
     p.wait_for_timeout(500)

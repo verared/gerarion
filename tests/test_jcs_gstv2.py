@@ -349,3 +349,42 @@ def test_tai_utc_checked_vigencia():
 def test_tai_utc_checked_extrapolacion_marcada():
     _, extra = tai.tai_minus_utc_checked(tai.TAI_UTC_VALID_UNTIL_UNIX + 86_400)
     assert extra is True  # pasada la vigencia: advertencia de extrapolación
+
+
+# ----------------------------------------- JCS binary64 (adenda v3.1.1)
+
+def test_jcs_entero_limite_supero_binary64_aceptado():
+    from gerarion.jcs import BINARY64_MAX_INT, BINARY64_MIN_INT
+    assert BINARY64_MAX_INT == 9_007_199_254_740_991
+    assert BINARY64_MIN_INT == -9_007_199_254_740_991
+    # 2^53 - 1: el límite exacto interoperable de Number, VÁLIDO.
+    assert dumps(BINARY64_MAX_INT) == "9007199254740991"
+    assert dumps(BINARY64_MIN_INT) == "-9007199254740991"
+
+
+@pytest.mark.parametrize("value", [9_007_199_254_740_992, 9_007_199_254_740_993,
+                                   -(9_007_199_254_740_992),
+                                   2**63 - 1, 2**63])
+def test_jcs_entero_fuera_de_binary64_rechazado(value):
+    # RFC 8785 serializa TODO número como Number de ECMAScript (binary64):
+    # a partir de 2^53 los dígitos bajos no son interoperables. El serializador
+    # rechaza (nunca redondea en silencio); el productor debe enviar str(value).
+    with pytest.raises(JcsError):
+        dumps(value)
+
+
+def test_jcs_entero_64bit_viaja_como_cadena_decimal():
+    # Patrón recomendado para valores de 64 bits en sobres GST v2.
+    big = 2**63 - 1
+    assert dumps({"ins": str(big)}) == ('{"ins":"9223372036854775807"}')
+
+
+def test_gst_v2_campos_internos_dentro_del_rango_binary64(signer):
+    # Los campos enteros del sobre GST v2 (ins, nanos, seq) se serializan
+    # sin error: sus dominios quedan dentro de ±(2^53-1). Se chequea el
+    # rango real de `ins` (horizonte calendario) y `seq` (contador).
+    env = gts.create_v2(TS, signer, event_hash=EVENT_HASH, kid="k1",
+                        issuer="test", seq=2**53 - 1)
+    assert env["ins"] <= 9_007_199_254_740_991
+    assert env["seq"] == 9_007_199_254_740_991
+    assert 0 <= env.get("nanos", 0) <= cal.NANOS_MAX

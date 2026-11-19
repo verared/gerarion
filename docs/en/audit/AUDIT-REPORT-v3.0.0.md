@@ -136,3 +136,23 @@ does not cover the supply chain of third-party libraries
 sample of the full 64-bit input space. The formal proofs of the calendar
 (closed derivations) are in spec Appendix A; the operational limits, in
 its table A.5.
+
+---
+
+## Adenda v3.1.1 — fourth static adversarial review (2026-11-19)
+
+Four additional findings from the static review of `v3.1.0` (`1e30820`),
+fixed in patch `v3.1.1`. The frozen GUS v3.0.0 arithmetic and the
+normative vectors do not change.
+
+| id | Severity | Finding | Resolution | Regression |
+|---|---|---|---|---|
+| B-1 | Medium | JCS serialized arbitrary Python integers as `number`; beyond ±(2^53−1) the serialization is not interoperable (RFC 8785 requires an ECMAScript Number) | `jcs.dumps` rejects with `JcsError` any integer outside ±(2^53−1); 64-bit values must travel as decimal strings (documented in the docstring) | `tests/test_jcs_gstv2.py::test_jcs_entero_*` (9007199254740991 valid; 9007199254740992/…993 rejected) |
+| B-2 | Medium | Anti-rollback compared seconds only: a sub-second (nanosecond) rollback within the same second passed; source authenticity was implicit | Tuple comparison `(instant, nanos)` → `REJECTED`; `ClockReading.authenticated` and `ClockPolicy.require_authenticated` (default `True`, optional `trusted_sources` whitelist): no `VERIFIED` without explicit authenticity even at uncertainty 0 | `tests/test_clock_state.py::test_rollback_subsegundo_*`, `test_sin_autenticidad_nunca_verified_*`, `test_lista_blanca_*`; C category `check_clock_state` |
+| B-3 | High | The Service Worker used an open `fetch(req)` fallback: any same-origin endpoint (e.g. `/telemetry?…`) could have been channeled through the SW | Strict whitelist policy: only precached paths are served from cache; everything else → 403 *Offline-only strict isolation* (fail-closed, no network); restrictive CSP declared in `index.html` (`connect-src 'none'`) | `e2e_web_test.py`: «SW estricto: /telemetry …», «CSP restrictiva declarada», full suite 62/62 |
+| B-4 | Low | The Chinese calendar lacked an independent astronomical contrast table | `tests/test_guti_calendars.py`: 40 tests against published dates (New Years 1900–2100 + 1645, eight runyue, lunation borders); boundary nights fixed as regressions with the ≤ 1 day divergence documented in `docs/en/CALENDAR-ENGINE.md` | `tests/test_guti_calendars.py` (40/40) |
+
+Post-patch battery: pytest 310 passed, 1 skipped (includes the
+new regressions), JS runners green, `make -C impl-c conformance` and
+`make -C impl-c audit` with no errors, Playwright 62/62, `reuse lint`
+100 %.
