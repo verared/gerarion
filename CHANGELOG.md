@@ -1,6 +1,45 @@
 # Changelog — GUS
 
-## 3.1.1 — Endurecimiento quirúrgico: JCS binary64, reloj autenticado, SW fail-closed, verificación china (2026-11-19)
+## 3.2.0-alpha.1 — Reorganización modular en 8 dominios (2026-11-19)
+
+Desacoplamiento estructural de la suite de referencia. **Ningún cambio
+de la aritmética congelada de GUS v3.0.0, de los vectores
+`gus-normative-003.json` ni de las reglas de los 10 calendarios.**
+
+- **Documentación**: cada dominio tiene ahora una especificación
+  autocontenida bilingüe en `docs/specs/` (TCJ, GUS, CALENDAR, GTS, GST,
+  TSLR\*, GCERTS\*, INTEROP; \* experimentales). `docs/spec/gus-3.0.0.md`
+  permanece como edición consolidada. Historial en `docs/history/`
+  (REDISENO, erratas v1.2, informe de adopción, TODO-pendientes).
+- **C11**: `impl-c/` dividido por dominio — `core/` (TCJ+GUS, apto para
+  MCU sin reloj ni TAI), `tai/`, `clock/` (GTS §6.3), `calendars/`;
+  `gus.h`/`gerarion.h` quedan como paraguas retrocompatibles. Makefile
+  con 4 bibliotecas (`libgerarion-core`, `-clock`, `-calendars` y la
+  unificada) con pkg-config por dominio; `core-smoke` demuestra que el
+  núcleo standalone compila y corre solo.
+- **Pruebas C**: parser JSON unificado en `test_jsonmin.[ch]` (antes
+  duplicado en los dos runners).
+- **Python**: `src/gerarion/` en subpaquetes (`core`, `tcj`,
+  `calendars`, `gts`, `gst`, `interop`, `service`, `deprecated`) con
+  shims planos de compatibilidad (importaciones de 3.1.1 intactas) y
+  extras por dominio (`[gst]`, `[gts]`, `[service]`, `[all]`).
+  `hashots.py` a `deprecated/` con `DeprecationWarning`; el stack
+  activo carga el legado de forma condicional.
+- **Web**: `engine/` (núcleo dividido en `core.mjs` + `tcj-tai.mjs`,
+  GUTI, tabla china, zonas), `ui/` (app, atlas) y `test/` (seis
+  runners); `web/gerarion.mjs` reexporta el API unido; Service Worker
+  fail-closed con las rutas nuevas (`gerarion-v3-2-0`); `package.json`
+  exporta cada submódulo.
+- **Distribución**: `release.yml` publica `libgerarion-core` standalone
+  además de la suite completa; `vectors/README.md` mapea cada conjunto
+  de vectores con su dominio.
+
+Verificación completa: pytest 310+1, seis runners JS (36/36, 42/42,
+127.204/127.204, conformance/3339/regresión 0 fallos), C conformance 11
+categorías + 63.850/63.850 GUTI, audit ASan+UBSan 6.524.458
+comprobaciones 0 errores, e2e Playwright 62/62, `reuse lint` 100 %.
+
+## 3.1.1 — Endurecimiento quirúrgico: JCS binary64, reloj autenticado, SW fail-closed, verificación china (2026-11-19) — Endurecimiento quirúrgico: JCS binary64, reloj autenticado, SW fail-closed, verificación china (2026-11-19)
 
 Parche de seguridad de la cuarta revisión adversarial estática (adenda
 v3.1.1 en `docs/audit/AUDIT-REPORT-v3.0.0.md`, hallazgos `B-1..B-4`).

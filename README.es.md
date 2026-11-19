@@ -148,6 +148,31 @@ binarios C) más `SHA256SUMS.txt` para verificación de integridad
 [Publicación](#publicación)). El extra `[slh]` es opcional: es la única
 dependencia de todo el proyecto.
 
+## Distribución modular (v3.2.0)
+
+La suite de referencia está organizada en **8 dominios normativos
+autocontenidos** (`TCJ`, `GUS`, `CALENDAR`, `GTS`, `GST`, `TSLR`\*,
+`GCERTS`\*, `INTEROP`; \* experimentales), cada uno documentado en
+`docs/specs/<DOMINIO>.es.md` (y `.en.md`). Un producto derivado puede
+adoptar un solo dominio sin el resto:
+
+- `impl-c/core/` — `libgerarion-core`: núcleo C11 para
+  microcontroladores (TCJ+GUS: sin reloj de SO ni tabla TAI);
+  `tai/`, `clock/` y `calendars/` son bibliotecas separadas y
+  `gus.h`/`gerarion.h` siguen siendo paraguas retrocompatibles.
+- `src/gerarion/` — SDK Python en subpaquetes por dominio (`core`,
+  `tcj`, `calendars`, `gts`, `gst`, `interop`, `service`,
+  `deprecated`) con shims planos de compatibilidad y extras de
+  instalación por dominio (`pip install gerarion[gst]`).
+- `web/engine/` — motores puros del navegador (`core.mjs`,
+  `tcj-tai.mjs`, `guti.mjs`); `web/ui/` (interfaz) y `web/test/`
+  (corredores); el scope de la PWA sigue siendo `web/`.
+- `vectors/` — vectores de prueba CC0, mapeados por dominio en
+  `vectors/README.md`.
+
+`docs/spec/gus-3.0.0.md` permanece como edición consolidada de
+referencia.
+
 ## Idioma normativo
 
 La versión inglesa de `docs/spec/gus-3.0.0.md`, `docs/spec/threat-model.md`,

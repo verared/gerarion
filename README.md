@@ -138,6 +138,29 @@ Canonical output agrees in all three: `day=742049`, `2031DY-09-06-S`,
 
 ---
 
+## Repository layout (modular, v3.2.0)
+
+The reference suite is organised in **8 self-contained normative
+domains** (`TCJ`, `GUS`, `CALENDAR`, `GTS`, `GST`, `TSLR`\*,
+`GCERTS`\*, `INTEROP`; \* experimental), each documented in
+`docs/specs/<DOMAIN>.es.md` / `.en.md`. Downstream products can adopt a
+single domain without the rest:
+
+- `impl-c/core/` — `libgerarion-core`: MCU-ready C11 core (TCJ+GUS: no
+  OS clock, no TAI table). `tai/`, `clock/`, `calendars/` are separate
+  libraries; `gus.h`/`gerarion.h` remain backward-compatible umbrellas.
+- `src/gerarion/` — Python SDK in domain subpackages (`core`, `tcj`,
+  `calendars`, `gts`, `gst`, `interop`, `service`, `deprecated`) with
+  flat compatibility shims; install extras per domain
+  (`pip install gerarion[gst]`).
+- `web/engine/` — pure browser engines (`core.mjs`, `tcj-tai.mjs`,
+  `guti.mjs`); `web/ui/` (interface) and `web/test/` (runners); the PWA
+  scope stays at `web/`.
+- `vectors/` — CC0 test vectors, mapped per domain in
+  `vectors/README.md`.
+
+`docs/spec/gus-3.0.0.md` remains the consolidated reference edition.
+
 ## Repository components
 
 | Path | What it is | How it's verified |

@@ -15,9 +15,9 @@
 #define GERARION_H
 
 #define GERARION_VERSION_MAJOR 3
-#define GERARION_VERSION_MINOR 1
+#define GERARION_VERSION_MINOR 2
 #define GERARION_VERSION_PATCH 0
-#define GERARION_VERSION_STRING "3.1.0"
+#define GERARION_VERSION_STRING "3.2.0-alpha.1"
 
 /* Código extendido para fechas fuera del rango validado (misma familia
  * que los GUS_* de gus.h; no altera el núcleo congelado). */
