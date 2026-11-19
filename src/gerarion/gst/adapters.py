@@ -33,7 +33,10 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from .. import hashots
+try:
+    from ..deprecated import hashots
+except ImportError:  # instalación sin el subpaquete deprecated
+    hashots = None
 from ..core.format import CANONICAL_CTX
 
 # ---------------------------------------------------------------------------

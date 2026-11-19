@@ -21,7 +21,10 @@ from pathlib import Path
 from .core import calendar as cal
 from .core import format as fmt
 from .gst import envelope as gts
-from . import hashots
+try:
+    from .deprecated import hashots
+except ImportError:  # instalación sin el subpaquete deprecated
+    hashots = None
 from .core.calendar import GeroError
 
 
