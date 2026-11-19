@@ -7,7 +7,7 @@ Origen y verificadores:
   - jdn(2026, 5, 23) = 2461184 (vector normativo).
   - Estructura interna del año 2031 DY: fin del mes 12, Tempalum, año nuevo
     2032 (vectores normativos de la spec — todos reproducidos aquí).
-  - Errata E-01 (docs/errata-v1.2.md): el vector "2026-03-21 → 2031DY-01-01-S"
+  - Errata E-01 (docs/history/errata-v1.2.md): el vector "2026-03-21 → 2031DY-01-01-S"
     del borrador histórico v1.2 era matemáticamente inconsistente (360 días
     de separación con el vector del año nuevo 2032, que exige longitud
     364/371). El algoritmo canónico ubica 2031DY-01-01 en 2026-03-17, y esa

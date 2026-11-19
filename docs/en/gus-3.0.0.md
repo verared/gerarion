@@ -15,7 +15,7 @@
 >non-normative complementary material in `docs/papers/`).
 >Every v1 property that is preserved is reproduced here in executable form
 >and verified by the test suite. Every divergence is documented in
->`docs/errata-v1.2.md`.
+>`docs/history/errata-v1.2.md`.
 
 > **Consolidated edition.** Since the modular reorganisation, every
 > normative domain has a self-contained specification in [`docs/specs/`](../specs/):

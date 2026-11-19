@@ -11,7 +11,7 @@
 >non-normative complementary material in `docs/papers/`).
 >Every v1 property that is preserved is reproduced here in executable form
 >and verified by the test suite. Every divergence is documented in
->`docs/errata-v1.2.md`.
+>`docs/history/errata-v1.2.md`.
 
 ## 1. What it is
 

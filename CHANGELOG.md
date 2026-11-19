@@ -284,7 +284,7 @@ Etiqueta de ciclo: `alfa-final` pasa a **BETA**.
   enlazado desde ambos README. El módulo `gts.py` conserva su nombre
   (razón histórica documentada en el glosario); renombrar sería
   DECISIÓN DEL AUTOR.
-- **F3:** `docs/TODO-pendientes.md` TODO-004 (offsets con minutos en
+- **F3:** `docs/history/TODO-pendientes.md` TODO-004 (offsets con minutos en
   `TCJ±O`, p. ej. +05:45): el formato NO cambia en esta beta (cambiarlo
   exige decidir la forma canónica); DECISIÓN DEL AUTOR con dos opciones.
 - **Lenguaje:** «estándar» → «especificación abierta» / «proyecto de
@@ -415,7 +415,7 @@ la salida numérica es idéntica a `2.3.4-alpha.2` (verificado: 110 tests +
   wheel + sdist + tarball npm + `SHA256SUMS.txt`); sin PyPI ni npm.
 - Estado del estándar: **ALFA-FINAL — GUS v2.0 congelado**; camino a 1.0
   queda: adaptadores criptográficos opcionales y pase a beta.
-- `docs/TODO-pendientes.md`: TODO-001 CERRADO; TODO-002 (Roughtime UDP)
+- `docs/history/TODO-pendientes.md`: TODO-001 CERRADO; TODO-002 (Roughtime UDP)
   sigue ABIERTO.
 
 ## 2.3.4-alpha.2 — arreglo de CI (2026-11)
@@ -471,7 +471,7 @@ cambian. Antes del primer push público:
   documentación complementaria no normativa en `docs/papers/` (con README propio).
 - Comentarios en código/tests que citaban "corpus v1 cap. N" ahora citan la
   spec GUS 2.0 (§3-§6); las erratas E-01..E-07 se referencian como
-  `docs/errata-v1.2.md`.
+  `docs/history/errata-v1.2.md`.
 
 ## 2.3.2-alpha — prepush (rama `audit-fixes`, 2026-11)
 
@@ -493,7 +493,7 @@ no cambian. Preparación para el primer push.
 
 ### Cambios de repo
 - Errata de textos culturales (fuera de este repositorio) eliminada del
-  repo técnico; su resumen vive en la errata histórica (`docs/errata-v1.2.md`).
+  repo técnico; su resumen vive en la errata histórica (`docs/history/errata-v1.2.md`).
 - Todas las URLs externas a otros repositorios eliminadas: el material
   histórico complementario vive en `docs/papers/` (no normativo).
 - Tercer elemento de WEEKDAYS (nombre civil, no usado) neutralizado a
@@ -553,7 +553,7 @@ propuesta para la primera publicacion de estas correcciones.
   como "observada, no estructural". Test ampliado a 11 000 años.
 - **Frontera UTC/TAI**: nueva sección §9 de la spec (ES y EN)
   documentando exactamente lo que el código hace; lo no definido quedó
-  registrado en `docs/TODO-pendientes.md` (TODO-001), no inventado.
+  registrado en `docs/history/TODO-pendientes.md` (TODO-001), no inventado.
 - **Hoja WOTS**: docstrings marcan el esquema hash-only como referencia
   de pruebas (producción = SLH-DSA); `LeafLedger` persistente con
   bloqueo fcntl cierra el hueco de reutilización de hojas.
@@ -610,7 +610,7 @@ propuesta para la primera publicacion de estas correcciones.
 
 ## 2.2.1 (2026-06 — informe de adopción)
 
-- `docs/informe-adopcion-gus.md`: informe técnico senior argumentando la
+- `docs/history/informe-adopcion-gus.md`: informe técnico senior argumentando la
   adopción del tiempo GUS sobre el régimen civil actual en cómputo —
   diagnóstico (4 causas raíz con incidentes públicos), propiedades
   verificables, comparativa de regímenes, evidencia test a test,
@@ -647,7 +647,7 @@ propuesta para la primera publicacion de estas correcciones.
 - Nombres propios, vectores, JDN de origen y acumulador solar.
 
 ### Corregido
-- E-07 (docs/errata-v1.2.md): aclaración estructural — el tiempo Gerarion
+- E-07 (docs/history/errata-v1.2.md): aclaración estructural — el tiempo Gerarion
   no está anclado al gregoriano. Origen: 1 Keuphero del año 0 DY
   (JDN 1.719.313 = 21 de marzo de -5 = 6 a.C.); 6 a.C. es el año 0, no el
   año 01. Toda fecha gregoriana es equivalencia derivada (interop), nunca
@@ -693,7 +693,7 @@ propuesta para la primera publicacion de estas correcciones.
 
 ### Cambios rupturistas respecto al corpus v1.2
 - Acumulador solar en microdías enteros exactos (antes: float).
-- Erratas E-01..E-06 aplicadas (docs/errata-v1.2.md): ancla de año 2031,
+- Erratas E-01..E-06 aplicadas (docs/history/errata-v1.2.md): ancla de año 2031,
   patrón Gran Tempalum, posición del Tempalum, corrección del vector
   Yeshuvid, código ejecutable, alfabeto canónico.
 - Aritmética de instantes: escala continua sin segundos intercalares.

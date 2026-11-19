@@ -11,7 +11,7 @@
 > material complementario no normativo en `docs/papers/`).
 > Toda propiedad de v1 que se conserva se reproduce aquí de forma ejecutable
 > y verificada por la suite de tests. Toda divergencia está documentada en
-> `docs/errata-v1.2.md`.
+> `docs/history/errata-v1.2.md`.
 
 ## 1. Qué es
 

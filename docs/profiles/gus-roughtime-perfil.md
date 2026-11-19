@@ -4,7 +4,7 @@
 > **Documento normativo**: [`docs/en/profiles/gus-roughtime-profile.md`](../en/profiles/gus-roughtime-profile.md) — EN prevalece; en divergencia mandar EN.
 > **Código de referencia**: `src/gerarion/profiles_roughtime.py` (Python puro, solo stdlib)
 > **Tests**: `tests/test_profiles_roughtime.py` (sin red, sin servicio externo)
-> **TODO-002**: parsear el wire-format UDP completo y el encadenamiento de shards del protocolo Roughtime queda fuera de este perfil; registrado en `docs/TODO-pendientes.md`.
+> **TODO-002**: parsear el wire-format UDP completo y el encadenamiento de shards del protocolo Roughtime queda fuera de este perfil; registrado en `docs/history/TODO-pendientes.md`.
 
 ## 1. Propósito
 
