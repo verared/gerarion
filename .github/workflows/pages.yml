@@ -36,9 +36,9 @@ jobs:
       - name: Suite Python (kernel + conformancia + fuzzing)
         run: PYTHONPATH=src python3 -m pytest tests/ -q
       - name: Suite JavaScript del kernel
-        run: node --version && cd web && node tests.mjs
+        run: node --version && cd web && node test/tests.mjs
       - name: Conformancia JS contra vectores normativos
-        run: cd web && node conformance.mjs
+        run: cd web && node test/conformance.mjs
       - name: Conformancia C contra vectores normativos
         run: make -C impl-c conformance
       - name: Subir artifact de Pages

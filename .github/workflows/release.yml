@@ -47,7 +47,9 @@ jobs:
           make -C impl-c libgerarion-core.a libgerarion-core.so.3 \
                libgerarion-clock.a libgerarion-calendars.a \
                gerarion-core.pc gerarion-clock.pc gerarion-calendars.pc
-          mkdir -p stage/lib stage/include/gerarion stage/lib/pkgconfig
+          mkdir -p stage/lib stage/lib/pkgconfig \
+            stage/include/gerarion/core stage/include/gerarion/tai \
+            stage/include/gerarion/clock stage/include/gerarion/calendars
           cp impl-c/libgerarion.a impl-c/libgerarion.so.3 stage/lib/
           cp impl-c/gus.h impl-c/gerarion.h stage/include/gerarion/
           cp impl-c/core/gus_core.h stage/include/gerarion/core/
