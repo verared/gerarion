@@ -49,13 +49,13 @@ jobs:
           cp impl-c/gus.h impl-c/china_table.h impl-c/gerarion_calendars.h \
              impl-c/gerarion.h stage/include/gerarion/
           cp impl-c/gerarion.pc stage/lib/pkgconfig/
-          tar czf libgerarion-3.1.0-linux-x86_64.tar.gz -C stage .
+          tar czf "libgerarion-${GITHUB_REF_NAME#v}-linux-x86_64.tar.gz" -C stage .
           rm -rf stage
 
       - name: Generar SHA256SUMS.txt
         run: |
           sha256sum dist/gerarion-*.whl dist/gerarion-*.tar.gz web/gerarion-kernel-*.tgz \
-            libgerarion-3.1.0-linux-x86_64.tar.gz > SHA256SUMS.txt
+            libgerarion-*-linux-x86_64.tar.gz > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Subir artefactos del workflow (workflow_dispatch, sin tag)
@@ -67,7 +67,7 @@ jobs:
             dist/gerarion-*.whl
             dist/gerarion-*.tar.gz
             web/gerarion-kernel-*.tgz
-            libgerarion-3.1.0-linux-x86_64.tar.gz
+            libgerarion-*-linux-x86_64.tar.gz
             SHA256SUMS.txt
           if-no-files-found: error
 
@@ -85,4 +85,4 @@ jobs:
           gh release upload "$GITHUB_REF_NAME" \
             dist/gerarion-*.whl dist/gerarion-*.tar.gz \
             web/gerarion-kernel-*.tgz \
-            libgerarion-3.1.0-linux-x86_64.tar.gz SHA256SUMS.txt
+            libgerarion-*-linux-x86_64.tar.gz SHA256SUMS.txt
