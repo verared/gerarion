@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gerarion_calendars.h"
+#include "calendars/gerarion_calendars.h"
 
 /* ------------------------------------------------------------------ */
 /* Parser JSON mínimo (árbol en memoria; igual enfoque que

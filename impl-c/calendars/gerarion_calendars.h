@@ -22,7 +22,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "gus.h"
+#include "../core/gus_core.h"
 
 #ifdef __cplusplus
 extern "C" {

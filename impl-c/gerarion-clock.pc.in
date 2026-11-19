@@ -1,0 +1,10 @@
+# pkg-config: gerarion-clock — libgerarion-clock - maquina de estados de confianza de reloj (GTS, spec 6.3)
+prefix=@PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: gerarion-clock
+Description: libgerarion-clock - maquina de estados de confianza de reloj (GTS, spec 6.3)
+Version: @VERSION@
+Libs: -L${libdir} -lgerarion-clock
+Cflags: -I${includedir}/gerarion/clock

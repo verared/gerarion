@@ -26,8 +26,8 @@
 #endif
 
 #include "gus.h"
-#include "gerarion_calendars.h"
-#include "china_table.h"
+#include "calendars/gerarion_calendars.h"
+#include "calendars/china_table.h"
 
 #ifdef __cplusplus
 extern "C" {

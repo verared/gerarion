@@ -28,3 +28,9 @@ impl-c/libgerarion.a
 impl-c/libgerarion.so.*
 impl-c/libgerarion.dylib
 impl-c/gerarion.pc
+impl-c/libgerarion-core.*
+impl-c/libgerarion-clock.*
+impl-c/libgerarion-calendars.*
+impl-c/gerarion-core.pc
+impl-c/gerarion-clock.pc
+impl-c/gerarion-calendars.pc

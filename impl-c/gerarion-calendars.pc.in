@@ -1,0 +1,10 @@
+# pkg-config: gerarion-calendars — libgerarion-calendars - motor multi-calendario determinista (10 sistemas sobre day_index/JDN)
+prefix=@PREFIX@
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: gerarion-calendars
+Description: libgerarion-calendars - motor multi-calendario determinista (10 sistemas sobre day_index/JDN)
+Version: @VERSION@
+Libs: -L${libdir} -lgerarion-calendars
+Cflags: -I${includedir}/gerarion/calendars
