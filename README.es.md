@@ -4,23 +4,49 @@
 español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 
 [![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
+![Especificación: GUS v3.0.0](https://img.shields.io/badge/specification-GUS%20v3.0.0-blue)
+![Suite Release: v3.3.0](https://img.shields.io/badge/release-v3.3.0-green)
 
-## Estado de madurez en tres ejes (`v3.2.2`)
+## Estado de madurez en tres ejes (`v3.3.0`)
 
 | Eje | Estado | Alcance y límites |
 |---|---|---|
 | **1. Especificación y aritmética (`GUS v3.0.0` + 10 calendarios)** | **Congelada y verificada** | Aritmética entera determinista (`TCJ = TAI + 8.400 s`, `AY`/`DY` simétrico, GUTI-1 en 10 sistemas calendáricos), verificada bit a bit entre Python, JavaScript y C11 contra `vectors/*.json`. |
-| **2. Implementaciones de referencia (`v3.2.2`)** | **Estables y probadas en CI** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts`, `gt-gst` y `gt-interop` son estables y se verifican continuamente en CI (unitarias, conformancia, ASan/UBSan, fuzzing diferencial, E2E e integración de satélites ensamblados). `gt-tslr` y `gt-gcerts` están en estado **EXPERIMENTAL** (especificación + andamiaje, sin implementación de referencia aún). Ver [COMPATIBILITY.md](COMPATIBILITY.md). |
+| **2. Implementaciones de referencia (`v3.3.0`)** | **Estables y probadas en CI** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts`, `gt-gst` y `gt-interop` son estables y se verifican continuamente en CI (unitarias, conformancia, ASan/UBSan, fuzzing diferencial, E2E e integración de satélites ensamblados). `gt-tslr` y `gt-gcerts` están en estado **EXPERIMENTAL** (especificación + andamiaje, sin implementación de referencia aún). Ver [COMPATIBILITY.md](COMPATIBILITY.md). |
 | **3. Aseguramiento criptográfico de producción** | **Requiere auditoría externa** | `gt-gst` (`GST v2`) y el notario Merkle diario requieren una **auditoría criptográfica independiente de terceros** y **custodia de claves en hardware (TPM/HSM)** antes de decisiones críticas de producción. Ver [SECURITY.md](SECURITY.md) y [docs/spec/threat-model.md](docs/spec/threat-model.md). |
 
 ### Gerarion Time — Estado del Proyecto y Visión
 
-En **`v3.2.2`**, el núcleo congelado `GUS v3.0.0` (`TCJ = TAI + 8.400 s`), el motor GUTI-1 de 10 calendarios, la referencia `GST v2` (Ed25519 + ML-DSA sobre RFC 8785 JCS) y los **9 repositorios satélite** (`verared/gt-*`) están publicados y verificados en CI. *Gerarion Time* complementa —sin reemplazar— a UTC, NTP, PTP y los relojes del SO.
+En **`v3.3.0`**, el núcleo congelado `GUS v3.0.0` (`TCJ = TAI + 8.400 s`), el motor GUTI-1 de 10 calendarios, la referencia endurecida `GST v2` (`gerarion.gst.v2`: híbrido Ed25519 + ML-DSA sobre RFC 8785 JCS, `KeyRegistry`, `SQLiteReplayStore` concurrente) y los **9 repositorios satélite** (`verared/gt-*`) están publicados y verificados en CI. *Gerarion Time* complementa —sin reemplazar— a UTC, NTP, PTP y los relojes del SO.
 
-- **Foco próximo:** adopción real de `gt-core`, `gt-gst` y `gt-gts`, matriz CI en 32 bits y guías de despliegue embebido.
+- **Foco próximo:** adopción real de `gt-core`, `gt-gst` y `gt-gts` (ver la [Guía de Integración CMS / API](docs/guides/CMS-INTEGRATION.es.md)), matriz CI en 32 bits y guías de despliegue embebido.
 - **Mediano plazo:** prototipos funcionales + vectores para los perfiles experimentales `gt-tslr` y `gt-gcerts`, adaptadores Linux en espacio de usuario (`CLOCK_TAI`) y custodia en hardware (`TPM`/`HSM`).
 - **Largo plazo:** auditorías criptográficas independientes de terceros, implementaciones de terceros y revisión formal de estándares (sin fechas fijas ni promesas de entrega).
-- **Explorar:** [ROADMAP.es.md](ROADMAP.es.md) · [ROADMAP.md](ROADMAP.md) · [COMPATIBILITY.md](COMPATIBILITY.md) · [`docs/specs/`](docs/specs/GUS.es.md)
+- **Explorar:** [ROADMAP.es.md](ROADMAP.es.md) · [ROADMAP.md](ROADMAP.md) · [COMPATIBILITY.md](COMPATIBILITY.md) · [`docs/specs/`](docs/specs/GUS.es.md) · [Guía CMS / API](docs/guides/CMS-INTEGRATION.es.md)
+
+### Los 9 Repositorios Satélite (`verared/gt-*` @ `v3.3.0`)
+
+| Satélite | Dominio y Spec | Estado (`v3.3.0`) | Dependencias |
+|---|---|---|---|
+| `verared/gt-core` | [`TCJ.es.md`](docs/specs/TCJ.es.md), [`GUS.es.md`](docs/specs/GUS.es.md) | **Estable** (C11 sin malloc, Python, JS) | *(ninguna — 100 % autónomo)* |
+| `verared/gt-gus` | [`GUS.es.md`](docs/specs/GUS.es.md) | **Estable** (sintaxis 29/32 chars, `quick_verify`) | *(ninguna — 100 % autónomo)* |
+| `verared/gt-tcj` | [`TCJ.es.md`](docs/specs/TCJ.es.md) | **Estable** (`TCJ = TAI + 8.400 s`, `IERS-C-2026.1`) | `gt-core` |
+| `verared/gt-calendar` | [`CALENDAR.es.md`](docs/specs/CALENDAR.es.md) | **Estable** (`AY`/`DY` + 10 calendarios GUTI-1) | `gt-core` |
+| `verared/gt-gts` | [`GTS.es.md`](docs/specs/GTS.es.md) | **Estable (núcleo)** / Experimental (Roughtime) | `gt-core` |
+| `verared/gt-gst` | [`GST.es.md`](docs/specs/GST.es.md) | **Referencia estable (`GST v2`)** *(auditoría externa pendiente)* | `gt-core` |
+| `verared/gt-interop` | [`INTEROP.es.md`](docs/specs/INTEROP.es.md) | **Estable (`RFC 3339` / `ISO 8601` / `Unix`)** / Experimental (`RFC 3161`) | `gt-core`, `gt-tcj` |
+| `verared/gt-tslr` | [`TSLR.es.md`](docs/specs/TSLR.es.md) | **EXPERIMENTAL** (solo spec + andamiaje) | `gt-core` |
+| `verared/gt-gcerts` | [`GCERTS.es.md`](docs/specs/GCERTS.es.md) | **EXPERIMENTAL** (solo spec + andamiaje) | `gt-core`, `gt-gst` |
+
+### Las 5 Garantías de Distribución
+
+| # | Garantía | Mecanismo verificable |
+|---|---|---|
+| 1 | **Integridad SHA-256** | Cada archivo exportado coincide con `EXPORT-MANIFEST.json` (`--verify-existing`). |
+| 2 | **Procedencia declarada** | Campos `source_repo`, `source_tag` (`v3.3.0`) y `source_commit` de 40 caracteres en `EXPORT-MANIFEST.json`. |
+| 3 | **Autenticidad de publicación** | Firma Ed25519 separada `EXPORT-MANIFEST.json.sig` verificable con `--trusted-pub-key` (sin autorreferencia). |
+| 4 | **Reproducibilidad** | Re-exportación determinista bit a bit desde el mismo `--source-commit`. |
+| 5 | **Conformidad funcional** | Vectores normativos CC0 e integración cruzada de satélites ensamblados en C11, Python y JavaScript. |
 
 **Tiempo regular, universal y verificable.**
 
@@ -54,9 +80,47 @@ Una especificación abierta y proyecto de estándar de tiempo que integra tres c
 
 | Aspecto | Declaración normativa |
 |---|---|
-| **Algoritmo normativo (`GST v2`)** | Firma híbrida **Ed25519 + ML-DSA** sobre payload canonicalizado con **RFC 8785 (JCS)** (enteros estrictamente dentro de IEEE-754 `binary64` `±(2^53 - 1)`), separación de dominio `GUS3-GST-V2`, descriptor de algoritmos y claves incluido dentro de los bytes firmados (protección **anti-downgrade**), contador monotónico `seq` + `nonce` con `ReplayGuard` *fail-closed* y notario Merkle diario opcional. |
+| **Algoritmo normativo (`GST v2`)** | Firma híbrida **Ed25519 + ML-DSA** sobre payload canonicalizado con **RFC 8785 (JCS)** (enteros estrictamente dentro de IEEE-754 `binary64` `±(2^53 - 1)`), separación de dominio `GUS3-GST-V2`, descriptor de algoritmos y claves incluido dentro de los bytes firmados (protección **anti-downgrade**), `KeyRegistry` vinculando `(issuer, kid)` con claves públicas autorizadas y ventanas de rotación/revocación, contador monotónico `seq` + `nonce` con `SQLiteReplayStore` / `ReplayGuard` transaccional *fail-closed* y notario Merkle diario opcional. |
 | **Algoritmo deprecado / educativo** | `WOTS+` / `WotsMerkleSigner`, aislado en `src/gerarion/deprecated/hashots.py` con `DeprecationWarning` explícito; **fuera** del perfil normativo `GST v2` y no apto para producción. |
-| **Cobertura de pruebas y límite de auditoría** | **Cubierto por vectores normativos y pruebas automatizadas:** núcleo aritmético, RFC 8785 JCS (incluyendo entradas hostiles y rechazo de enteros `> 2^53 - 1`), verificación dual híbrida, rechazo anti-downgrade, `ReplayGuard` *fail-closed*, anclas anti-rollback sub-segundo e integración de satélites ensamblados. **Pendiente:** auditoría criptográfica externa independiente de `gt-gst` / notario y custodia de claves en hardware (TPM/HSM) para despliegues de producción. |
+| **Cobertura de pruebas y límite de auditoría** | **Cubierto por vectores normativos y pruebas automatizadas:** núcleo aritmético, RFC 8785 JCS (incluyendo entradas hostiles y rechazo de enteros `> 2^53 - 1`), verificación dual híbrida, rechazo anti-downgrade, `KeyRegistry` (rotación, revocación y rechazo de claves suplantadas), `SQLiteReplayStore` concurrente multi-hilo, `VerificationResult` en 3 niveles, anclas anti-rollback sub-segundo e integración de satélites ensamblados. **Pendiente:** auditoría criptográfica externa independiente de `gt-gst` / notario y custodia de claves en hardware (TPM/HSM) para despliegues de producción. |
+
+## Integra `gt-core` + `gt-gst` en 1 minuto (Guía rápida CMS / API)
+
+Guía completa de arquitectura e integración y checklist externo `GEIACT-1`:
+**[docs/guides/CMS-INTEGRATION.es.md](docs/guides/CMS-INTEGRATION.es.md)** (EN:
+[docs/guides/CMS-INTEGRATION.en.md](docs/guides/CMS-INTEGRATION.en.md)).
+
+```python
+import hashlib
+from gerarion.core import format as fmt
+from gerarion.gst import HybridSigner, v2
+
+# 1. Inicializar firmante híbrido (Ed25519 + ML-DSA-65), registro de claves y ReplayStore SQLite
+signer = HybridSigner(seed_classical=bytes(range(32)), seed_pqc=bytes(range(32, 64)))
+registry = v2.KeyRegistry()
+registry.register_signer(issuer="cms.example.org", kid="cms-2026-k1", signer=signer)
+replay_store = v2.SQLiteReplayStore(":memory:")  # En producción: "/var/lib/cms/gst_replay.sqlite3"
+
+# 2. Sellar un evento de negocio sobre coordenada canónica GUS
+event_bytes = b'{"action":"post.publish","object_id":"art-42","version":1}'
+event_hash = "sha256:" + hashlib.sha256(event_bytes).hexdigest()
+envelope = v2.create(
+    fmt.parse("2031DY-03-08-T-09:30:00-SC-TCJ+0"),
+    signer,
+    event_hash=event_hash,
+    issuer="cms.example.org",
+    kid="cms-2026-k1",
+    seq=1,
+)
+
+# 3. Verificar en 3 niveles independientes (Criptografía, Identidad/Replay, Aseguramiento Temporal)
+res = v2.verify(envelope, trust_store=registry, replay_store=replay_store)
+assert res.crypto.valid is True
+assert res.identity.valid is True and res.identity.key_status == "ACTIVE"
+assert res.identity.replay_status == "OK"
+assert res.temporal.clock_state == "UNKNOWN"  # O "VERIFIED" al pasar una lectura de gt-gts
+assert res.overall_trusted is True
+```
 
 Las garantías exactas —y lo que GUS **no** garantiza— están declaradas en
 ["Qué NO garantiza GUS"](#qué-no-garantiza-gus) y en el
@@ -125,8 +189,8 @@ externos. Tres capas, cero dependencias obligatorias:
 ```bash
 # Python (kernel, stdlib >= 3.9) — instalable directo del repo con pip:
 pip install "git+https://github.com/verared/gerarion.git"
-pip install "gerarion[slh] @ git+https://github.com/verared/gerarion.git"
-#   la segunda añade SLH-DSA (slh-dsa 0.2.5) para firmas de producción.
+pip install "gerarion[gst] @ git+https://github.com/verared/gerarion.git"
+#   la segunda añade cryptography (>= 47) para firmas híbridas Ed25519 + ML-DSA (GST v2).
 #   Alternativa: descarga el .whl o .tar.gz de la última GitHub Release e
 #   instala con: pip install <fichero.descargado>
 ```
@@ -151,10 +215,10 @@ Cada GitHub Release adjunta los artefactos (`.whl`, `.tar.gz`, `.tgz`,
 binarios C) más `SHA256SUMS.txt` para verificación de integridad
 (`sha256sum -c SHA256SUMS.txt`); los genera el workflow
 `.github/workflows/release.yml` en cada tag `v*` (ver
-[Publicación](#publicación)). El extra `[slh]` es opcional: es la única
-dependencia de todo el proyecto.
+[Publicación](#publicación)). El extra `[gst]` (`cryptography>=47`) es
+opcional y solo se requiere para emisión/verificación híbrida `GST v2`.
 
-## Distribución modular (v3.2.2)
+## Distribución modular (v3.3.0)
 
 La suite de referencia está organizada en **8 dominios normativos
 autocontenidos** (`TCJ`, `GUS`, `CALENDAR`, `GTS`, `GST`, `TSLR`\*,
@@ -427,8 +491,7 @@ Declarado con la misma fuerza que las garantías:
 
 | Capa | Mecanismo | Propiedades y límites de seguridad (declarados honestamente) |
 |---|---|---|
-| Marca (`GST v2`, normativo) | Firma híbrida **Ed25519 + ML-DSA** sobre **RFC 8785 (JCS)** (`GUS3-GST-V2`) | Firma dual con descriptores de algoritmo y claves dentro de los bytes firmados (**anti-downgrade**); `seq` monotónico + `nonce` con `ReplayGuard` *fail-closed*. Requiere auditoría independiente de terceros y custodia TPM/HSM para producción. |
-| Marca (adaptador opcional) | SLH-DSA (FIPS 205, sin estado) | Adaptador opcional (`gerarion.gst.adapters.SlhDsaSigner`); el paquete externo `slh-dsa` no está validado FIPS aquí. |
+| Marca (`GST v2`, normativo) | Firma híbrida **Ed25519 + ML-DSA** sobre **RFC 8785 (JCS)** (`GUS3-GST-V2`) | Firma dual con descriptores de algoritmo y claves dentro de los bytes firmados (**anti-downgrade**); `KeyRegistry` vinculando `(issuer, kid)` con claves públicas autorizadas; `seq` monotónico + `nonce` con `SQLiteReplayStore` transaccional *fail-closed*. Requiere auditoría independiente de terceros y custodia TPM/HSM para producción. |
 | `WOTS+` legado (deprecado) | `WotsMerkleSigner` (`src/gerarion/deprecated/hashots.py`) | **Deprecado / solo educativo** (hojas de un solo uso con estado; emite `DeprecationWarning`); fuera de `GST v2`. |
 | Notario (opcional) | Raíz diaria encadenada `root(n) = H(n, tree(n), root(n-1))` | Recomputar toda la cadena posterior **conservando consistencia entre réplicas publicadas** (quórum de firmantes distintos). |
 | Objetividad | Réplicas independientes publicadas (supuesto operativo declarado — ver §3 de "Qué NO garantiza") | Reescribir todas **sin dejar divergencia detectable** |
@@ -633,17 +696,16 @@ y este kernel están registradas en [`docs/history/errata-v1.2.md`](docs/history
 - [ ] Auditoría criptográfica externa independiente de `gt-gst` y notario
 - [ ] Verificador de testigos contra la red Roughtime real (TODO-002)
 
-Consulta el [Estado de madurez en tres ejes](#estado-de-madurez-en-tres-ejes-v322)
-y [COMPATIBILITY.md](COMPATIBILITY.md) para la matriz exacta de versiones
-y madurez.
+Consulta el [Estado de madurez en tres ejes](#estado-de-madurez-en-tres-ejes-v330),
+[ROADMAP.es.md](ROADMAP.es.md) y [COMPATIBILITY.md](COMPATIBILITY.md) para la
+matriz exacta de versiones y madurez.
 
 ## Licencia
 
 Código: `MIT OR Apache-2.0`. Documentos: `CC-BY-4.0`. Vectores: `CC0-1.0`.
-La dependencia opcional [`slh-dsa`](https://pypi.org/project/slh-dsa/)
-(LGPL-3.0-or-later) **no** se incluye ni se vendoriza: se instala aparte y
-este repositorio no redistribuye ninguno de sus fragmentos. Ver
-[NOTICE](NOTICE), [REUSE.toml](REUSE.toml) y [sbom.cdx.json](sbom.cdx.json).
+Las dependencias opcionales de terceros se instalan por separado y nunca se
+incluyen ni se vendorizan en este repositorio. Ver [NOTICE](NOTICE),
+[REUSE.toml](REUSE.toml) y [sbom.cdx.json](sbom.cdx.json).
 
 ## Versiones
 
@@ -651,4 +713,4 @@ este repositorio no redistribuye ninguno de sus fragmentos. Ver
 |---|---|---|
 | Especificación normativa (`docs/spec/gus-3.0.0.md`) | **3.0.0** | La especificación en sí; aritmética y vectores congelados (`vectors/gus-normative-003.json`) |
 | Draft IETF (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | El documento de envío (individual submission) que describe la spec |
-| Suite de referencia y satélites (`pyproject.toml`, `web/package.json`, `impl-c/gerarion.h`, `verared/gt-*`) | **3.2.2** | Artefactos de software sincronizados y exportaciones satélite (ver [COMPATIBILITY.md](COMPATIBILITY.md)) |
+| Suite de referencia y satélites (`pyproject.toml`, `web/package.json`, `impl-c/gerarion.h`, `verared/gt-*`) | **3.3.0** | Artefactos de software sincronizados y exportaciones satélite (ver [COMPATIBILITY.md](COMPATIBILITY.md)) |

@@ -1,5 +1,37 @@
 # Changelog — GUS
 
+## 3.3.0 — Endurecimiento GST v2 (KeyRegistry, SQLiteReplayStore, VerificationResult en 3 niveles) y firma separada de manifiestos (2026-11-19)
+
+Cierre de los cuatro hallazgos de auditoría (`A`–`D`) sobre `gt-gst` y el
+exportador modular (sin cambios en aritmética congelada `GUS v3.0.0`, motores
+C11/JS ni vectores `vectors/*.json`):
+
+- **`src/gerarion/gst/trust.py` (`KeyRegistry`, `TrustedKeyRecord`)**:
+  registro determinista de claves públicas autorizadas por `(issuer, kid)` con
+  comparación en tiempo constante (`hmac.compare_digest`), rechazo de sobres
+  autofirmados/suplantados (`KEY_MISMATCH` / `UNKNOWN_KEY`), rotación con
+  preservación de eventos históricos (`HISTORICAL` / `HISTORICAL_VALID`),
+  expiración (`KEY_EXPIRED`) y revocación (`KEY_REVOKED`).
+- **`src/gerarion/gst/replay.py` (`ReplayStore`, `SQLiteReplayStore`, `ReplayGuard`)**:
+  almacén anti-replay y anti-rollback transaccional concurrente sobre SQLite
+  (`WAL`, `synchronous=FULL`, `busy_timeout=5000`, `BEGIN IMMEDIATE`) para
+  despliegues multi-hilo y multi-worker sin carreras TOCTOU y modo
+  *fail-closed* ante corrupción.
+- **`src/gerarion/gst/v2.py` (`create`, `verify`, `VerificationResult`)**:
+  entrada pública principal de `GST v2` con resultado estructurado en 3
+  niveles independientes (`crypto`, `identity`, `temporal`), política
+  *fail-closed* para `trust_store=None` / `replay_store=None`, estado de
+  reloj `"UNKNOWN"` por defecto cuando no se pasa una lectura de `gt-gts`, y
+  `DeprecationWarning` explícito en la API legada `GST v1`.
+- **`tools/export_module.py`**: versión leída 100 % dinámicamente desde
+  `pyproject.toml` en todas las plantillas; tabla oficial de las 5 garantías
+  de distribución; soporte de firma Ed25519 separada `EXPORT-MANIFEST.json.sig`
+  (`--sign-key` / `--trusted-pub-key`, sin autorreferencia) y resumen
+  explícito de garantías en `--verify-existing`.
+- **Guías y pruebas**: `docs/guides/CMS-INTEGRATION.{en,es}.md` (esquema
+  `gerarion-cms-event/1` + checklist `GEIACT-1`), Quickstart ejecutable de 1
+  minuto en `README.md`/`README.es.md` y `tests/test_gst_v2_security.py`.
+
 ## 3.2.2 — Consolidación del ecosistema Gerarion Time (2026-11-19)
 
 Consolidación documental, contrato de versiones verificable, integración

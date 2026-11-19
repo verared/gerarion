@@ -32,7 +32,7 @@ jobs:
 
       - name: Construir sdist y wheel de Python
         run: |
-          python -m pip install build
+          python -m pip install build reuse
           python -m build
 
       - name: Empaquetar kernel JS (npm pack, sin dependencias)
@@ -67,8 +67,9 @@ jobs:
           tar czf "libgerarion-core-${GITHUB_REF_NAME#v}-linux-x86_64.tar.gz" -C stage-core .
           rm -rf stage stage-core
 
-      - name: Generar SHA256SUMS.txt
+      - name: Generar SHA256SUMS.txt y manifiestos satélite verificados
         run: |
+          python3 tools/export_module.py --all --out /tmp/release-satellites --verify
           sha256sum dist/gerarion-*.whl dist/gerarion-*.tar.gz web/gerarion-kernel-*.tgz \
             libgerarion-*-linux-x86_64.tar.gz libgerarion-core-*-linux-x86_64.tar.gz > SHA256SUMS.txt
           cat SHA256SUMS.txt
@@ -95,10 +96,11 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --title "Gerarion $GITHUB_REF_NAME" \
             --verify-tag \
-            --notes "Artefactos sellados del tag \`$GITHUB_REF_NAME\` (GUS v2.0).
-            Ver CHANGELOG.md para las notas de versión.
-            Verificación de integridad: \`sha256sum -c SHA256SUMS.txt\` (desde una carpeta con dist/ y el tarball JS, o recorta las rutas del fichero)."
+            --notes "Artefactos sellados del tag \`$GITHUB_REF_NAME\` (GUS v3.0.0 / suite $GITHUB_REF_NAME).
+            Ver CHANGELOG.md y COMPATIBILITY.md para las notas de versión y las 5 garantías de distribución.
+            Verificación de integridad: \`sha256sum -c SHA256SUMS.txt\` y \`python3 tools/export_module.py --verify-existing <satelite>\`."
           gh release upload "$GITHUB_REF_NAME" \
             dist/gerarion-*.whl dist/gerarion-*.tar.gz \
             web/gerarion-kernel-*.tgz \
-            libgerarion-*-linux-x86_64.tar.gz SHA256SUMS.txt
+            libgerarion-*-linux-x86_64.tar.gz \
+            libgerarion-core-*-linux-x86_64.tar.gz SHA256SUMS.txt
