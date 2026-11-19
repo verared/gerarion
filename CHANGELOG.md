@@ -1,5 +1,26 @@
 # Changelog — GUS
 
+## 3.2.1 — Exportador modular a repositorios satélite gt-* (2026-11-19)
+
+Herramienta de empaquetado (sin cambios en aritmética, motores, vectores
+ni web publicada; PR #22):
+
+- `tools/export_module.py` (stdlib pura): exporta los 9 dominios
+  normativos (`gt-core`, `gt-tcj`, `gt-gus`, `gt-calendar`, `gt-gts`,
+  `gt-gst`, `gt-interop`, `gt-tslr` y `gt-gcerts`) como paquetes
+  autónomos con la jerarquía relativa intacta; genera `LICENSE`,
+  `LICENSES/` (solo textos usados), `NOTICE`, `REUSE.toml` con
+  cobertura 100 % y README bilingüe con contrato de sincronización.
+- `--verify`: `reuse lint` al 100 % en cada export y compilación
+  standalone de `libgerarion-core` (`-std=gnu11 -Wall -Wextra -Werror`
+  + humo; la excepción pedantic — el guardia congelado usa `__int128`,
+  extensión GNU — está documentada).
+- `tests/test_export_module.py`: 19 pruebas (lint del export,
+  compilación autónoma, dependencias declaradas, determinismo,
+  solo lectura del origen, `--no-large-vectors`).
+- `docs/architecture/SATELLITE-REPOS.{es,en}.md`: modelo de satélites
+  y flujos exportar/publicar/consumir/actualizar.
+
 ## 3.2.0 — Reorganización modular en 8 dominios (2026-11-19)
 
 Desacoplamiento estructural de la suite de referencia. **Ningún cambio

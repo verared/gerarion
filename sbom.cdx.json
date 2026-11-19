@@ -4,10 +4,10 @@
   "version": 1,
   "metadata": {
     "component": {
-      "bom-ref": "pkg:github/verared/gerarion@v3.2.0",
+      "bom-ref": "pkg:github/verared/gerarion@v3.2.1",
       "type": "library",
       "name": "gerarion",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "description": "Gerarion Universal Standard (GUS 3.0.1): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables; funciones de seguridad en revisión",
       "licenses": [
         {
@@ -17,7 +17,7 @@
           "expression": "CC-BY-4.0"
         }
       ],
-      "purl": "pkg:github/verared/gerarion@v3.2.0"
+      "purl": "pkg:github/verared/gerarion@v3.2.1"
     },
     "properties": [
       {
@@ -41,11 +41,11 @@
   },
   "components": [
     {
-      "bom-ref": "pkg:pypi/gerarion@3.2.0",
+      "bom-ref": "pkg:pypi/gerarion@3.2.1",
       "type": "library",
       "name": "gerarion",
-      "version": "3.2.0",
-      "purl": "pkg:github/verared/gerarion@v3.2.0",
+      "version": "3.2.1",
+      "purl": "pkg:github/verared/gerarion@v3.2.1",
       "description": "Kernel Python: GTS, GST, notario diario Merkle, adaptadores criptograficos",
       "licenses": [
         {
@@ -57,11 +57,11 @@
       ]
     },
     {
-      "bom-ref": "pkg:npm/gerarion-kernel@3.2.0",
+      "bom-ref": "pkg:npm/gerarion-kernel@3.2.1",
       "type": "library",
       "name": "gerarion-kernel",
-      "version": "3.2.0",
-      "purl": "pkg:npm/gerarion-kernel@3.2.0",
+      "version": "3.2.1",
+      "purl": "pkg:npm/gerarion-kernel@3.2.1",
       "description": "Kernel JavaScript ESM (web/gerarion.mjs): cero dependencias, mismo vector set",
       "licenses": [
         {
@@ -71,10 +71,10 @@
       "note": "distribuido como tarball en GitHub Releases (sin registro npm)"
     },
     {
-      "bom-ref": "pkg:generic/gerarion-c@3.2.0",
+      "bom-ref": "pkg:generic/gerarion-c@3.2.1",
       "type": "library",
       "name": "gerarion-c",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "description": "Segunda implementacion independiente en C (impl-c/): cero dependencias, cero red",
       "licenses": [
         {
@@ -84,23 +84,23 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:generic/libgerarion-core@3.2.0",
+      "bom-ref": "pkg:generic/libgerarion-core@3.2.1",
       "name": "libgerarion-core",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "description": "Nucleo C11 TCJ+GUS para microcontroladores (sin malloc, sin reloj de SO, sin TAI)"
     },
     {
       "type": "library",
-      "bom-ref": "pkg:generic/libgerarion-clock@3.2.0",
+      "bom-ref": "pkg:generic/libgerarion-clock@3.2.1",
       "name": "libgerarion-clock",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "description": "Maquina de estados de reloj GTS (spec 6.3), C11"
     },
     {
       "type": "library",
-      "bom-ref": "pkg:generic/libgerarion-calendars@3.2.0",
+      "bom-ref": "pkg:generic/libgerarion-calendars@3.2.1",
       "name": "libgerarion-calendars",
-      "version": "3.2.0",
+      "version": "3.2.1",
       "description": "Motor multi-calendario determinista (10 sistemas), C11"
     },
     {
@@ -196,18 +196,18 @@
   ],
   "dependencies": [
     {
-      "ref": "pkg:pypi/gerarion@3.2.0",
+      "ref": "pkg:pypi/gerarion@3.2.1",
       "dependsOn": [
         "pkg:pypi/slh-dsa@0.2.5",
         "pkg:pypi/cryptography@>=47"
       ]
     },
     {
-      "ref": "pkg:npm/gerarion-kernel@3.2.0",
+      "ref": "pkg:npm/gerarion-kernel@3.2.1",
       "dependsOn": []
     },
     {
-      "ref": "pkg:generic/gerarion-c@3.2.0",
+      "ref": "pkg:generic/gerarion-c@3.2.1",
       "dependsOn": []
     }
   ],
