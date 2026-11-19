@@ -5,19 +5,13 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 
 [![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
 
-> ⚠ **ESTADO: BETA TEMPRANA — NO APTO PARA SEGURIDAD DE PRODUCCIÓN.**
-> El esquema hash-only de referencia, la raíz de confianza y el notario
-> son **implementaciones de referencia solo para evaluación**: no sirven
-> para decisiones de seguridad reales y no tienen auditoría criptográfica.
-> Vía recomendada para producción: biblioteca SLH-DSA (FIPS 205) auditada
-> y/o TSA externa (RFC 3161). Ver [SECURITY.md](SECURITY.md) y
-> [docs/threat-model.md](docs/spec/threat-model.md).
+## Estado de madurez en tres ejes (`v3.2.2`)
 
-> **Spec GUS v3.0.0 (ESTADO: ALPHA):** el Gran Tempalum es simétrico e
-> infinito en ambas eras (DY/AY) y la base temporal es **TAI + tabla
-> IERS con TCJ = TAI + 8,400 s** (`docs/history/TODO-pendientes.md` TODO-001 y
-> TODO-004 cerrados; D-001 CERRADA/ADOPTADA en 3.0.0 — ver
-> [Escala de tiempo](#escala-de-tiempo)).
+| Eje | Estado | Alcance y límites |
+|---|---|---|
+| **1. Especificación y aritmética (`GUS v3.0.0` + 10 calendarios)** | **Congelada y verificada** | Aritmética entera determinista (`TCJ = TAI + 8.400 s`, `AY`/`DY` simétrico, GUTI-1 en 10 sistemas calendáricos), verificada bit a bit entre Python, JavaScript y C11 contra `vectors/*.json`. |
+| **2. Implementaciones de referencia (`v3.2.2`)** | **Estables y probadas en CI** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts`, `gt-gst` y `gt-interop` son estables y se verifican continuamente en CI (unitarias, conformancia, ASan/UBSan, fuzzing diferencial, E2E e integración de satélites ensamblados). `gt-tslr` y `gt-gcerts` están en estado **EXPERIMENTAL** (especificación + andamiaje, sin implementación de referencia aún). Ver [COMPATIBILITY.md](COMPATIBILITY.md). |
+| **3. Aseguramiento criptográfico de producción** | **Requiere auditoría externa** | `gt-gst` (`GST v2`) y el notario Merkle diario requieren una **auditoría criptográfica independiente de terceros** y **custodia de claves en hardware (TPM/HSM)** antes de decisiones críticas de producción. Ver [SECURITY.md](SECURITY.md) y [docs/spec/threat-model.md](docs/spec/threat-model.md). |
 
 **Tiempo regular, universal y verificable.**
 
@@ -34,23 +28,26 @@ sin cookies, sin cuentas; funciona sin conexión una vez cargada.
 Para opciones de instalación (Python, JS, C11) por GitHub Releases, mira la
 sección de distribución del README en inglés `README.md`.
 
-Una especificación abierta y proyecto de estándar de tiempo que integra tres capas bajo una misma especificación verificable
-máquina-verificable:
+Una especificación abierta y proyecto de estándar de tiempo que integra tres capas bajo una misma especificación verificable por máquina:
 
 1. **Calendario regular:** 12 meses de 30 días exactos + Tempalum de cierre
    (4/11 días). Toda fecha fija cae siempre en el mismo día de la semana.
-2. **Escala continua:** instantes lineales sobre etiquetas de día con
-   medianoche UTC, sin aplicar tabla de segundos intercalares (ver
-   [Escala de tiempo](#escala-de-tiempo)). Comparaciones, rangos y
-   totales triviales en cualquier lenguaje.
-3. **Marca temporal verificable (GST):** firma post-cuántica + notario
-   Merkle diario encadenado. El nivel de seguridad efectivo es ~2^128
-   frente a un atacante cuántico (Grover); el coste crudo de preimagen de
-   SHA-256 es 2^256, y el nivel de WOTS+Merkle depende además de los
-   parámetros (altura del árbol, Winternitz — ver
-   [números](#por-qué-las-marcas-son-caras-de-alterar)). Reescribir el
-   pasado **anclado** exige recomputar toda la cadena del notario sin
-   dejar divergencia detectable entre réplicas.
+2. **Escala continua:** instantes lineales sobre base TAI con la tabla
+   histórica IERS TAI−UTC, coordinados mediante TCJ = TAI + 8.400 s
+   (Jerusalén; ver [Escala de tiempo](#escala-de-tiempo)). Comparaciones,
+   rangos y totales triviales en cualquier lenguaje.
+3. **Marca temporal verificable (`GST v2`):** firma híbrida **Ed25519 +
+   ML-DSA** sobre payload canonicalizado con **RFC 8785 (JCS)**, protección
+   anti-downgrade, `ReplayGuard` *fail-closed* y notario Merkle diario
+   opcional.
+
+### Perfil criptográfico normativo (`GST v2`)
+
+| Aspecto | Declaración normativa |
+|---|---|
+| **Algoritmo normativo (`GST v2`)** | Firma híbrida **Ed25519 + ML-DSA** sobre payload canonicalizado con **RFC 8785 (JCS)** (enteros estrictamente dentro de IEEE-754 `binary64` `±(2^53 - 1)`), separación de dominio `GUS3-GST-V2`, descriptor de algoritmos y claves incluido dentro de los bytes firmados (protección **anti-downgrade**), contador monotónico `seq` + `nonce` con `ReplayGuard` *fail-closed* y notario Merkle diario opcional. |
+| **Algoritmo deprecado / educativo** | `WOTS+` / `WotsMerkleSigner`, aislado en `src/gerarion/deprecated/hashots.py` con `DeprecationWarning` explícito; **fuera** del perfil normativo `GST v2` y no apto para producción. |
+| **Cobertura de pruebas y límite de auditoría** | **Cubierto por vectores normativos y pruebas automatizadas:** núcleo aritmético, RFC 8785 JCS (incluyendo entradas hostiles y rechazo de enteros `> 2^53 - 1`), verificación dual híbrida, rechazo anti-downgrade, `ReplayGuard` *fail-closed*, anclas anti-rollback sub-segundo e integración de satélites ensamblados. **Pendiente:** auditoría criptográfica externa independiente de `gt-gst` / notario y custodia de claves en hardware (TPM/HSM) para despliegues de producción. |
 
 Las garantías exactas —y lo que GUS **no** garantiza— están declaradas en
 ["Qué NO garantiza GUS"](#qué-no-garantiza-gus) y en el
@@ -148,13 +145,15 @@ binarios C) más `SHA256SUMS.txt` para verificación de integridad
 [Publicación](#publicación)). El extra `[slh]` es opcional: es la única
 dependencia de todo el proyecto.
 
-## Distribución modular (v3.2.0)
+## Distribución modular (v3.2.2)
 
 La suite de referencia está organizada en **8 dominios normativos
 autocontenidos** (`TCJ`, `GUS`, `CALENDAR`, `GTS`, `GST`, `TSLR`\*,
 `GCERTS`\*, `INTEROP`; \* experimentales), cada uno documentado en
-`docs/specs/<DOMINIO>.es.md` (y `.en.md`). Un producto derivado puede
-adoptar un solo dominio sin el resto:
+`docs/specs/<DOMINIO>.es.md` (y `.en.md`) y exportado como repositorio
+satélite `verared/gt-*` independiente (ver [COMPATIBILITY.md](COMPATIBILITY.md)
+y `compatibility.json`). Un producto derivado puede adoptar un solo
+dominio sin el resto:
 
 - `impl-c/core/` — `libgerarion-core`: núcleo C11 para
   microcontroladores (TCJ+GUS: sin reloj de SO ni tabla TAI);
@@ -370,18 +369,17 @@ diseño, no como parche:
 
 Declarado con la misma fuerza que las garantías:
 
-## Qué está listo y qué no (BETA)
+## Qué está listo y qué no
 
-| Capa | Estado | Una frase honesta |
+| Capa / Satélite | Estado | Resumen |
 |---|---|---|
-| Kernel calendárico (12×30+Tempalum, GT simétrico) | **estable** | Aritmética entera determinista, verificada por 22 vectores normativos × 3 implementaciones + fuzz diferencial de 1500 casos. |
-| Conversión multicalendario web | **estable** | 100 % cliente, 0 peticiones de red, ida y vuelta densa 1900–2100 hebreo/chino con 0 fallos (UTC fijado; límites históricos documentados por tarjeta). |
-| GUS-3339 (subconjunto RFC 3339) | **estable (estrecho)** | Parser estricto con vector negativo compartido; no es un parser RFC 3339 general, a propósito. |
-| GUS-3161 (TSA) | **beta** | Adaptador de referencia probado en local con TSA sintética; depende de la confianza del operador en su TSA. |
-| GUS-Roughtime | **beta** | Verificación de recibos con nonce ligado; Ed25519 es clásico (no poscuántico); no es el protocolo de red Roughtime completo. |
-| Firma hash-only de referencia (WOTS16-MERKLE-REF) | **no usar en producción** | Problemas de reuso histórico corregidos deshabilitándola por defecto (`GUS_ALLOW_INSECURE_REF`); solo uso educativo. |
-| Adaptador SLH-DSA (FIPS 205, dependencia opcional) | **beta** | Funciona con slh-dsa 0.2.5; la biblioteca no está auditada ni validada FIPS aquí. |
-| Notario (Merkle diario + quórum + raíz de confianza) | **no usar en producción** | Endurecimiento beta hecho (S2–S6); falta revisión criptográfica externa antes de cualquier uso en producción. |
+| `gt-core`, `gt-gus`, `gt-tcj` | **estable** | Aritmética congelada `GUS v3.0.0`, `TCJ = TAI + 8.400 s`, verificada bit a bit entre Python, JS y C11 (`libgerarion-core` sin malloc). |
+| `gt-calendar` | **estable** | Motor determinista `AY`/`DY` + 10 calendarios GUTI-1, verificado contra `vectors/guti-calendars-001.json` y portal web 100 % offline. |
+| `gt-gts` | **estable (núcleo) / experimental (Roughtime)** | Máquina de estados de confianza de reloj (`VERIFIED`/`HOLDOVER`/`UNVERIFIED`/`REJECTED`) con anclas anti-rollback sub-segundo; el perfil Roughtime es experimental. |
+| `gt-gst` (`GST v2`) | **estable (pendiente de auditoría externa)** | Firma híbrida normativa **Ed25519 + ML-DSA** sobre **RFC 8785 (JCS)**, dominio `GUS3-GST-V2`, protección anti-downgrade, `ReplayGuard` *fail-closed* y notario Merkle diario opcional. Requiere auditoría independiente de terceros y custodia TPM/HSM antes de producción. |
+| `gt-interop` | **estable (RFC 3339) / experimental (RFC 3161)** | Parser estricto GUS-3339 con vectores negativos compartidos; el puente RFC 3161 TSA es experimental. |
+| `gt-tslr`, `gt-gcerts` | **EXPERIMENTAL** | Solo especificaciones y andamiaje vacío; sin implementación de referencia aún. |
+| `WOTS+` (`src/gerarion/deprecated/hashots.py`) | **deprecado / educativo** | Aislado con `DeprecationWarning`; fuera del perfil normativo `GST v2`; nunca usar en producción. |
 
 1. **No garantiza que la hora firmada sea *verdadera*.** Una GST prueba
    que una marca existía y se comprometió **no más tarde** del ancla
@@ -418,29 +416,13 @@ Declarado con la misma fuerza que las garantías:
 
 ## Por qué las marcas son caras de alterar
 
-| Capa | Mecanismo | Coste de romper (declarado honestamente) |
+| Capa | Mecanismo | Propiedades y límites de seguridad (declarados honestamente) |
 |---|---|---|
-| Marca (GST) | Firma hash-only de referencia (SHA-256 + WOTS + Merkle) | Preimagen SHA-256: 2^256. **Nivel efectivo: ~2^128** (dominado por Grover en el caso cuántico, y dependiente de los parámetros: altura del árbol y cota Winternitz — ver nota stateful) |
-| Marca (SLH-DSA) | FIPS 205, SHA2-128f: firma **sin estado** | Nivel QP Categoría I de FIPS 205 (~2^128 colisión/preimagen con Grover); firma de 17.088 bytes, clave pública de 32 bytes. Nota: `SLH-DSA-SHA2-128s` produciría firmas de ~7,9 KB (7.856 B medidos con la librería de referencia), más lenta al firmar; **no es el set usado por la referencia** |
-| Notario | Raíz diaria encadenada `root(n) = H(n, tree(n), root(n-1))` | Recomputar toda la cadena posterior **conservando consistencia entre réplicas publicadas** |
+| Marca (`GST v2`, normativo) | Firma híbrida **Ed25519 + ML-DSA** sobre **RFC 8785 (JCS)** (`GUS3-GST-V2`) | Firma dual con descriptores de algoritmo y claves dentro de los bytes firmados (**anti-downgrade**); `seq` monotónico + `nonce` con `ReplayGuard` *fail-closed*. Requiere auditoría independiente de terceros y custodia TPM/HSM para producción. |
+| Marca (adaptador opcional) | SLH-DSA (FIPS 205, sin estado) | Adaptador opcional (`gerarion.gst.adapters.SlhDsaSigner`); el paquete externo `slh-dsa` no está validado FIPS aquí. |
+| `WOTS+` legado (deprecado) | `WotsMerkleSigner` (`src/gerarion/deprecated/hashots.py`) | **Deprecado / solo educativo** (hojas de un solo uso con estado; emite `DeprecationWarning`); fuera de `GST v2`. |
+| Notario (opcional) | Raíz diaria encadenada `root(n) = H(n, tree(n), root(n-1))` | Recomputar toda la cadena posterior **conservando consistencia entre réplicas publicadas** (quórum de firmantes distintos). |
 | Objetividad | Réplicas independientes publicadas (supuesto operativo declarado — ver §3 de "Qué NO garantiza") | Reescribir todas **sin dejar divergencia detectable** |
-
-**Nota sobre firmas con estado.** El esquema hash-only de referencia usa
-WOTS+Winternitz+Merkle: cada hoja firma exactamente un mensaje; reutilizar
-un índice rompe la seguridad (misma familia de riesgo que XMSS/LMS — ver
-NIST SP 800-208). La disciplina de estado es responsabilidad del portador y
-el anclaje diario registra el índice usado (hoja repetida = alarma pública).
-El esquema recomendado para producción es **SLH-DSA (FIPS 205)**, sin
-estado: `gerarion.adapters.SlhDsaSigner`.
-
-**Números concretos:** referencia hash-only altura 8 → firma JSON de
-9.354 bytes (serialización binaria cruda: 67×32 + 8×32 = 2.400 bytes: 67
-elementos Winternitz + 8 nodos de path, todos de 32 bytes),
-clave pública 32 bytes (hex 64), árbol de 256 hojas (256 marcas/día por
-clave); SLH-DSA-128f → firma 17.088 bytes (128s: 7.856, no es el set de
-referencia), pk 32 bytes. La raíz diaria del
-notario es de 32 bytes — verificar offline es re-calcular el árbol con las
-hojas del bundle (cero red, cero latencia de terceros).
 
 Nada de esto depende de confianza política *para su verificación*: la
 matemática es ejecutable por cualquiera. La *independencia* de réplicas y la
@@ -625,39 +607,39 @@ y este kernel están registradas en [`docs/history/errata-v1.2.md`](docs/history
       C, 7/7 categorías núcleo cada uno; fuzzing diferencial entre las
       tres implementaciones (1500×3 casos idénticos)
 - [x] Formato canónico + normalización (reglas 1–7, errores GERO_*)
-- [x] GST hash-only de referencia (WOTS+Merkle, disciplinado por estado)
-      + SLH-DSA (FIPS 205) vía adaptador + notario Merkle encadenado
+- [x] `GST v2` normativo (firma híbrida Ed25519 + ML-DSA sobre RFC 8785 JCS,
+      protección anti-downgrade, `ReplayGuard` *fail-closed*, notario Merkle
+      diario opcional); `WOTS+` legado aislado en `deprecated/hashots.py`
 - [x] CLI (`gero`)
-- [x] Notario de producción (multi-réplica, k-de-n, trust root firmada
-      SLH-DSA, puentes OTS/RFC 3161, deploy compose/systemd)
+- [x] Notario Merkle multi-réplica (quórum k-de-n, trust root, puentes
+      OTS/RFC 3161, deploy compose/systemd)
 - [x] Calculador web (estático, sin backend, self-test de vectores en
-      vivo, E2E Playwright 12/12)
-- [x] Inglés normativo (`docs/en/`, 5 documentos, precedencia EN>ES)
+      vivo, E2E Playwright)
+- [x] Inglés normativo (`docs/en/`, `docs/specs/*.en.md`, precedencia EN>ES)
 - [x] Perfiles de interop (GUS-3339, GUS-3161, GUS-Roughtime) con pruebas
-      e2e locales y verificador monolítico stdlib puro
-      (`tools/verify_gus.py`); la pregunta abierta D-001 (ver
-      [Escala de tiempo](#escala-de-tiempo)) en borrador público, en
-      revisión de 90 días
+      e2e locales y verificador monolítico stdlib puro (`tools/verify_gus.py`)
 - [x] Documento de adopción mínima GUS-for-notation (solo notación)
-- [x] Primer push a GitHub + publicación vía GitHub Releases (distribución independiente, sin registries externos)
-- [ ] Primer ancla OpenTimestamps operacional
+- [x] Exportación modular y 9 repositorios satélite `verared/gt-*` con
+      `EXPORT-MANIFEST.json` verificable y `COMPATIBILITY.md`
+- [ ] Auditoría criptográfica externa independiente de `gt-gst` y notario
 - [ ] Verificador de testigos contra la red Roughtime real (TODO-002)
 
-**Versión actual: beta** — la especificación es reproducible desde el repo
-(vectores, tres implementaciones, conformancia), pero no hay todavía
-despliegue externo ni tercero independiente que lo implemente.
+Consulta el [Estado de madurez en tres ejes](#estado-de-madurez-en-tres-ejes-v322)
+y [COMPATIBILITY.md](COMPATIBILITY.md) para la matriz exacta de versiones
+y madurez.
 
 ## Licencia
 
-Código: MIT. Documentos: CC-BY-4.0. Dependencia opcional
-[`slh-dsa`](https://pypi.org/project/slh-dsa/) (LGPL-3.0-or-later) **no** se
-incluye ni se vendoriza: se instala aparte y este repositorio no redistribuye
-ninguno de sus fragmentos. Ver [NOTICE](NOTICE) y [sbom.cdx.json](sbom.cdx.json).
+Código: `MIT OR Apache-2.0`. Documentos: `CC-BY-4.0`. Vectores: `CC0-1.0`.
+La dependencia opcional [`slh-dsa`](https://pypi.org/project/slh-dsa/)
+(LGPL-3.0-or-later) **no** se incluye ni se vendoriza: se instala aparte y
+este repositorio no redistribuye ninguno de sus fragmentos. Ver
+[NOTICE](NOTICE), [REUSE.toml](REUSE.toml) y [sbom.cdx.json](sbom.cdx.json).
 
 ## Versiones
 
 | Artefacto | Versión | Qué numera |
 |---|---|---|
-| Especificación normativa (`docs/spec/gus-3.0.0.md`) | **3.0.0** | La especificación en sí; solo cambia con cambios normativos aprobados (ventana de revisión de 90 días) |
-| Draft IETF (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | El documento de envío (individual submission) que describe la spec; puede avanzar sin que la spec cambie |
-| Paquetes (`pyproject.toml`, `web/package.json`) | **2.4.0** | Los artefactos de software: kernel Python/JS/C, tests, docs y erratas aplicadas. Puede cambiar entre releases de la spec |
+| Especificación normativa (`docs/spec/gus-3.0.0.md`) | **3.0.0** | La especificación en sí; aritmética y vectores congelados (`vectors/gus-normative-003.json`) |
+| Draft IETF (`docs/ietf/draft-gerarion-gus-00.xml`) | **2.1** | El documento de envío (individual submission) que describe la spec |
+| Suite de referencia y satélites (`pyproject.toml`, `web/package.json`, `impl-c/gerarion.h`, `verared/gt-*`) | **3.2.2** | Artefactos de software sincronizados y exportaciones satélite (ver [COMPATIBILITY.md](COMPATIBILITY.md)) |

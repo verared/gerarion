@@ -1,0 +1,99 @@
+{
+  "schema": "gerarion-compatibility/1",
+  "source_repo": "verared/gerarion",
+  "release": "3.2.2",
+  "tag": "v3.2.2",
+  "spec_version": "3.0.0",
+  "semver_range": ">=3.2.0,<4.0.0",
+  "satellites": {
+    "gt-core": {
+      "repository": "verared/gt-core",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "stable",
+      "experimental": false,
+      "dependencies": {}
+    },
+    "gt-gus": {
+      "repository": "verared/gt-gus",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "stable",
+      "experimental": false,
+      "dependencies": {}
+    },
+    "gt-tcj": {
+      "repository": "verared/gt-tcj",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "stable",
+      "experimental": false,
+      "dependencies": {
+        "gt-core": ">=3.2.0,<4.0.0"
+      }
+    },
+    "gt-calendar": {
+      "repository": "verared/gt-calendar",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "stable",
+      "experimental": false,
+      "dependencies": {
+        "gt-core": ">=3.2.0,<4.0.0"
+      }
+    },
+    "gt-gts": {
+      "repository": "verared/gt-gts",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "stable-core/experimental-roughtime",
+      "experimental": false,
+      "dependencies": {
+        "gt-core": ">=3.2.0,<4.0.0"
+      }
+    },
+    "gt-gst": {
+      "repository": "verared/gt-gst",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "stable",
+      "experimental": false,
+      "audit_note": "Requires independent third-party cryptographic audit and TPM/HSM key custody before production security decisions.",
+      "dependencies": {
+        "gt-core": ">=3.2.0,<4.0.0"
+      }
+    },
+    "gt-interop": {
+      "repository": "verared/gt-interop",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "stable",
+      "experimental": false,
+      "dependencies": {
+        "gt-core": ">=3.2.0,<4.0.0",
+        "gt-tcj": ">=3.2.0,<4.0.0"
+      }
+    },
+    "gt-tslr": {
+      "repository": "verared/gt-tslr",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "experimental",
+      "experimental": true,
+      "dependencies": {
+        "gt-core": ">=3.2.0,<4.0.0"
+      }
+    },
+    "gt-gcerts": {
+      "repository": "verared/gt-gcerts",
+      "version": "3.2.2",
+      "compatible_range": ">=3.2.0,<4.0.0",
+      "maturity": "experimental",
+      "experimental": true,
+      "dependencies": {
+        "gt-core": ">=3.2.0,<4.0.0",
+        "gt-gst": ">=3.2.0,<4.0.0"
+      }
+    }
+  }
+}

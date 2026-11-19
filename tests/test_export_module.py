@@ -73,6 +73,7 @@ def test_gt_core_export_expected_files(tmp_path: Path) -> None:
     export = out / "gt-core"
     expected = [
         "LICENSE", "NOTICE", "REUSE.toml", "README.md", "README.es.md",
+        "EXPORT-MANIFEST.json",
         "LICENSES/MIT.txt", "LICENSES/Apache-2.0.txt",
         "LICENSES/CC-BY-4.0.txt", "LICENSES/CC0-1.0.txt",
         "impl-c/Makefile", "impl-c/gerarion-core.pc.in",
@@ -150,11 +151,21 @@ def test_module_metadata_present(tmp_path: Path, name: str) -> None:
     assert rc.returncode == 0, rc.stderr
     export = tmp_path / name
     assert (export / "REUSE.toml").is_file()
+    assert (export / "EXPORT-MANIFEST.json").is_file()
+    manifest = json.loads((export / "EXPORT-MANIFEST.json").read_text())
+    assert manifest["schema"] == "gerarion-export-manifest/1"
+    assert manifest["module"] == name
+    assert manifest["version"] == em.GERARION_VERSION
+    assert manifest["source_repo"] == "verared/gerarion"
+    assert manifest["source_tag"] == f"v{em.GERARION_VERSION}"
+    assert "EXPORT-MANIFEST.json" not in manifest["files"]
     for readme in ("README.md", "README.es.md"):
         text = (export / readme).read_text()
         assert f"verared/{name}" in text
-        assert "3.2.0" in text
+        assert em.GERARION_VERSION in text
         assert "verared/gerarion" in text
+        assert "EXPORT-MANIFEST.json" in text
+        assert "COMPATIBILITY.md" in text
     spec_doc = em.MODULES[name].docs[0]
     assert (export / spec_doc).is_file()
 
