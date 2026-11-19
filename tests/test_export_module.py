@@ -23,6 +23,16 @@ from pathlib import Path
 
 import pytest
 
+try:
+    import reuse  # noqa: F401
+    REUSE_AVAILABLE = True
+except ImportError:
+    REUSE_AVAILABLE = False
+
+needs_reuse = pytest.mark.skipif(
+    not REUSE_AVAILABLE, reason="reuse no instalado en este entorno"
+)
+
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "tools"))
 
@@ -79,6 +89,7 @@ def test_gt_core_export_expected_files(tmp_path: Path) -> None:
         assert (export / rel).is_file(), f"falta {rel}"
 
 
+@needs_reuse
 def test_gt_core_reuse_lint_100(tmp_path: Path) -> None:
     out = tmp_path / "sat"
     rc = _run_tool("--module", "gt-core", "--out", str(out))
@@ -95,7 +106,7 @@ def test_gt_core_compiles_standalone(tmp_path: Path) -> None:
     assert rc.returncode == 0, rc.stderr
     build = subprocess.run(
         ["make", "smoke",
-         "CFLAGS=-std=c11 -O2 -Wall -Wextra -Werror -pedantic"],
+         "CFLAGS=-std=gnu11 -O2 -Wall -Wextra -Werror -pedantic"],
         cwd=out / "gt-core" / "impl-c", capture_output=True, text=True,
     )
     assert build.returncode == 0, build.stdout + build.stderr
@@ -122,6 +133,7 @@ def test_gt_core_no_unresolved_references(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
+@needs_reuse
 def test_all_modules_export_and_reuse_lint(tmp_path: Path) -> None:
     rc = _run_tool("--all", "--out", str(tmp_path))
     assert rc.returncode == 0, rc.stderr

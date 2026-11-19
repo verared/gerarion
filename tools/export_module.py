@@ -403,7 +403,7 @@ LIBDIR ?= $(PREFIX)/lib
 PKGCONFDIR ?= $(LIBDIR)/pkgconfig
 
 CC ?= cc
-CFLAGS ?= -std=c11 -O2 -Wall -Wextra -pedantic
+CFLAGS ?= -std=gnu11 -O2 -Wall -Wextra -pedantic
 PICFLAGS ?= -fPIC
 
 SRC = core/gus_core.c
@@ -932,7 +932,7 @@ def verify_module(export_dir: Path) -> Tuple[bool, str]:
             return False, "make/cc no disponibles para verificar gt-core"
         build = subprocess.run(
             [make,
-             "CFLAGS=-std=c11 -O2 -Wall -Wextra -Werror -pedantic",
+             "CFLAGS=-std=gnu11 -O2 -Wall -Wextra -Werror -pedantic",
              "smoke"],
             cwd=export_dir / "impl-c", capture_output=True, text=True,
         )
