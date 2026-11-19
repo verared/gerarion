@@ -27,13 +27,16 @@ jobs:
           python -m pytest tests/test_clock_state.py -v
       - name: Conformance JS (normative vectors)
         run: |
-          node web/tests.mjs
-          node web/conformance.mjs
-          node web/profiles-conformance.mjs
-          node web/regression-conformance.mjs
-          node web/calendars.test.mjs
+          node web/test/tests.mjs
+          node web/test/conformance.mjs
+          node web/test/profiles-conformance.mjs
+          node web/test/regression-conformance.mjs
+          node web/test/calendars.test.mjs
       - name: Conformance C (independent implementation)
         run: make -C impl-c conformance
+
+      - name: Núcleo standalone (libgerarion-core, humo sin reloj ni TAI)
+        run: make -C impl-c core-smoke
       # 4.5(c): auditoría de dependencias (requiere red). Los hallazgos
       # afectan al toolchain de CI (pip, setuptools, urllib3…), no al kernel
       # (no publicado en PyPI: skip "Dependency not found" esperado), así que

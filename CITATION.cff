@@ -4,7 +4,7 @@ title: "Gerarion Universal Standard (GUS 3.0.0): calendario computacional y proy
 cff-version: 1.2.0
 message: "If you use GUS, please cite it as below."
 title: "Gerarion Universal Standard (GUS 3.0.0): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables"
-version: 3.1.1
+version: 3.2.0-alpha.1
 date-released: "2026-11-18"
 license:
   - MIT

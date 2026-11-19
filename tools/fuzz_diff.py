@@ -357,7 +357,7 @@ def run_stress(cases: list, c_path: str, js_path: str, allow_missing: bool) -> i
                 fout.write(json.dumps({"ok": False, "error": py_err(exc),
                                        "ex": type(exc).__name__}) + "\n")
 
-    js_cmd = [js_path, os.path.join(REPO, "web", "conformance.mjs"), "--cli"]
+    js_cmd = [js_path, os.path.join(REPO, "web", "test", "conformance.mjs"), "--cli"]
     runs = [("JS (node)", js_cmd, js_path_f), ("C (impl-c)", [c_path], c_path_f)]
     for name, cmd, outp in runs:
         try:
@@ -435,7 +435,7 @@ def main() -> int:
     py_res = normalize(run_python(cases))
     results = {"python": py_res}
 
-    js_cmd = [args.js_path, os.path.join(REPO, "web", "conformance.mjs"), "--cli"]
+    js_cmd = [args.js_path, os.path.join(REPO, "web", "test", "conformance.mjs"), "--cli"]
     c_res: list = []
     if not args.python_only:
         js_res = normalize(run_child(js_cmd, cases, "JS (node)", args.allow_missing))

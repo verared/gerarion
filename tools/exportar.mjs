@@ -21,7 +21,7 @@ const OUT = resolve(process.argv[2] || "Gerarion.html");
 function bundle() {
   const bin = process.env.ESBUILD || "esbuild";
   const args = [
-    resolve(WEB, "app.js"),
+    resolve(WEB, "ui/app.js"),
     "--bundle",
     "--format=esm",
     "--target=es2022",
@@ -68,7 +68,7 @@ let html = readFileSync(resolve(WEB, "index.html"), "utf8")
     '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\'%3E%3Ccircle cx=\'12\' cy=\'12\' r=\'4.5\' fill=\'%23a55439\'/%3E%3C/svg%3E" />',
   )
   .replace(/<link rel="stylesheet" href="style\.css" \/>/, () => `<style>\n${css}\n</style>`)
-  .replace(/<script type="module" src="app\.js"><\/script>/, () => `<script type="module">\n${js}\n</script>`)
+  .replace(/<script type="module" src="ui\/app.js"><\/script>/, () => `<script type="module">\n${js}\n</script>`)
   .replace(/<body>/, `<body data-portable="true">\n${sprite}`)
   .replaceAll('href="assets/atlas.svg#', 'href="#');
 

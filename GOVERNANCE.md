@@ -89,7 +89,7 @@ kernel. Si afecta el output, es una breaking change de kernel (§3.1) y
 obliga a nueva versión del vector set. Las erratas se enumeran con
 prefijo E-01, E-02, etc., con reproducción mínima y corrección.
 
-El archivo `docs/errata-v1.2.md` histórico queda como registro de las
+El archivo `docs/history/errata-v1.2.md` histórico queda como registro de las
 seis erratas E-01..E-06 aplicadas al documento histórico v1.2.
 
 ### 3.3. Certificación de forks (Fork Certification)
@@ -253,7 +253,7 @@ Si en el futuro se registra la marca, esta sección se actualiza primero
 - Modelo de amenazas: `docs/spec/threat-model.md` (ES) / `docs/en/threat-model.md`.
 - Runbook del notario: `docs/notary-runbook.md`.
 - Vectores y cláusula de conformancia: `vectors/README.md`.
-- Erratas históricas: `docs/errata-v1.2.md`.
+- Erratas históricas: `docs/history/errata-v1.2.md`.
 
 ---
 

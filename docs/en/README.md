@@ -4,16 +4,16 @@ The documents in `docs/en/` are the **normative English version** of the
 Gerarion Universal Standard (GUS).
 
 The Spanish originals (`docs/spec/gus-2.1.0.md`,
-`docs/spec/threat-model.md`, `docs/errata-v1.2.md`,
-`docs/informe-adopcion-gus.md`) are **informative mirrors** of this
+`docs/spec/threat-model.md`, `docs/history/errata-v1.2.md`,
+`docs/history/informe-adopcion-gus.md`) are **informative mirrors** of this
 English version: they exist for reference and reading convenience, but
 they carry no independent normative weight of their own.
 
 ## Rule of precedence
 
 **In case of divergence between this English version and the Spanish
-original (docs/spec/, docs/errata-v1.2.md,
-docs/informe-adopcion-gus.md), the English version (docs/en/) prevails
+original (docs/spec/, docs/history/errata-v1.2.md,
+docs/history/informe-adopcion-gus.md), the English version (docs/en/) prevails
 for normative purposes.**
 
 This rule applies both to the content of the normative sections of the
@@ -26,8 +26,8 @@ two versions could be read differently.
 |---|---|
 | `docs/en/gus-2.1.0.md` | `docs/spec/gus-2.1.0.md` |
 | `docs/en/threat-model.md` | `docs/spec/threat-model.md` |
-| `docs/en/errata-v1.2.md` | `docs/errata-v1.2.md` |
-| `docs/en/adoption-report.md` | `docs/informe-adopcion-gus.md` |
+| `docs/history/errata-v1.2.en.md` | `docs/history/errata-v1.2.md` |
+| `docs/history/adoption-report.en.md` | `docs/history/informe-adopcion-gus.md` |
 
 Terms that are proper names of the standard or of its calendar are
 translated nowhere and carried identically in both versions: GUS, GST,
@@ -52,6 +52,6 @@ the standard is maintained by the verared project (future foundation) (github.co
 
 Divergences between the English normative version and the Spanish mirrors
 are defects and are handled like any other erratum: an entry in
-`docs/en/errata-v1.2.md` — mirrored in the Spanish errata — plus the
+`docs/history/errata-v1.2.en.md` — mirrored in the Spanish errata — plus the
 corresponding test, following the versioning rules of section 11 of
 `docs/en/gus-2.1.0.md`.

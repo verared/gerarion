@@ -3,7 +3,7 @@
 ## Principio único
 Lo normativo es lo verificable. Cualquier cambio a la especificación se
 manifiesta como: (1) texto en docs/spec/, (2) vectores en tests/, (3) entrada
-en docs/errata-v1.2.md o CHANGELOG.md. Si un cambio no se puede expresar así,
+en docs/history/errata-v1.2.md o CHANGELOG.md. Si un cambio no se puede expresar así,
 no entra.
 
 ## Flujo

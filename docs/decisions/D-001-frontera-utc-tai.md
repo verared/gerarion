@@ -25,7 +25,7 @@
 ## 1. Contexto
 
 La spec 2.0 (§9) declara la escala de instantes "análoga a TAI" y deja no
-especificados tres puntos (TODO-001 en `docs/TODO-pendientes.md`):
+especificados tres puntos (TODO-001 en `docs/history/TODO-pendientes.md`):
 
 - (a) el meridiano del día GUS: medianoche UTC vs medianoche TAI;
 - (b) la conversión UTC↔GUS y la tabla TAI−UTC (37 s en 2026);

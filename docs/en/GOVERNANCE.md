@@ -86,7 +86,7 @@ is a breaking kernel change (§3.1) and forces a new vector set version.
 Errata are enumerated with the prefix E-01, E-02, etc., with its minimal
 reproduction and its correction.
 
-The historical file `docs/errata-v1.2.md` remains as the record of the six
+The historical file `docs/history/errata-v1.2.md` remains as the record of the six
 errata E-01..E-06 applied to the historical v1.2 document.
 
 ### 3.3. Fork Certification
@@ -247,7 +247,7 @@ else.
 - Threat model: `docs/en/threat-model.md` (EN) / `docs/spec/threat-model.md`.
 - Notary runbook: `docs/notary-runbook.md` (planes: EN pending; see repo).
 - Vectors and conformance clause: `vectors/README.md`.
-- Historical errata: `docs/en/errata-v1.2.md` (EN) / `docs/errata-v1.2.md`.
+- Historical errata: `docs/history/errata-v1.2.en.md` (EN) / `docs/history/errata-v1.2.md`.
 
 ---
 

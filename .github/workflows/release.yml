@@ -44,18 +44,31 @@ jobs:
       - name: Empaquetar libgerarion (estática y compartida, linux x86_64)
         run: |
           make -C impl-c libgerarion.a libgerarion.so.3 gerarion.pc
+          make -C impl-c libgerarion-core.a libgerarion-core.so.3 \
+               libgerarion-clock.a libgerarion-calendars.a \
+               gerarion-core.pc gerarion-clock.pc gerarion-calendars.pc
           mkdir -p stage/lib stage/include/gerarion stage/lib/pkgconfig
           cp impl-c/libgerarion.a impl-c/libgerarion.so.3 stage/lib/
-          cp impl-c/gus.h impl-c/china_table.h impl-c/gerarion_calendars.h \
-             impl-c/gerarion.h stage/include/gerarion/
+          cp impl-c/gus.h impl-c/gerarion.h stage/include/gerarion/
+          cp impl-c/core/gus_core.h stage/include/gerarion/core/
+          cp impl-c/tai/gus_tai.h stage/include/gerarion/tai/
+          cp impl-c/clock/gus_clock.h stage/include/gerarion/clock/
+          cp impl-c/calendars/gerarion_calendars.h impl-c/calendars/china_table.h \
+             stage/include/gerarion/calendars/
           cp impl-c/gerarion.pc stage/lib/pkgconfig/
+          # Standalone del núcleo (dominios TCJ+GUS: apto para MCU)
+          mkdir -p stage-core/include/gerarion/core stage-core/lib/pkgconfig
+          cp impl-c/core/gus_core.h stage-core/include/gerarion/core/
+          cp impl-c/libgerarion-core.a impl-c/libgerarion-core.so.3 stage-core/lib/
+          cp impl-c/gerarion-core.pc stage-core/lib/pkgconfig/
           tar czf "libgerarion-${GITHUB_REF_NAME#v}-linux-x86_64.tar.gz" -C stage .
-          rm -rf stage
+          tar czf "libgerarion-core-${GITHUB_REF_NAME#v}-linux-x86_64.tar.gz" -C stage-core .
+          rm -rf stage stage-core
 
       - name: Generar SHA256SUMS.txt
         run: |
           sha256sum dist/gerarion-*.whl dist/gerarion-*.tar.gz web/gerarion-kernel-*.tgz \
-            libgerarion-*-linux-x86_64.tar.gz > SHA256SUMS.txt
+            libgerarion-*-linux-x86_64.tar.gz libgerarion-core-*-linux-x86_64.tar.gz > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Subir artefactos del workflow (workflow_dispatch, sin tag)
@@ -68,6 +81,7 @@ jobs:
             dist/gerarion-*.tar.gz
             web/gerarion-kernel-*.tgz
             libgerarion-*-linux-x86_64.tar.gz
+            libgerarion-core-*-linux-x86_64.tar.gz
             SHA256SUMS.txt
           if-no-files-found: error
 

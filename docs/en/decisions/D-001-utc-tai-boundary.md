@@ -15,7 +15,7 @@
 ## 1. Context
 
 Spec 2.0 (§9) declares the instant scale "analogous to TAI" and leaves three
-points unspecified (TODO-001 in `docs/TODO-pendientes.md`):
+points unspecified (TODO-001 in `docs/history/TODO-pendientes.md`):
 
 - (a) the GUS day meridian: midnight UTC vs midnight TAI;
 - (b) the UTC↔GUS conversion and the TAI−UTC table (37 s in 2026);

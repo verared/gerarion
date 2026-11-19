@@ -15,7 +15,7 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 
 > **Spec GUS v3.0.0 (ESTADO: ALPHA):** el Gran Tempalum es simétrico e
 > infinito en ambas eras (DY/AY) y la base temporal es **TAI + tabla
-> IERS con TCJ = TAI + 8,400 s** (`docs/TODO-pendientes.md` TODO-001 y
+> IERS con TCJ = TAI + 8,400 s** (`docs/history/TODO-pendientes.md` TODO-001 y
 > TODO-004 cerrados; D-001 CERRADA/ADOPTADA en 3.0.0 — ver
 > [Escala de tiempo](#escala-de-tiempo)).
 
@@ -148,10 +148,35 @@ binarios C) más `SHA256SUMS.txt` para verificación de integridad
 [Publicación](#publicación)). El extra `[slh]` es opcional: es la única
 dependencia de todo el proyecto.
 
+## Distribución modular (v3.2.0)
+
+La suite de referencia está organizada en **8 dominios normativos
+autocontenidos** (`TCJ`, `GUS`, `CALENDAR`, `GTS`, `GST`, `TSLR`\*,
+`GCERTS`\*, `INTEROP`; \* experimentales), cada uno documentado en
+`docs/specs/<DOMINIO>.es.md` (y `.en.md`). Un producto derivado puede
+adoptar un solo dominio sin el resto:
+
+- `impl-c/core/` — `libgerarion-core`: núcleo C11 para
+  microcontroladores (TCJ+GUS: sin reloj de SO ni tabla TAI);
+  `tai/`, `clock/` y `calendars/` son bibliotecas separadas y
+  `gus.h`/`gerarion.h` siguen siendo paraguas retrocompatibles.
+- `src/gerarion/` — SDK Python en subpaquetes por dominio (`core`,
+  `tcj`, `calendars`, `gts`, `gst`, `interop`, `service`,
+  `deprecated`) con shims planos de compatibilidad y extras de
+  instalación por dominio (`pip install gerarion[gst]`).
+- `web/engine/` — motores puros del navegador (`core.mjs`,
+  `tcj-tai.mjs`, `guti.mjs`); `web/ui/` (interfaz) y `web/test/`
+  (corredores); el scope de la PWA sigue siendo `web/`.
+- `vectors/` — vectores de prueba CC0, mapeados por dominio en
+  `vectors/README.md`.
+
+`docs/spec/gus-3.0.0.md` permanece como edición consolidada de
+referencia.
+
 ## Idioma normativo
 
 La versión inglesa de `docs/spec/gus-3.0.0.md`, `docs/spec/threat-model.md`,
-`docs/errata-v1.2.md` y el informe de adopción vive en
+`docs/history/errata-v1.2.md` y el informe de adopción vive en
 [`docs/en/`](docs/en/), junto con [`README.md`](README.md) (principal, en
 inglés), del que este documento es espejo completo en español. **En caso de
 divergencia entre la versión inglesa
@@ -442,8 +467,8 @@ formal en [GOVERNANCE.md](GOVERNANCE.md)). Detalle completo en el
    `from_gerarion`, roundtrip gregoriano emitido en el vector set) y el
    offset civil opcional mantiene la lectura habitual. La migración real
    (bancos, JEE, contratos) es un proyecto institucional: el informe de
-   adopción ([ES](docs/informe-adopcion-gus.md) /
-   [EN](docs/en/adoption-report.md)) propone un camino por fases sin
+   adopción ([ES](docs/history/informe-adopcion-gus.md) /
+   [EN](docs/history/adoption-report.en.md)) propone un camino por fases sin
    big-bang.
 4. **El notario necesita operación.** Claves, réplicas, rotación, ceremonia:
    es infraestructura con coste ops (runbook completo en
@@ -590,7 +615,7 @@ Ese origen histórico, cultural y religioso **no es normativa de GUS**: el
 este perfil usa solo el formato canónico de la spec y los vectores. La
 documentación complementaria se conserva, como investigación no normativa, en
 [`docs/papers/`](docs/papers/); las discrepancias conocidas entre ese material
-y este kernel están registradas en [`docs/errata-v1.2.md`](docs/errata-v1.2.md).
+y este kernel están registradas en [`docs/history/errata-v1.2.md`](docs/history/errata-v1.2.md).
 
 ## Estado
 

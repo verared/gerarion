@@ -29,7 +29,7 @@ For CUDA-free install options see [Distribution](#distribution) below.
 
 > **STATUS: ALPHA.** Spec **GUS v3.0.0**: the Gran Tempalum
 > rule is symmetric and infinite in both eras (DY/AY), and the day
-> boundary is normative (`docs/TODO-pendientes.md` TODO-001 closed;
+> boundary is normative (`docs/history/TODO-pendientes.md` TODO-001 closed;
 > only D-001 stays open as a 2.x proposal — see
 > [Time scale](#time-scale)). The remaining
 > open work before v1.0 is the optional crypto adapters and the beta
@@ -137,6 +137,29 @@ Canonical output agrees in all three: `day=742049`, `2031DY-09-06-S`,
 `instant=64113116641`.
 
 ---
+
+## Repository layout (modular, v3.2.0)
+
+The reference suite is organised in **8 self-contained normative
+domains** (`TCJ`, `GUS`, `CALENDAR`, `GTS`, `GST`, `TSLR`\*,
+`GCERTS`\*, `INTEROP`; \* experimental), each documented in
+`docs/specs/<DOMAIN>.es.md` / `.en.md`. Downstream products can adopt a
+single domain without the rest:
+
+- `impl-c/core/` — `libgerarion-core`: MCU-ready C11 core (TCJ+GUS: no
+  OS clock, no TAI table). `tai/`, `clock/`, `calendars/` are separate
+  libraries; `gus.h`/`gerarion.h` remain backward-compatible umbrellas.
+- `src/gerarion/` — Python SDK in domain subpackages (`core`, `tcj`,
+  `calendars`, `gts`, `gst`, `interop`, `service`, `deprecated`) with
+  flat compatibility shims; install extras per domain
+  (`pip install gerarion[gst]`).
+- `web/engine/` — pure browser engines (`core.mjs`, `tcj-tai.mjs`,
+  `guti.mjs`); `web/ui/` (interface) and `web/test/` (runners); the PWA
+  scope stays at `web/`.
+- `vectors/` — CC0 test vectors, mapped per domain in
+  `vectors/README.md`.
+
+`docs/spec/gus-3.0.0.md` remains the consolidated reference edition.
 
 ## Repository components
 
@@ -283,7 +306,7 @@ CLOSED in GUS 3.0.0**).
   aligns the kernel with that resolution.
 
 The English version of `docs/spec/gus-3.0.0.md`, `docs/spec/threat-model.md`,
-`docs/errata-v1.2.md` and the adoption report lives in
+`docs/history/errata-v1.2.md` and the adoption report lives in
 [`docs/en/`](docs/en/). `README.es.md` is a complete Spanish mirror of this
 README. **In case of divergence between the English
 and Spanish versions, the English one prevails (EN > ES).** The complementary
@@ -528,8 +551,8 @@ governance are human-trust questions (formal governance in
    `from_gerarion`, the Gregorian round trip shipped in the vector set)
    and the optional civil offset keeps the familiar reading. Real
    migration (banks, ERP, contracts) is an institutional project: the
-   adoption report ([ES](docs/informe-adopcion-gus.md) /
-   [EN](docs/en/adoption-report.md)) proposes a phased path without
+   adoption report ([ES](docs/history/informe-adopcion-gus.md) /
+   [EN](docs/history/adoption-report.en.md)) proposes a phased path without
    big-bang.
 4. **The notary needs operation.** Keys, replicas, rotation, ceremony: it
    is infrastructure with ops cost (full runbook in
@@ -674,7 +697,7 @@ That historical, cultural and religious origin is **not normative for GUS**:
 the standard uses only the canonical format of the spec and the vectors.
 Complementary documentation is preserved, as non-normative research, in
 [`docs/papers/`](docs/papers/); known discrepancies between that material
-and this kernel are logged in [`docs/errata-v1.2.md`](docs/errata-v1.2.md).
+and this kernel are logged in [`docs/history/errata-v1.2.md`](docs/history/errata-v1.2.md).
 
 ## Status
 

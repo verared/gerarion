@@ -18,7 +18,7 @@ Ejemplo:
     # -> '2031DY-03-08-T'
 """
 
-from .calendar import (
+from .core.calendar import (
     GeroEinval,
     GeroError,
     GeroItemporal,
@@ -29,16 +29,16 @@ from .calendar import (
     parts_from_instant,
     to_gerarion,
 )
-from .format import ParsedTimestamp, parse, quick_verify, to_canonical, to_compact
-from .tai import (
+from .core.format import ParsedTimestamp, parse, quick_verify, to_canonical, to_compact
+from .tcj.tai import (
     TCJ_OFFSET_SECONDS,
     TAI_MINUS_UTC_TABLE,
     instant_from_unix,
     tai_minus_utc,
     unix_from_instant,
 )
-from .gts import GtsDocument, create as create_gst, verify as verify_gst
-from .profiles import (
+from .gst.envelope import GtsDocument, create as create_gst, verify as verify_gst
+from .interop.profiles import (
     GUS_UNIX_OFFSET,
     instant_from_rfc3339,
     instant_to_rfc3339,
@@ -64,7 +64,7 @@ Ejemplo:
     # -> '2031DY-03-08-T'
 """
 
-from .calendar import (
+from .core.calendar import (
     GeroEinval,
     GeroError,
     GeroItemporal,
@@ -75,51 +75,22 @@ from .calendar import (
     parts_from_instant,
     to_gerarion,
 )
-from .format import ParsedTimestamp, parse, quick_verify, to_canonical, to_compact
-from .tai import (
+from .core.format import ParsedTimestamp, parse, quick_verify, to_canonical, to_compact
+from .tcj.tai import (
     TCJ_OFFSET_SECONDS,
     TAI_MINUS_UTC_TABLE,
     instant_from_unix,
     tai_minus_utc,
     unix_from_instant,
 )
-from .gts import GtsDocument, create as create_gst, verify as verify_gst
-from .profiles import (
+from .gst.envelope import GtsDocument, create as create_gst, verify as verify_gst
+from .interop.profiles import (
     GUS_UNIX_OFFSET,
     instant_from_rfc3339,
     instant_to_rfc3339,
 )
 
-__version__ = "3.1.1"
-
-__all__ = [
-    "GeroEinval",
-    "GeroError",
-    "GeroItemporal",
-    "GerarionDate",
-    "ParsedTimestamp",
-    "GtsDocument",
-    "GUS_UNIX_OFFSET",
-    "unix_from_instant",
-    "create_gst",
-    "from_gerarion",
-    "instant_from_parts",
-    "instant_from_rfc3339",
-    "instant_from_unix",
-    "instant_parts",
-    "instant_to_rfc3339",
-    "parse",
-    "parts_from_instant",
-    "quick_verify",
-    "TCJ_OFFSET_SECONDS",
-    "TAI_MINUS_UTC_TABLE",
-    "tai_minus_utc",
-    "to_canonical",
-    "to_compact",
-    "to_gerarion",
-    "verify_gst",
-    "__version__",
-]
+__version__ = "3.2.0a1"
 
 
 __all__ = [
@@ -150,3 +121,4 @@ __all__ = [
     "verify_gst",
     "__version__",
 ]
+

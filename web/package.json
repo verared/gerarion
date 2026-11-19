@@ -1,21 +1,29 @@
 {
   "name": "gerarion-kernel",
-  "version": "3.1.1",
+  "version": "3.2.0-alpha.1",
   "description": "Gerarion Universal Standard (GUS 2.1.0) kernel: calendario computacional con años de 364/371 días, instantes y formato canónico — implementación de referencia en JavaScript (ESM, cero dependencias)",
   "type": "module",
   "main": "gerarion.mjs",
   "exports": {
-    ".": "./gerarion.mjs"
+    ".": "./gerarion.mjs",
+    "./core": "./engine/core.mjs",
+    "./tcj-tai": "./engine/tcj-tai.mjs",
+    "./calendars": "./engine/calendars.mjs",
+    "./guti": "./engine/guti.mjs",
+    "./china-table": "./engine/china-table.mjs",
+    "./zonas-tcj": "./engine/zonas-tcj.mjs",
+    "./atlas": "./ui/atlas.mjs"
   },
   "files": [
     "gerarion.mjs",
-    "conformance.mjs",
+    "engine/",
+    "ui/",
     "README.md"
   ],
   "scripts": {
-    "test": "node tests.mjs",
-    "conformance": "node conformance.mjs",
-    "conformance:cli": "node conformance.mjs --cli"
+    "test": "node test/tests.mjs",
+    "conformance": "node test/conformance.mjs",
+    "conformance:cli": "node test/conformance.mjs --cli"
   },
   "keywords": [
     "calendar",

@@ -29,7 +29,7 @@ import {
   clockSample,
   interval,
   milestones,
-} from "../web/atlas.mjs";
+} from "../web/ui/atlas.mjs";
 import {
   REFERENCE,
   territories,
@@ -41,7 +41,7 @@ import {
   observe,
   supportedZone,
   civilOffset,
-} from "../web/zonas-tcj.mjs";
+} from "../web/engine/zonas-tcj.mjs";
 import { ORIGIN_JDN, parse as parseGus } from "../web/gerarion.mjs";
 
 // Gregoriano proléptico → JDN, año astronómico.

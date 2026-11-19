@@ -4,7 +4,7 @@
 > **Spanish mirror**: [`docs/profiles/gus-roughtime-perfil.md`](../../profiles/gus-roughtime-perfil.md) — EN prevails.
 > **Reference code**: `src/gerarion/profiles_roughtime.py` (pure Python, stdlib only)
 > **Tests**: `tests/test_profiles_roughtime.py` (no network, no external service)
-> **TODO-002**: full UDP wire-format parsing and shard chaining of the Roughtime protocol is out of scope of this profile and is listed in `docs/TODO-pendientes.md`.
+> **TODO-002**: full UDP wire-format parsing and shard chaining of the Roughtime protocol is out of scope of this profile and is listed in `docs/history/TODO-pendientes.md`.
 
 ## 1. Purpose
 
