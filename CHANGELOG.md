@@ -1,6 +1,6 @@
 # Changelog — GUS
 
-## 3.2.0-alpha.1 — Reorganización modular en 8 dominios (2026-11-19)
+## 3.2.0 — Reorganización modular en 8 dominios (2026-11-19)
 
 Desacoplamiento estructural de la suite de referencia. **Ningún cambio
 de la aritmética congelada de GUS v3.0.0, de los vectores
