@@ -11,10 +11,10 @@
 > *podría* construirse a meses o años vista si el proyecto y la comunidad
 > avanzan en esa dirección.
 >
-> - **Línea base auditada:** `v3.2.2` (`322a650`)
+> - **Línea base auditada:** `v3.3.0`
 > - **Especificación normativa:** `GUS v3.0.0` (aritmética y vectores congelados)
 > - **Versión normativa en inglés:** [`ROADMAP.md`](ROADMAP.md) (en caso de divergencia prevalece EN > ES)
-> - **Referencias relacionadas:** [`COMPATIBILITY.md`](COMPATIBILITY.md) · [`docs/architecture/SATELLITE-REPOS.es.md`](docs/architecture/SATELLITE-REPOS.es.md) · [`SECURITY.md`](SECURITY.md) · [`docs/audit/AUDIT-REPORT-v3.0.0.md`](docs/audit/AUDIT-REPORT-v3.0.0.md)
+> - **Referencias relacionadas:** [`COMPATIBILITY.md`](COMPATIBILITY.md) · [`docs/architecture/SATELLITE-REPOS.es.md`](docs/architecture/SATELLITE-REPOS.es.md) · [`docs/guides/CMS-INTEGRATION.es.md`](docs/guides/CMS-INTEGRATION.es.md) · [`SECURITY.md`](SECURITY.md) · [`docs/audit/AUDIT-REPORT-v3.0.0.md`](docs/audit/AUDIT-REPORT-v3.0.0.md)
 
 ---
 
@@ -51,9 +51,9 @@ afirmaciones de seguridad en producción— revisión externa independiente.
 | `VERIFIED` | Verificado de forma cruzada contra vectores normativos compartidos y suites automatizadas en CI (`reuse`, unitarias, conformancia, fuzz/sanitizers). |
 | `STABLE` | Contrato normativo congelado (`>=3.2.0,<4.0.0`), verificado entre plataformas y reproducible mediante `EXPORT-MANIFEST.json`. *(El uso criptográfico crítico en producción exige además auditoría externa + custodia en hardware.)* |
 
-### Matriz del Ecosistema (`v3.2.2`, alineada con [`COMPATIBILITY.md`](COMPATIBILITY.md))
+### Matriz del Ecosistema (`v3.3.0`, alineada con [`COMPATIBILITY.md`](COMPATIBILITY.md))
 
-| Satélite | Especificación | Madurez (`v3.2.2`) | Alcance y límites honestos |
+| Satélite | Especificación | Madurez (`v3.3.0`) | Alcance y límites honestos |
 |---|---|---|---|
 | `verared/gt-core` | [`TCJ.es.md`](docs/specs/TCJ.es.md), [`GUS.es.md`](docs/specs/GUS.es.md) | **STABLE / VERIFIED** | Núcleo `GUS v3.0.0` congelado; C11 sin `malloc`, Python y JS; 100 % autónomo. |
 | `verared/gt-gus` | [`GUS.es.md`](docs/specs/GUS.es.md) | **STABLE / VERIFIED** | Sintaxis canónica 29/32 caracteres, reglas de normalización 1–7, `quick_verify`, `int64` + `nanos`. |
@@ -135,10 +135,10 @@ afirmaciones de seguridad en producción— revisión externa independiente.
 ### Fase 6 — Evidencia Criptográfica Temporal (`gt-gst`)
 **Objetivo:** Proveer sobres temporales verificables y resistentes a computación cuántica (`GST v2`) con canonicalización estricta, protección anti-downgrade y anti-replay *fail-closed*.
 
-- [x] Sobre normativo `GST v2` con firma híbrida **Ed25519 + ML-DSA**, RFC 8785 JCS (límite entero `±(2^53 - 1)`), separación de dominio `GUS3-GST-V2` y protección anti-downgrade (`src/gerarion/gst/envelope.py`, `src/gerarion/gst/jcs.py`, `src/gerarion/gst/adapters.py`, `docs/specs/GST.es.md`).
-- [x] `ReplayGuard` *fail-closed* (`seq` + `nonce`) y notario Merkle diario opcional con quórum de firmantes distintos (`src/gerarion/gst/notary.py`, `src/gerarion/gst/notary_cluster.py`, `tests/test_jcs_gstv2.py`, `tests/test_notary_cluster.py`).
+- [x] Sobre normativo `GST v2` (`gerarion.gst.v2`) con firma híbrida **Ed25519 + ML-DSA**, RFC 8785 JCS (límite entero `±(2^53 - 1)`), separación de dominio `GUS3-GST-V2`, protección anti-downgrade y `VerificationResult` en 3 niveles (`src/gerarion/gst/v2.py`, `src/gerarion/gst/envelope.py`, `src/gerarion/gst/jcs.py`, `src/gerarion/gst/adapters.py`, `docs/specs/GST.es.md`).
+- [x] Registro de confianza de claves (`KeyRegistry` / `TrustedKeyRecord`) con comparación en tiempo constante, rotación histórica (`HISTORICAL`), expiración (`KEY_EXPIRED`) y revocación (`KEY_REVOKED`), más `SQLiteReplayStore` transaccional concurrente (`WAL`, `BEGIN IMMEDIATE`) y notario Merkle diario opcional (`src/gerarion/gst/trust.py`, `src/gerarion/gst/replay.py`, `src/gerarion/gst/notary.py`, `tests/test_gst_v2_security.py`, `docs/guides/CMS-INTEGRATION.es.md`).
 - [x] `WOTS+` legado aislado en `src/gerarion/deprecated/hashots.py` con `DeprecationWarning`, fuera del perfil normativo `GST v2`.
-- [ ] Políticas operativas de rotación y revocación de claves respaldadas por custodia en hardware (`TPM`/`HSM`).
+- [ ] Integración física con custodia de claves en hardware (`TPM`/`HSM`) y validación productiva en repositorio externo de CMS (`GEIACT-1`).
 - [ ] Vectores criptográficos independientes del lenguaje para verificación cruzada externa de sobres `GST v2`.
 - [ ] **Auditoría criptográfica independiente de terceros** sobre `gt-gst` y el notario Merkle antes de uso crítico en producción.
 
@@ -186,7 +186,7 @@ afirmaciones de seguridad en producción— revisión externa independiente.
 ### Fase 10 — Integración con Sistemas Operativos e Infraestructura (Satélites Externos Futuros)
 **Objetivo:** Habilitar adopción incremental en Linux, sistemas embebidos y observabilidad mediante bibliotecas y adaptadores en espacio de usuario, sin apresurar cambios en kernel.
 
-- [x] Publicación de artefactos autónomos `libgerarion` y `libgerarion-core` con `SHA256SUMS.txt` (`.github/workflows/release.yml`, `v3.2.2`).
+- [x] Publicación de artefactos autónomos `libgerarion` y `libgerarion-core` con `SHA256SUMS.txt` (`.github/workflows/release.yml`, `v3.3.0`).
 - [ ] Demonio en espacio de usuario Linux que lea `CLOCK_TAI` + estado de `chrony`/PTP hacia estados de confianza `gt-gts`.
 - [ ] Ejemplos de referencia embebidos e industriales (integración C11 *bare-metal* + RTOS).
 - [ ] Integración con observabilidad (p. ej. atributos de marca temporal en OpenTelemetry y exportadores `GST v2`).
@@ -199,10 +199,10 @@ afirmaciones de seguridad en producción— revisión externa independiente.
 ### Eje Transversal A — Integridad del Ecosistema y Releases Reproducibles
 **Objetivo:** Garantizar que cada repositorio satélite sea una proyección verificable byte a byte de un commit etiquetado en `verared/gerarion`.
 
-- [x] Exportación determinista desde commit versionado con `EXPORT-MANIFEST.json` (`gerarion-export-manifest/1`) y `--verify-existing` (`tools/export_module.py`, `COMPATIBILITY.md`, `compatibility.json`).
+- [x] Exportación determinista desde commit versionado con `EXPORT-MANIFEST.json` (`gerarion-export-manifest/1`), soporte de firma Ed25519 separada (`EXPORT-MANIFEST.json.sig` vía `--sign-key` / `--trusted-pub-key`) y `--verify-existing` (`tools/export_module.py`, `tests/test_export_module.py`, `COMPATIBILITY.md`, `compatibility.json`).
 - [x] Pruebas de integración cruzada sobre satélites ensamblados limpiamente en C11, Python y JS, como gate obligatorio en CI (`tests/test_satellite_integration.py`, `.github/workflows/ci.yml`).
 - [x] Conformidad REUSE 3.3 al 100 % y SBOM CycloneDX 1.5 (`REUSE.toml`, `sbom.cdx.json`, `.github/workflows/ci.yml`).
-- [ ] Firma criptográfica externa de tags de release y artefactos `EXPORT-MANIFEST.json` en CI (p. ej. atestaciones Sigstore/Cosign o GPG).
+- [ ] Firma automatizada OIDC/Sigstore o respaldada por hardware en CI de tags de release y `EXPORT-MANIFEST.json.sig` en los 9 repositorios satélite.
 - [ ] Runbook formal de rollback y sincronización de emergencia multi-satélite.
 
 **Criterio de aceptación:** Cada tag de release y exportación satélite es reproducible deterministamente, verificada por hash, conforme en licencias y atestada criptográficamente.

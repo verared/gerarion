@@ -24,6 +24,7 @@ jobs:
       - name: Suites de endurecimiento aisladas (JCS/GST v2 y reloj §6.3)
         run: |
           python -m pytest tests/test_jcs_gstv2.py -v
+          python -m pytest tests/test_gst_v2_security.py -v
           python -m pytest tests/test_clock_state.py -v
       - name: Conformance JS (normative vectors)
         run: |
@@ -76,7 +77,7 @@ jobs:
       - name: Exportar y verificar los 9 satélites (manifest + reuse + core)
         run: python3 tools/export_module.py --all --out /tmp/ci-satellites --verify
       - name: Pruebas de exportador e integración cruzada de satélites ensamblados
-        run: python -m pytest tests/test_export_module.py tests/test_satellite_integration.py -v
+        run: python -m pytest tests/test_export_module.py tests/test_satellite_integration.py tests/test_gst_v2_security.py -v
 
   web-e2e:
     # E2E del portal web (Playwright + Chromium): sin errores JS, cero

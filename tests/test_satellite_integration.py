@@ -292,12 +292,20 @@ def test_assembled_python_integration(assembled_workspace: Path) -> None:
         from gerarion.tcj import tai as tcj_tai
         from gerarion import calendars as multi_cal
         from gerarion.gts import clock as gts_clock
-        from gerarion.gst import envelope as gst_env, jcs as gst_jcs, adapters as gst_adapters
+        from gerarion.gst import (
+            envelope as gst_env,
+            jcs as gst_jcs,
+            adapters as gst_adapters,
+            trust as gst_trust,
+            replay as gst_replay,
+            v2 as gst_v2,
+        )
         from gerarion.interop import profiles as interop_profiles
 
         # Confirmar que TODOS los módulos cargaron desde assembled_src
         for mod in (core_cal, core_fmt, tcj_tai, multi_cal, gts_clock,
-                    gst_env, gst_jcs, gst_adapters, interop_profiles):
+                    gst_env, gst_jcs, gst_adapters, gst_trust, gst_replay,
+                    gst_v2, interop_profiles):
             mod_path = Path(mod.__file__).resolve()
             assert mod_path.is_relative_to(assembled_src), f"cargado fuera de satélites: {mod_path}"
 
@@ -359,14 +367,40 @@ def test_assembled_python_integration(assembled_workspace: Path) -> None:
                 seed_classical=bytes(range(32)),
                 seed_pqc=bytes(range(32, 64)),
             )
-            env = gst_env.create_v2(
+            attacker = gst_adapters.HybridSigner(
+                seed_classical=bytes(range(64, 96)),
+                seed_pqc=bytes(range(96, 128)),
+            )
+            registry = gst_v2.KeyRegistry()
+            registry.register_signer(issuer="sat-test", kid="sat-k1", signer=signer)
+            sqlite_store = gst_v2.SQLiteReplayStore(":memory:")
+
+            env = gst_v2.create(
                 parsed, signer, event_hash="sha256:" + "ab" * 32,
                 kid="sat-k1", issuer="sat-test", seq=1,
             )
-            v1 = gst_env.verify_v2(dict(env), guard=guard)
-            assert v1["ok"] is True and v1["state"] == "VALID", v1
-            v2 = gst_env.verify_v2(dict(env), guard=guard)
-            assert v2["ok"] is False and v2["state"] == "REJECTED", v2
+            res1 = gst_v2.verify(dict(env), trust_store=registry, replay_store=sqlite_store)
+            assert res1.overall_trusted is True
+            assert res1.identity.key_status == "ACTIVE"
+            assert res1.identity.replay_status == "OK"
+            assert res1.temporal.clock_state == "UNKNOWN"
+
+            # Replay exacto rechazado por SQLiteReplayStore
+            res_replay = gst_v2.verify(dict(env), trust_store=registry, replay_store=sqlite_store)
+            assert res_replay.overall_trusted is False
+            assert res_replay.identity.replay_status == "REPLAY"
+
+            # Clave autofirmada suplantando issuer/kid rechazada por KeyRegistry
+            spoof = gst_v2.create(
+                parsed, attacker, event_hash="sha256:" + "ab" * 32,
+                kid="sat-k1", issuer="sat-test", seq=2,
+            )
+            res_spoof = gst_v2.verify(dict(spoof), trust_store=registry, replay_store=sqlite_store)
+            assert res_spoof.crypto.valid is True
+            assert res_spoof.identity.valid is False
+            assert res_spoof.identity.key_status == "MISMATCH"
+            assert res_spoof.overall_trusted is False
+            sqlite_store.close()
         else:
             # Validación estructural GST v2 + ReplayGuard sin dependencia externa
             msg = gst_env.gst_v2_message({"gst_version": "2.0", "ins": ins, "seq": 1})

@@ -10,10 +10,10 @@
 > represents an open direction that *may* be pursued over months or years if
 > the project and community advance in that direction.
 >
-> - **Audited baseline:** `v3.2.2` (`322a650`)
+> - **Audited baseline:** `v3.3.0`
 > - **Normative specification:** `GUS v3.0.0` (frozen arithmetic and vectors)
 > - **Spanish mirror:** [`ROADMAP.es.md`](ROADMAP.es.md) (in case of divergence, EN > ES)
-> - **Related references:** [`COMPATIBILITY.md`](COMPATIBILITY.md) · [`docs/architecture/SATELLITE-REPOS.en.md`](docs/architecture/SATELLITE-REPOS.en.md) · [`SECURITY.md`](SECURITY.md) · [`docs/en/audit/AUDIT-REPORT-v3.0.0.md`](docs/en/audit/AUDIT-REPORT-v3.0.0.md)
+> - **Related references:** [`COMPATIBILITY.md`](COMPATIBILITY.md) · [`docs/architecture/SATELLITE-REPOS.en.md`](docs/architecture/SATELLITE-REPOS.en.md) · [`docs/guides/CMS-INTEGRATION.en.md`](docs/guides/CMS-INTEGRATION.en.md) · [`SECURITY.md`](SECURITY.md) · [`docs/en/audit/AUDIT-REPORT-v3.0.0.md`](docs/en/audit/AUDIT-REPORT-v3.0.0.md)
 
 ---
 
@@ -48,9 +48,9 @@ production security claims — independent external review.
 | `VERIFIED` | Cross-verified against shared normative vectors and automated CI suites (`reuse`, unit, conformance, fuzz/sanitizers). |
 | `STABLE` | Frozen normative contract (`>=3.2.0,<4.0.0`), verified across platforms, and reproducible via `EXPORT-MANIFEST.json`. *(Cryptographic production readiness additionally requires external audit + hardware key custody.)* |
 
-### Ecosystem Matrix (`v3.2.2`, aligned with [`COMPATIBILITY.md`](COMPATIBILITY.md))
+### Ecosystem Matrix (`v3.3.0`, aligned with [`COMPATIBILITY.md`](COMPATIBILITY.md))
 
-| Satellite | Specification | Maturity (`v3.2.2`) | Honest Scope & Limits |
+| Satellite | Specification | Maturity (`v3.3.0`) | Honest Scope & Limits |
 |---|---|---|---|
 | `verared/gt-core` | [`TCJ.en.md`](docs/specs/TCJ.en.md), [`GUS.en.md`](docs/specs/GUS.en.md) | **STABLE / VERIFIED** | Frozen `GUS v3.0.0` kernel; zero-malloc C11, Python, and JS; 100 % standalone. |
 | `verared/gt-gus` | [`GUS.en.md`](docs/specs/GUS.en.md) | **STABLE / VERIFIED** | Canonical 29/32-char syntax, normalization rules 1–7, `quick_verify`, `int64` + `nanos`. |
@@ -132,10 +132,10 @@ production security claims — independent external review.
 ### Phase 6 — Cryptographic Temporal Evidence (`gt-gst`)
 **Objective:** Provide post-quantum-ready, tamper-evident timestamp envelopes (`GST v2`) with strict canonicalization, anti-downgrade binding, and fail-closed replay protection.
 
-- [x] Normative `GST v2` envelope with hybrid **Ed25519 + ML-DSA**, RFC 8785 JCS (`±(2^53 - 1)` integer enforcement), domain `GUS3-GST-V2`, and anti-downgrade descriptor binding (`src/gerarion/gst/envelope.py`, `src/gerarion/gst/jcs.py`, `src/gerarion/gst/adapters.py`, `docs/specs/GST.en.md`).
-- [x] Fail-closed `ReplayGuard` (`seq` + `nonce`) and optional daily Merkle notary with distinct-signer quorum (`src/gerarion/gst/notary.py`, `src/gerarion/gst/notary_cluster.py`, `tests/test_jcs_gstv2.py`, `tests/test_notary_cluster.py`).
+- [x] Normative `GST v2` envelope (`gerarion.gst.v2`) with hybrid **Ed25519 + ML-DSA**, RFC 8785 JCS (`±(2^53 - 1)` integer enforcement), domain `GUS3-GST-V2`, anti-downgrade descriptor binding, and 3-level `VerificationResult` (`src/gerarion/gst/v2.py`, `src/gerarion/gst/envelope.py`, `src/gerarion/gst/jcs.py`, `src/gerarion/gst/adapters.py`, `docs/specs/GST.en.md`).
+- [x] Key trust registry (`KeyRegistry` / `TrustedKeyRecord`) with constant-time key verification, historical key rotation (`HISTORICAL`), expiration (`KEY_EXPIRED`), and revocation (`KEY_REVOKED`), plus concurrent transactional `SQLiteReplayStore` (`WAL`, `BEGIN IMMEDIATE`) and optional daily Merkle notary (`src/gerarion/gst/trust.py`, `src/gerarion/gst/replay.py`, `src/gerarion/gst/notary.py`, `tests/test_gst_v2_security.py`, `docs/guides/CMS-INTEGRATION.en.md`).
 - [x] Legacy `WOTS+` isolated in `src/gerarion/deprecated/hashots.py` with `DeprecationWarning`, outside normative `GST v2`.
-- [ ] Operational key-rotation and revocation policies backed by hardware key custody (`TPM`/`HSM`).
+- [ ] Physical hardware key custody integration (`TPM`/`HSM`) and external CMS production validation (`GEIACT-1` in a live external CMS repository).
 - [ ] Language-independent external cryptographic cross-verification test vectors for `GST v2` envelopes.
 - [ ] **Independent third-party cryptographic security audit** of `gt-gst` and the Merkle notary prior to critical production use.
 
@@ -183,7 +183,7 @@ production security claims — independent external review.
 ### Phase 10 — Operating System & Infrastructure Integration (Future External Satellites)
 **Objective:** Enable incremental adoption in Linux, embedded, and observability stacks via user-space libraries and adapters — never rushing kernel modifications.
 
-- [x] Standalone `libgerarion` and `libgerarion-core` release artifacts with `SHA256SUMS.txt` (`.github/workflows/release.yml`, `v3.2.2`).
+- [x] Standalone `libgerarion` and `libgerarion-core` release artifacts with `SHA256SUMS.txt` (`.github/workflows/release.yml`, `v3.3.0`).
 - [ ] Linux user-space daemon reading `CLOCK_TAI` + `chrony`/PTP status into `gt-gts` trust states.
 - [ ] Reference embedded and industrial examples (bare-metal C11 + RTOS integration).
 - [ ] Observability integration (e.g., OpenTelemetry trace/log timestamp attributes and `GST v2` exporters).
@@ -196,10 +196,10 @@ production security claims — independent external review.
 ### Cross-Cutting Track A — Ecosystem Integrity & Reproducible Releases
 **Objective:** Guarantee that every satellite repository is a byte-for-byte verifiable projection of a tagged commit in `verared/gerarion`.
 
-- [x] Deterministic export from versioned commit with `EXPORT-MANIFEST.json` (`gerarion-export-manifest/1`) and `--verify-existing` (`tools/export_module.py`, `COMPATIBILITY.md`, `compatibility.json`).
+- [x] Deterministic export from versioned commit with `EXPORT-MANIFEST.json` (`gerarion-export-manifest/1`), detached Ed25519 signature support (`EXPORT-MANIFEST.json.sig` via `--sign-key` / `--trusted-pub-key`), and `--verify-existing` (`tools/export_module.py`, `tests/test_export_module.py`, `COMPATIBILITY.md`, `compatibility.json`).
 - [x] Cross-language integration tests on cleanly assembled satellites in C11, Python, and JS, gated in CI (`tests/test_satellite_integration.py`, `.github/workflows/ci.yml`).
 - [x] 100 % REUSE 3.3 licensing compliance and CycloneDX 1.5 SBOM (`REUSE.toml`, `sbom.cdx.json`, `.github/workflows/ci.yml`).
-- [ ] External cryptographic signing of release tags and `EXPORT-MANIFEST.json` artifacts in CI (e.g., Sigstore/Cosign or GPG attestations).
+- [ ] Automated CI OIDC/Sigstore or hardware-backed signing of release tags and `EXPORT-MANIFEST.json.sig` across all 9 satellite repositories.
 - [ ] Formal multi-satellite rollback and emergency synchronization runbook.
 
 **Acceptance criterion:** Every release tag and satellite export is deterministically reproducible, hash-verified, license-compliant, and cryptographically attested.

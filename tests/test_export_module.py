@@ -251,3 +251,99 @@ def test_frozen_sources_untouched_by_export(tmp_path: Path) -> None:
         + [REPO / "vectors" / "gus-normative-003.json"]
     }
     assert before == after
+
+
+# ---------------------------------------------------------------------------
+# firma separada de manifiesto (EXPORT-MANIFEST.json.sig) y anti-regresión doc
+# ---------------------------------------------------------------------------
+
+
+def _generate_ed25519_keypair_pems(tmp_dir: Path, prefix: str = "k") -> tuple[Path, Path]:
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    priv = Ed25519PrivateKey.generate()
+    priv_pem = priv.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    pub_pem = priv.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    priv_path = tmp_dir / f"{prefix}_priv.pem"
+    pub_path = tmp_dir / f"{prefix}_pub.pem"
+    priv_path.write_bytes(priv_pem)
+    pub_path.write_bytes(pub_pem)
+    return priv_path, pub_path
+
+
+@needs_reuse
+def test_detached_manifest_signature_roundtrip_and_tamper_rejection(
+    tmp_path: Path,
+) -> None:
+    keys_dir = tmp_path / "keys"
+    keys_dir.mkdir()
+    priv_pem, pub_pem = _generate_ed25519_keypair_pems(keys_dir, "release")
+    _, wrong_pub_pem = _generate_ed25519_keypair_pems(keys_dir, "wrong")
+
+    out = tmp_path / "exports"
+    rc = _run_tool(
+        "--module", "gt-gst",
+        "--out", str(out),
+        "--sign-key", str(priv_pem),
+        "--verify",
+        "--trusted-pub-key", str(pub_pem),
+    )
+    assert rc.returncode == 0, rc.stdout + rc.stderr
+    sat = out / "gt-gst"
+    sig_file = sat / "EXPORT-MANIFEST.json.sig"
+    assert sig_file.is_file()
+
+    # EXPORT-MANIFEST.json.sig NUNCA debe aparecer dentro de EXPORT-MANIFEST.json["files"]
+    manifest = json.loads((sat / "EXPORT-MANIFEST.json").read_text(encoding="utf-8"))
+    assert "EXPORT-MANIFEST.json.sig" not in manifest["files"]
+
+    # Verificar con --verify-existing y clave pública confiable
+    v_ok = _run_tool("--verify-existing", str(sat), "--trusted-pub-key", str(pub_pem))
+    assert v_ok.returncode == 0, v_ok.stdout + v_ok.stderr
+    assert "[OK] Detached Signature Authenticity" in v_ok.stdout
+
+    # Verificar sin --trusted-pub-key reporta explícitamente SKIPPED
+    v_skip = _run_tool("--verify-existing", str(sat))
+    assert v_skip.returncode == 0, v_skip.stdout + v_skip.stderr
+    assert "[SKIPPED — no --trusted-pub-key provided] Detached Signature Authenticity" in v_skip.stdout
+
+    # Verificar con clave pública distinta debe fallar
+    v_wrong = _run_tool("--verify-existing", str(sat), "--trusted-pub-key", str(wrong_pub_pem))
+    assert v_wrong.returncode != 0
+    assert "[FAIL] Detached Signature Authenticity" in v_wrong.stdout
+
+    # Alterar 1 byte de EXPORT-MANIFEST.json debe invalidar la firma
+    man_path = sat / "EXPORT-MANIFEST.json"
+    orig_bytes = man_path.read_bytes()
+    man_path.write_bytes(orig_bytes + b"\n")
+    v_tamper = _run_tool("--verify-existing", str(sat), "--trusted-pub-key", str(pub_pem))
+    assert v_tamper.returncode != 0
+    man_path.write_bytes(orig_bytes)
+
+
+def test_documentation_anti_regression_no_legacy_strings(tmp_path: Path) -> None:
+    """Ni los README de la raíz ni ninguno de los 9 README exportados puede
+    contener 'EARLY BETA', 'SLH-DSA' ni menciones obsoletas a 'v3.2.0'."""
+    forbidden = ("EARLY BETA", "SLH-DSA", "v3.2.0")
+    for root_readme in ("README.md", "README.es.md"):
+        text = (REPO / root_readme).read_text(encoding="utf-8")
+        for bad in forbidden:
+            assert bad not in text, f"{root_readme} contiene cadena obsoleta prohibida: {bad!r}"
+
+    rc = _run_tool("--all", "--out", str(tmp_path), "--no-large-vectors")
+    assert rc.returncode == 0, rc.stderr
+    current_version = em._read_project_version()
+    for name in ALL_MODULES:
+        for doc_name in ("README.md", "README.es.md"):
+            text = (tmp_path / name / doc_name).read_text(encoding="utf-8")
+            for bad in forbidden:
+                assert bad not in text, f"{name}/{doc_name} contiene cadena obsoleta: {bad!r}"
+            assert f"v{current_version}" in text

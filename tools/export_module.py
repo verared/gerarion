@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT OR Apache-2.0
 # SPDX-FileCopyrightText: 2026 verared contributors
-"""Exportador modular de la suite de referencia Gerarion (v3.2.0).
+"""Exportador modular de la suite de referencia Gerarion.
 
 Genera paquetes autónomos —uno por dominio normativo— listos para
 publicarse como repositorios satélite ``verared/gt-*`` (Gerarion Time),
 manteniendo intacta la matemática, los motores y los vectores congelados
-de ``verared/gerarion``. La herramienta SOLO empaqueta: nunca altera el
+de ``verared/gerarion``. La versión se lee dinámicamente desde
+``pyproject.toml``. La herramienta SOLO empaqueta: nunca altera el
 código fuente del repositorio base.
 
 Para cada exportación se genera en el directorio destino:
@@ -34,21 +35,25 @@ from __future__ import annotations
 
 import argparse
 import ast
+import base64
 import dataclasses
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_REPO = "verared/gerarion"
 COMPAT_RANGE = ">=3.2.0,<4.0.0"
 MANIFEST_FILENAME = "EXPORT-MANIFEST.json"
 MANIFEST_SCHEMA = "gerarion-export-manifest/1"
+MANIFEST_SIG_FILENAME = "EXPORT-MANIFEST.json.sig"
+MANIFEST_SIG_SCHEMA = "gerarion-manifest-sig/1"
 
 
 def _read_project_version() -> str:
@@ -557,7 +562,17 @@ base para componer módulos.
 - Especificación(es) incluida(s): {spec_list}
 - Manifiesto de integridad verificable: [`EXPORT-MANIFEST.json`](EXPORT-MANIFEST.json)
 - Matriz oficial de compatibilidad: [`COMPATIBILITY.md`](https://github.com/{source}/blob/v{version}/COMPATIBILITY.md)
-{crypto_section_es}
+{crypto_section_es}{quickstart_section_es}
+## Las 5 Garantías de Distribución
+
+| # | Garantía | Mecanismo verificable |
+|---|---|---|
+| 1 | **Integridad SHA-256** | Mapa `files` en [`EXPORT-MANIFEST.json`](EXPORT-MANIFEST.json) verificado con `--verify-existing`. |
+| 2 | **Procedencia declarada** | Campos `source_repo`, `source_tag` (`v{version}`) y `source_commit` (SHA-1 de 40 caracteres). |
+| 3 | **Autenticidad de publicación** | Firma Ed25519 separada `EXPORT-MANIFEST.json.sig` verificable con `--trusted-pub-key` (sin autorreferencia). |
+| 4 | **Reproducibilidad** | Re-exportación determinista bit a bit desde el mismo `--source-commit`. |
+| 5 | **Conformidad funcional** | Suite de vectores normativos CC0 e integración cruzada en C11, Python y JavaScript. |
+
 ## Dependencias
 
 {deps_es}
@@ -581,10 +596,12 @@ reuse lint                                    # licencias al 100 %
 {verify_extra}
 ```
 
-Desde `{source}`, la integridad completa contra `EXPORT-MANIFEST.json` se verifica con:
+Desde `{source}`, la integridad y (opcionalmente) la autenticidad de firma separada se verifican con:
 
 ```bash
 python3 tools/export_module.py --verify-existing /ruta/a/{name}
+# Con verificación criptográfica de EXPORT-MANIFEST.json.sig:
+python3 tools/export_module.py --verify-existing /ruta/a/{name} --trusted-pub-key /ruta/a/release-pub.pem
 ```
 
 ## Contrato de sincronización con `{source}`
@@ -619,7 +636,17 @@ compose cleanly.
 - Included specification(s): {spec_list}
 - Verifiable integrity manifest: [`EXPORT-MANIFEST.json`](EXPORT-MANIFEST.json)
 - Official compatibility matrix: [`COMPATIBILITY.md`](https://github.com/{source}/blob/v{version}/COMPATIBILITY.md)
-{crypto_section_en}
+{crypto_section_en}{quickstart_section_en}
+## The 5 Distribution Guarantees
+
+| # | Guarantee | Verifiable mechanism |
+|---|---|---|
+| 1 | **SHA-256 Integrity** | `files` map in [`EXPORT-MANIFEST.json`](EXPORT-MANIFEST.json) checked via `--verify-existing`. |
+| 2 | **Declared Provenance** | `source_repo`, `source_tag` (`v{version}`), and 40-char `source_commit` fields. |
+| 3 | **Publication Authenticity** | Detached Ed25519 signature `EXPORT-MANIFEST.json.sig` verified via `--trusted-pub-key` (zero self-reference). |
+| 4 | **Reproducibility** | Bit-for-bit deterministic re-export from the same `--source-commit`. |
+| 5 | **Functional Conformance** | Shared CC0 normative vectors and cross-satellite integration tests in C11, Python, and JavaScript. |
+
 ## Dependencies
 
 {deps_en}
@@ -643,10 +670,12 @@ reuse lint                                    # licensing 100 %
 {verify_extra}
 ```
 
-From `{source}`, full integrity against `EXPORT-MANIFEST.json` is verified with:
+From `{source}`, full integrity and (optionally) detached-signature authenticity are verified with:
 
 ```bash
 python3 tools/export_module.py --verify-existing /path/to/{name}
+# With cryptographic verification of EXPORT-MANIFEST.json.sig:
+python3 tools/export_module.py --verify-existing /path/to/{name} --trusted-pub-key /path/to/release-pub.pem
 ```
 
 ## Synchronisation contract with `{source}`
@@ -666,9 +695,9 @@ GST_CRYPTO_SECTION_ES = """
 
 | Aspecto | Declaración normativa |
 |---|---|
-| **Algoritmo normativo (`GST v2`)** | Firma híbrida **Ed25519 + ML-DSA** sobre payload canonicalizado con **RFC 8785 (JCS)** (enteros estrictamente dentro de IEEE-754 `binary64` `±(2^53 - 1)`), separación de dominio `GUS3-GST-V2`, descriptor de algoritmos y claves incluido en los bytes firmados (protección **anti-downgrade**), contador monotónico `seq` + `nonce` con `ReplayGuard` *fail-closed* y notario Merkle diario opcional. |
+| **Algoritmo normativo (`GST v2`)** | Firma híbrida **Ed25519 + ML-DSA** sobre payload canonicalizado con **RFC 8785 (JCS)** (enteros estrictamente dentro de IEEE-754 `binary64` `±(2^53 - 1)`), separación de dominio `GUS3-GST-V2`, descriptor de algoritmos y claves incluido en los bytes firmados (protección **anti-downgrade**), `KeyRegistry` con vigencia/rotación/revocación, contador monotónico `seq` + `nonce` con `SQLiteReplayStore` / `ReplayGuard` *fail-closed* y notario Merkle diario opcional. |
 | **Algoritmo deprecado / educativo** | `WOTS+` / `WotsMerkleSigner`, aislado en `src/gerarion/deprecated/hashots.py` de `verared/gerarion` con `DeprecationWarning` explícito; **fuera** del perfil normativo `GST v2`. |
-| **Cobertura y límite de auditoría** | Cubierto por vectores y pruebas (JCS, verificación dual, anti-downgrade, `ReplayGuard`, integración de satélites). Pendiente de **auditoría criptográfica externa independiente** y **custodia TPM/HSM** antes de producción. |
+| **Cobertura y límite de auditoría** | Cubierto por vectores y pruebas (JCS, verificación dual, anti-downgrade, `KeyRegistry`, `SQLiteReplayStore` concurrente, integración de satélites). Pendiente de **auditoría criptográfica externa independiente** y **custodia TPM/HSM** antes de producción. |
 """
 
 GST_CRYPTO_SECTION_EN = """
@@ -676,13 +705,86 @@ GST_CRYPTO_SECTION_EN = """
 
 | Aspect | Normative declaration |
 |---|---|
-| **Normative algorithm (`GST v2`)** | Hybrid **Ed25519 + ML-DSA** over **RFC 8785 (JCS)** canonicalised payload (integers strictly within IEEE-754 `binary64` `±(2^53 - 1)`), domain separation `GUS3-GST-V2`, algorithm and key descriptors included in signed bytes (**anti-downgrade**), monotonic counter `seq` + `nonce` with fail-closed `ReplayGuard`, and optional daily Merkle notary. |
+| **Normative algorithm (`GST v2`)** | Hybrid **Ed25519 + ML-DSA** over **RFC 8785 (JCS)** canonicalised payload (integers strictly within IEEE-754 `binary64` `±(2^53 - 1)`), domain separation `GUS3-GST-V2`, algorithm and key descriptors included in signed bytes (**anti-downgrade**), `KeyRegistry` with validity/rotation/revocation, monotonic counter `seq` + `nonce` with fail-closed `SQLiteReplayStore` / `ReplayGuard`, and optional daily Merkle notary. |
 | **Deprecated / educational algorithm** | `WOTS+` / `WotsMerkleSigner`, isolated in `src/gerarion/deprecated/hashots.py` of `verared/gerarion` with explicit `DeprecationWarning`; **outside** the normative `GST v2` profile. |
-| **Test coverage & audit boundary** | Covered by vectors and tests (JCS, dual verification, anti-downgrade, `ReplayGuard`, satellite integration). **Independent third-party cryptographic audit** and **TPM/HSM key custody** are required before production security decisions. |
+| **Test coverage & audit boundary** | Covered by vectors and tests (JCS, dual verification, anti-downgrade, `KeyRegistry`, concurrent `SQLiteReplayStore`, satellite integration). **Independent third-party cryptographic audit** and **TPM/HSM key custody** are required before production security decisions. |
+"""
+
+CMS_QUICKSTART_ES = """
+## Integra `gt-core` + `gt-gst` en 1 minuto (Guía rápida CMS / API)
+
+```python
+import hashlib
+from gerarion.core import format as fmt
+from gerarion.gst import HybridSigner, v2
+
+# 1. Inicializar firmante híbrido (Ed25519 + ML-DSA-65), registro de claves y ReplayStore SQLite
+signer = HybridSigner(seed_classical=bytes(range(32)), seed_pqc=bytes(range(32, 64)))
+registry = v2.KeyRegistry()
+registry.register_signer(issuer="cms.example.org", kid="cms-2026-k1", signer=signer)
+replay_store = v2.SQLiteReplayStore(":memory:")  # En producción: "/var/lib/cms/gst_replay.sqlite3"
+
+# 2. Sellar un evento de negocio sobre coordenada canónica GUS
+event_bytes = b\'{"action":"post.publish","object_id":"art-42","version":1}\'
+event_hash = "sha256:" + hashlib.sha256(event_bytes).hexdigest()
+envelope = v2.create(
+    fmt.parse("2031DY-03-08-T-09:30:00-SC-TCJ+0"),
+    signer,
+    event_hash=event_hash,
+    issuer="cms.example.org",
+    kid="cms-2026-k1",
+    seq=1,
+)
+
+# 3. Verificar en 3 niveles independientes (Criptografía, Identidad/Replay, Aseguramiento Temporal)
+res = v2.verify(envelope, trust_store=registry, replay_store=replay_store)
+assert res.crypto.valid is True
+assert res.identity.valid is True and res.identity.key_status == "ACTIVE"
+assert res.identity.replay_status == "OK"
+assert res.temporal.clock_state == "UNKNOWN"  # O "VERIFIED" al pasar una lectura de gt-gts
+assert res.overall_trusted is True
+```
+"""
+
+CMS_QUICKSTART_EN = """
+## Integrate `gt-core` + `gt-gst` in 1 Minute (CMS / API Quickstart)
+
+```python
+import hashlib
+from gerarion.core import format as fmt
+from gerarion.gst import HybridSigner, v2
+
+# 1. Initialize hybrid signer (Ed25519 + ML-DSA-65), key trust registry, and SQLite ReplayStore
+signer = HybridSigner(seed_classical=bytes(range(32)), seed_pqc=bytes(range(32, 64)))
+registry = v2.KeyRegistry()
+registry.register_signer(issuer="cms.example.org", kid="cms-2026-k1", signer=signer)
+replay_store = v2.SQLiteReplayStore(":memory:")  # In production: "/var/lib/cms/gst_replay.sqlite3"
+
+# 2. Seal a business event on a canonical GUS coordinate
+event_bytes = b\'{"action":"post.publish","object_id":"art-42","version":1}\'
+event_hash = "sha256:" + hashlib.sha256(event_bytes).hexdigest()
+envelope = v2.create(
+    fmt.parse("2031DY-03-08-T-09:30:00-SC-TCJ+0"),
+    signer,
+    event_hash=event_hash,
+    issuer="cms.example.org",
+    kid="cms-2026-k1",
+    seq=1,
+)
+
+# 3. Verify across 3 independent levels (Cryptography, Identity/Replay, Temporal Assurance)
+res = v2.verify(envelope, trust_store=registry, replay_store=replay_store)
+assert res.crypto.valid is True
+assert res.identity.valid is True and res.identity.key_status == "ACTIVE"
+assert res.identity.replay_status == "OK"
+assert res.temporal.clock_state == "UNKNOWN"  # Or "VERIFIED" when passing a gt-gts ClockReading
+assert res.overall_trusted is True
+```
 """
 
 
-def _deps_text(spec: ModuleSpec, lang: str) -> str:
+def _deps_text(spec: ModuleSpec, lang: str, version: Optional[str] = None) -> str:
+    ver = version or _read_project_version()
     if not spec.deps:
         return ("- **Ninguna externa: 100 % standalone.** Puede adoptarse "
                 "aisladamente, sin el resto de la suite."
@@ -693,14 +795,16 @@ def _deps_text(spec: ModuleSpec, lang: str) -> str:
     for d in spec.deps:
         lines.append(f"- `{d}` (*verared/{d}*): " + (
             "tipos base y servicios del núcleo."
+            if d == "gt-core" and lang == "es" else
+            "base types and core services."
             if d == "gt-core" else
             "módulo hermano de esta suite."
             if lang == "es" else
             "sibling module of this suite."))
     if lang == "es":
-        lines.append("Base común: `verared/gerarion` `v{}`.".format(GERARION_VERSION))
+        lines.append("Base común: `verared/gerarion` `v{}`.".format(ver))
     else:
-        lines.append("Common base: `verared/gerarion` `{}`.".format(GERARION_VERSION))
+        lines.append("Common base: `verared/gerarion` `v{}`.".format(ver))
     if spec.name == "gt-gts":
         lines.append(
             "- *Nota:* el perfil Roughtime (experimental) importa "
@@ -845,7 +949,7 @@ def _format_gt_core_smoke_c(version: str) -> str:
 
 def _collect_export_hashes(export: Path) -> Dict[str, str]:
     """Mapa ordenado alfabéticamente ruta_relativa -> sha256 de todos los
-    archivos exportados (excluyendo EXPORT-MANIFEST.json y .git/**)."""
+    archivos exportados (excluyendo EXPORT-MANIFEST.json, EXPORT-MANIFEST.json.sig y .git/**)."""
     hashes: Dict[str, str] = {}
     for p in sorted(export.rglob("*")):
         if not p.is_file():
@@ -854,18 +958,110 @@ def _collect_export_hashes(export: Path) -> Dict[str, str]:
         if _is_git_internal(rel):
             continue
         posix = rel.as_posix()
-        if posix == MANIFEST_FILENAME:
+        if posix in (MANIFEST_FILENAME, MANIFEST_SIG_FILENAME):
             continue
         hashes[posix] = _sha256_file(p)
     return dict(sorted(hashes.items()))
 
 
+def sign_manifest(export_dir: Path, sign_key_source: str) -> Path:
+    """Firma los bytes exactos de EXPORT-MANIFEST.json con Ed25519 y escribe
+    el archivo separado EXPORT-MANIFEST.json.sig (sin autorreferencia)."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    manifest_path = export_dir / MANIFEST_FILENAME
+    if not manifest_path.is_file():
+        raise FileNotFoundError(f"No existe {manifest_path} para firmar")
+    manifest_bytes = manifest_path.read_bytes()
+    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+
+    key_path = Path(sign_key_source)
+    if not sign_key_source.lstrip().startswith("-----BEGIN") and key_path.is_file():
+        pem_bytes = key_path.read_bytes()
+    else:
+        pem_bytes = sign_key_source.encode("utf-8")
+
+    priv = serialization.load_pem_private_key(pem_bytes, password=None)
+    if not isinstance(priv, Ed25519PrivateKey):
+        raise TypeError("La clave de firma de manifiesto debe ser Ed25519 (PEM)")
+
+    sig_bytes = priv.sign(manifest_bytes)
+    pub_raw = priv.public_key().public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw,
+    )
+    key_id = hashlib.sha256(pub_raw).hexdigest()[:16]
+
+    sig_doc = {
+        "schema": MANIFEST_SIG_SCHEMA,
+        "algorithm": "Ed25519",
+        "manifest_sha256": manifest_sha256,
+        "key_id": key_id,
+        "signature_b64": base64.b64encode(sig_bytes).decode("ascii"),
+    }
+    sig_path = export_dir / MANIFEST_SIG_FILENAME
+    sig_path.write_text(json.dumps(sig_doc, indent=2) + "\n", encoding="utf-8")
+    return sig_path
+
+
+def verify_manifest_signature(
+    export_dir: Path,
+    trusted_pub_key_source: Union[str, Path],
+) -> Tuple[bool, str]:
+    """Verifica criptográficamente EXPORT-MANIFEST.json.sig contra EXPORT-MANIFEST.json."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+    manifest_path = export_dir / MANIFEST_FILENAME
+    sig_path = export_dir / MANIFEST_SIG_FILENAME
+    if not manifest_path.is_file():
+        return False, f"falta {MANIFEST_FILENAME}"
+    if not sig_path.is_file():
+        return False, f"falta {MANIFEST_SIG_FILENAME}"
+
+    try:
+        sig_doc = json.loads(sig_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        return False, f"{MANIFEST_SIG_FILENAME} JSON inválido: {exc}"
+
+    if not isinstance(sig_doc, dict) or sig_doc.get("schema") != MANIFEST_SIG_SCHEMA:
+        return False, f"schema inesperado en {MANIFEST_SIG_FILENAME}: {sig_doc.get('schema') if isinstance(sig_doc, dict) else None!r}"
+    if sig_doc.get("algorithm") != "Ed25519":
+        return False, f"algoritmo no soportado en {MANIFEST_SIG_FILENAME}: {sig_doc.get('algorithm')!r}"
+
+    manifest_bytes = manifest_path.read_bytes()
+    actual_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
+    if sig_doc.get("manifest_sha256") != actual_sha256:
+        return False, "manifest_sha256 en .sig no coincide con EXPORT-MANIFEST.json"
+
+    try:
+        if isinstance(trusted_pub_key_source, Path):
+            pub_pem = trusted_pub_key_source.read_bytes()
+        elif not str(trusted_pub_key_source).lstrip().startswith("-----BEGIN") and Path(str(trusted_pub_key_source)).is_file():
+            pub_pem = Path(str(trusted_pub_key_source)).read_bytes()
+        else:
+            pub_pem = str(trusted_pub_key_source).encode("utf-8")
+        pub = serialization.load_pem_public_key(pub_pem)
+        if not isinstance(pub, Ed25519PublicKey):
+            return False, "la clave pública confiable no es Ed25519"
+        sig_bytes = base64.b64decode(sig_doc["signature_b64"], validate=True)
+        pub.verify(sig_bytes, manifest_bytes)
+    except Exception as exc:  # noqa: BLE001
+        return False, f"firma Ed25519 inválida: {exc}"
+
+    return True, f"EXPORT-MANIFEST.json.sig verificada (key_id={sig_doc.get('key_id')})"
+
+
 def export_module(spec: ModuleSpec, out_dir: Path,
                   include_large_vectors: bool = True,
-                  source_commit: Optional[str] = None) -> List[str]:
+                  source_commit: Optional[str] = None,
+                  sign_key: Optional[str] = None) -> List[str]:
     """Exporta `spec` a `<out_dir>/<spec.name>`; devuelve la lista de
     archivos escritos (rutas relativas al export)."""
+    global GERARION_VERSION
     version = _read_project_version()
+    GERARION_VERSION = version
     commit = _resolve_source_commit(source_commit)
     export = out_dir / spec.name
     _clear_export_dir_preserving_git(export)
@@ -944,6 +1140,8 @@ def export_module(spec: ModuleSpec, out_dir: Path,
     files_desc = "\n".join(_tree_lines(written + [MANIFEST_FILENAME]))
     crypto_es = GST_CRYPTO_SECTION_ES if spec.name == "gt-gst" else ""
     crypto_en = GST_CRYPTO_SECTION_EN if spec.name == "gt-gst" else ""
+    quickstart_es = CMS_QUICKSTART_ES if spec.name in ("gt-core", "gt-gst") else ""
+    quickstart_en = CMS_QUICKSTART_EN if spec.name in ("gt-core", "gt-gst") else ""
     readme_es = README_TMPL_ES.format(
         title=spec.title_es,
         source=SOURCE_REPO,
@@ -954,7 +1152,8 @@ def export_module(spec: ModuleSpec, out_dir: Path,
         maturity=spec.maturity,
         spec_list=specs,
         crypto_section_es=crypto_es,
-        deps_es=_deps_text(spec, "es"),
+        quickstart_section_es=quickstart_es,
+        deps_es=_deps_text(spec, "es", version=version),
         content_es=files_desc,
         usage_es=usage,
         verify_extra=verify_extra,
@@ -969,7 +1168,8 @@ def export_module(spec: ModuleSpec, out_dir: Path,
         maturity=spec.maturity,
         spec_list=specs,
         crypto_section_en=crypto_en,
-        deps_en=_deps_text(spec, "en"),
+        quickstart_section_en=quickstart_en,
+        deps_en=_deps_text(spec, "en", version=version),
         content_en=files_desc,
         usage_en=usage,
         verify_extra=verify_extra,
@@ -978,7 +1178,7 @@ def export_module(spec: ModuleSpec, out_dir: Path,
     (export / "README.es.md").write_text(readme_es, encoding="utf-8")
     written.extend(["README.md", "README.es.md"])
 
-    # 8. REUSE.toml del export (incluyendo EXPORT-MANIFEST.json bajo CC0-1.0);
+    # 8. REUSE.toml del export (incluyendo EXPORT-MANIFEST.json* bajo CC0-1.0);
     # después, solo los textos de licencia realmente referenciados.
     used = _write_export_reuse(export, version=version)
     rel_add(export / "REUSE.toml")
@@ -1009,6 +1209,12 @@ def export_module(spec: ModuleSpec, out_dir: Path,
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
     rel_add(export / MANIFEST_FILENAME)
+
+    # 10. Firma separada opcional (EXPORT-MANIFEST.json.sig, nunca incluida en files)
+    active_sign_key = sign_key or os.environ.get("GERARION_MANIFEST_SIGNING_KEY")
+    if active_sign_key:
+        sig_path = sign_manifest(export, active_sign_key)
+        rel_add(sig_path)
 
     return written
 
@@ -1049,10 +1255,11 @@ def _write_export_reuse(export: Path, version: Optional[str] = None) -> Set[str]
         if lic:
             by_license.setdefault(lic, []).append(rel.as_posix())
 
-    # EXPORT-MANIFEST.json se genera inmediatamente después y queda bajo CC0-1.0
+    # EXPORT-MANIFEST.json (y opcionalmente .sig) quedan bajo CC0-1.0
     vec_paths = by_license.setdefault(LICENSE_VECTOR, [])
-    if MANIFEST_FILENAME not in vec_paths:
-        vec_paths.append(MANIFEST_FILENAME)
+    manifest_glob = f"{MANIFEST_FILENAME}*"
+    if manifest_glob not in vec_paths:
+        vec_paths.append(manifest_glob)
         vec_paths.sort()
 
     blocks = [
@@ -1128,17 +1335,23 @@ def verify_manifest(export_dir: Path) -> Tuple[bool, str, Optional[dict]]:
     return True, f"EXPORT-MANIFEST.json: OK ({len(actual_files)} archivos verificados)", manifest
 
 
-def verify_module(export_dir: Path) -> Tuple[bool, str]:
+def verify_module(
+    export_dir: Path,
+    trusted_pub_key: Optional[Union[str, Path]] = None,
+) -> Tuple[bool, str]:
     """Verifica EXPORT-MANIFEST.json (SHA-256 + sin faltantes/sobrantes),
-    reuse lint al 100 % dentro del export y, para gt-core, compilación limpia
-    del núcleo standalone. Devuelve (ok, mensaje)."""
+    reuse lint al 100 % dentro del export, compilación limpia del núcleo
+    standalone en gt-core y (si se provee --trusted-pub-key) autenticidad de
+    la firma separada EXPORT-MANIFEST.json.sig. Devuelve (ok, mensaje)."""
     messages = []
     ok = True
 
     m_ok, m_msg, manifest = verify_manifest(export_dir)
-    messages.append(m_msg)
-    if not m_ok:
+    if m_ok:
+        messages.append(f"[OK] SHA-256 Integrity — {m_msg}")
+    else:
         ok = False
+        messages.append(f"[FAIL] SHA-256 Integrity — {m_msg}")
 
     lint = subprocess.run(
         [sys.executable, "-m", "reuse", "lint", "--quiet"],
@@ -1152,9 +1365,12 @@ def verify_module(export_dir: Path) -> Tuple[bool, str]:
         )
     if lint.returncode != 0:
         ok = False
-        messages.append("reuse lint falló:\n" + (lint.stdout + lint.stderr)[-2000:])
+        messages.append(
+            "[FAIL] REUSE 3.3 License Compliance — reuse lint falló:\n"
+            + (lint.stdout + lint.stderr)[-2000:]
+        )
     else:
-        messages.append("reuse lint: 100 % conforme")
+        messages.append("[OK] REUSE 3.3 License Compliance — reuse lint: 100 % conforme")
 
     mod_name = (manifest or {}).get("module") or export_dir.name
     if mod_name == "gt-core":
@@ -1162,13 +1378,6 @@ def verify_module(export_dir: Path) -> Tuple[bool, str]:
         cc = shutil.which("cc") or shutil.which("gcc") or shutil.which("clang")
         if not make or not cc:
             return False, "make/cc no disponibles para verificar gt-core"
-        # -std=gnu11 (no c11+pedantic): el guardia interno de 128 bits del
-        # núcleo congelado usa __int128, extensión GNU; GCC la marca como
-        # aviso pedantic ISO incluso en gnu11 y la aritmética NO es
-        # editable desde esta herramienta. El gate estricto compila con
-        # -Werror sobre todos los avisos estándar (-Wall -Wextra); la
-        # conformancia pedantic estricta del núcleo la cubre la batería
-        # audit/conformance del repositorio base.
         build = subprocess.run(
             [make,
              "CFLAGS=-std=gnu11 -O2 -Wall -Wextra -Werror",
@@ -1177,14 +1386,31 @@ def verify_module(export_dir: Path) -> Tuple[bool, str]:
         )
         if build.returncode != 0:
             ok = False
-            messages.append("compilación del núcleo falló:\n" + (build.stdout + build.stderr)[-2000:])
+            messages.append(
+                "[FAIL] C11 Core Standalone Smoke — compilación del núcleo falló:\n"
+                + (build.stdout + build.stderr)[-2000:]
+            )
         else:
-            messages.append("make smoke: compilación limpia (-Werror) y humo OK")
+            messages.append(
+                "[OK] C11 Core Standalone Smoke — make smoke: compilación limpia (-Werror) y humo OK"
+            )
         clean = subprocess.run([make, "clean"], cwd=export_dir / "impl-c",
                                capture_output=True, text=True)
         if clean.returncode != 0:
             ok = False
             messages.append("make clean falló:\n" + (clean.stdout + clean.stderr)[-1000:])
+
+    if trusted_pub_key:
+        sig_ok, sig_msg = verify_manifest_signature(export_dir, trusted_pub_key)
+        if sig_ok:
+            messages.append(f"[OK] Detached Signature Authenticity — {sig_msg}")
+        else:
+            ok = False
+            messages.append(f"[FAIL] Detached Signature Authenticity — {sig_msg}")
+    else:
+        messages.append(
+            "[SKIPPED — no --trusted-pub-key provided] Detached Signature Authenticity"
+        )
 
     return ok, "\n".join(messages)
 
@@ -1205,7 +1431,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     group.add_argument("--all", action="store_true",
                        help="exportar los 9 módulos")
     group.add_argument("--verify-existing", metavar="DIR",
-                       help="verificar un directorio satélite ya exportado (manifest + reuse + core)")
+                       help="verificar un directorio satélite ya exportado (manifest + reuse + core + .sig opcional)")
     ap.add_argument("--out",
                     help="directorio base de los exports (requerido con --module o --all)")
     ap.add_argument("--verify", action="store_true",
@@ -1214,6 +1440,10 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="omitir vectores grandes (p. ej. guti-calendars-001.json, ~8 MB)")
     ap.add_argument("--source-commit",
                     help="hash SHA-1 de origen para EXPORT-MANIFEST.json (por defecto git rev-parse HEAD)")
+    ap.add_argument("--sign-key", metavar="PEM",
+                    help="ruta a clave privada Ed25519 PEM (o GERARION_MANIFEST_SIGNING_KEY) para generar EXPORT-MANIFEST.json.sig")
+    ap.add_argument("--trusted-pub-key", metavar="PEM",
+                    help="ruta a clave pública Ed25519 PEM confiable para verificar EXPORT-MANIFEST.json.sig")
     args = ap.parse_args(argv)
 
     if args.verify_existing:
@@ -1221,7 +1451,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         if not target.is_dir():
             print(f"ERROR: no existe el directorio {target}", file=sys.stderr)
             return 2
-        ok, msg = verify_module(target)
+        ok, msg = verify_module(target, trusted_pub_key=args.trusted_pub_key)
         print(f"verify {target.name}:")
         for line in msg.splitlines():
             print(f"  {line}")
@@ -1246,10 +1476,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             out_dir,
             include_large_vectors=not args.no_large_vectors,
             source_commit=args.source_commit,
+            sign_key=args.sign_key,
         )
         print(f"export {name} -> {target} ({len(files)} archivos)")
         if args.verify:
-            ok, msg = verify_module(target)
+            ok, msg = verify_module(target, trusted_pub_key=args.trusted_pub_key)
             for line in msg.splitlines():
                 print(f"  {line}")
             if not ok:

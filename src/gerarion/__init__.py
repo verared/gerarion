@@ -90,7 +90,7 @@ from .interop.profiles import (
     instant_to_rfc3339,
 )
 
-__version__ = "3.2.2"
+__version__ = "3.3.0"
 
 
 __all__ = [
