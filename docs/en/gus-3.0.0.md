@@ -17,6 +17,15 @@
 >and verified by the test suite. Every divergence is documented in
 >`docs/errata-v1.2.md`.
 
+> **Consolidated edition.** Since the modular reorganisation, every
+> normative domain has a self-contained specification in [`docs/specs/`](../specs/):
+> [TCJ](../specs/TCJ.en.md) · [GUS](../specs/GUS.en.md) ·
+> [CALENDAR](../specs/CALENDAR.en.md) · [GTS](../specs/GTS.en.md) ·
+> [GST](../specs/GST.en.md) · [TSLR](../specs/TSLR.en.md) (experimental) ·
+> [GCERTS](../specs/GCERTS.en.md) (experimental) · [INTEROP](../specs/INTEROP.en.md).
+> This document remains the consolidated reference edition; in case of
+> divergence, the domain specification prevails.
+
 ## 1. What it is
 
 GUS defines:

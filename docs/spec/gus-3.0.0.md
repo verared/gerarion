@@ -13,6 +13,15 @@
 
 > Esta especificación sustituye al borrador histórico v1.2 (documentado como
 > material complementario no normativo en `docs/papers/`).
+
+> **Edición consolidada.** Desde la reorganización modular, cada dominio
+> normativo tiene una especificación autocontenida en [`docs/specs/`](../specs/):
+> [TCJ](../specs/TCJ.es.md) · [GUS](../specs/GUS.es.md) ·
+> [CALENDAR](../specs/CALENDAR.es.md) · [GTS](../specs/GTS.es.md) ·
+> [GST](../specs/GST.es.md) · [TSLR](../specs/TSLR.es.md) (experimental) ·
+> [GCERTS](../specs/GCERTS.es.md) (experimental) · [INTEROP](../specs/INTEROP.es.md).
+> Este documento permanece como la edición consolidada de referencia; en
+> caso de divergencia, manda la especificación del dominio.
 > Toda propiedad de v1 que se conserva se reproduce aquí de forma ejecutable
 > y verificada por la suite de tests. Toda divergencia está documentada en
 > `docs/errata-v1.2.md`.
