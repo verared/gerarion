@@ -13,6 +13,15 @@ español; en caso de divergencia prevalece la versión inglesa (EN > ES).
 | **2. Implementaciones de referencia (`v3.2.2`)** | **Estables y probadas en CI** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts`, `gt-gst` y `gt-interop` son estables y se verifican continuamente en CI (unitarias, conformancia, ASan/UBSan, fuzzing diferencial, E2E e integración de satélites ensamblados). `gt-tslr` y `gt-gcerts` están en estado **EXPERIMENTAL** (especificación + andamiaje, sin implementación de referencia aún). Ver [COMPATIBILITY.md](COMPATIBILITY.md). |
 | **3. Aseguramiento criptográfico de producción** | **Requiere auditoría externa** | `gt-gst` (`GST v2`) y el notario Merkle diario requieren una **auditoría criptográfica independiente de terceros** y **custodia de claves en hardware (TPM/HSM)** antes de decisiones críticas de producción. Ver [SECURITY.md](SECURITY.md) y [docs/spec/threat-model.md](docs/spec/threat-model.md). |
 
+### Gerarion Time — Estado del Proyecto y Visión
+
+En **`v3.2.2`**, el núcleo congelado `GUS v3.0.0` (`TCJ = TAI + 8.400 s`), el motor GUTI-1 de 10 calendarios, la referencia `GST v2` (Ed25519 + ML-DSA sobre RFC 8785 JCS) y los **9 repositorios satélite** (`verared/gt-*`) están publicados y verificados en CI. *Gerarion Time* complementa —sin reemplazar— a UTC, NTP, PTP y los relojes del SO.
+
+- **Foco próximo:** adopción real de `gt-core`, `gt-gst` y `gt-gts`, matriz CI en 32 bits y guías de despliegue embebido.
+- **Mediano plazo:** prototipos funcionales + vectores para los perfiles experimentales `gt-tslr` y `gt-gcerts`, adaptadores Linux en espacio de usuario (`CLOCK_TAI`) y custodia en hardware (`TPM`/`HSM`).
+- **Largo plazo:** auditorías criptográficas independientes de terceros, implementaciones de terceros y revisión formal de estándares (sin fechas fijas ni promesas de entrega).
+- **Explorar:** [ROADMAP.es.md](ROADMAP.es.md) · [ROADMAP.md](ROADMAP.md) · [COMPATIBILITY.md](COMPATIBILITY.md) · [`docs/specs/`](docs/specs/GUS.es.md)
+
 **Tiempo regular, universal y verificable.**
 
 ## Probar en línea (sin instalar nada, sin cuentas)
