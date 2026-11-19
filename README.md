@@ -16,6 +16,15 @@ Live demo: **<https://verared.github.io/gerarion/>** — EN spec below;
 | **2. Reference implementations (`v3.2.2`)** | **Stable & CI-tested** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts`, `gt-gst`, and `gt-interop` are stable and continuously verified in CI (unit, conformance, ASan/UBSan, differential fuzzing, E2E, and satellite assembly). `gt-tslr` and `gt-gcerts` are **EXPERIMENTAL** (specification + scaffolding, no reference implementation yet). See [COMPATIBILITY.md](COMPATIBILITY.md). |
 | **3. Production cryptographic assurance** | **External audit required** | `gt-gst` (`GST v2`) and the daily Merkle notary require an **independent third-party cryptographic audit** and **hardware key custody (TPM/HSM)** before production security decisions. See [SECURITY.md](SECURITY.md) and [docs/en/threat-model.md](docs/en/threat-model.md). |
 
+### Gerarion Time — Project Status & Vision
+
+At **`v3.2.2`**, the frozen `GUS v3.0.0` kernel (`TCJ = TAI + 8,400 s`), the 10-calendar GUTI-1 engine, the `GST v2` reference stack (Ed25519 + ML-DSA over RFC 8785 JCS), and all **9 satellite repositories** (`verared/gt-*`) are published and CI-verified. *Gerarion Time* complements — without replacing — UTC, NTP, PTP, and OS clocks.
+
+- **Near-term focus:** real-world adoption of `gt-core`, `gt-gst`, and `gt-gts`, explicit 32-bit CI coverage, and embedded deployment guides.
+- **Medium-term direction:** working prototypes + vectors for experimental `gt-tslr` and `gt-gcerts`, Linux user-space `CLOCK_TAI` adapters, and hardware key custody (`TPM`/`HSM`).
+- **Long-term vision:** independent third-party cryptographic audits, external third-party implementations, and formal standards review (no fixed dates or delivery promises).
+- **Explore:** [ROADMAP.md](ROADMAP.md) · [ROADMAP.es.md](ROADMAP.es.md) · [COMPATIBILITY.md](COMPATIBILITY.md) · [`docs/specs/`](docs/specs/GUS.en.md)
+
 ## Try online (no install, no account)
 
 The **date translator** runs entirely in your browser at
