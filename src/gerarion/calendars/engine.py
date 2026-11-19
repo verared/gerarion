@@ -28,7 +28,7 @@ import bisect
 from dataclasses import dataclass, field as dc_field
 from typing import Dict, List, Optional, Tuple
 
-from . import calendar as cal
+from ..core import calendar as cal
 from . import china_table
 
 GERO_ERANGE = "GERO_ERANGE"

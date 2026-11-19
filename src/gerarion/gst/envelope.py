@@ -38,9 +38,9 @@ from dataclasses import asdict, dataclass
 from typing import Optional
 
 from . import adapters as _adapters
-from . import calendar as cal
-from . import format as fmt
-from . import hashots
+from ..core import calendar as cal
+from ..core import format as fmt
+from .. import hashots
 from .jcs import JcsError, dumps_bytes as _jcs_bytes
 
 ALG_REFERENCE = "WOTS16-MERKLE-REF-SHA256"

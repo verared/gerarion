@@ -38,6 +38,11 @@ gero = "gerarion.cli:main"
 dev = ["pytest>=7"]
 slh = ["slh-dsa==0.2.5"]
 pqc = ["cryptography>=47"]
+# extras por dominio (reorganización modular v3.2.0)
+gst = ["cryptography>=47"]
+gts = []
+service = []
+all = ["pytest>=7", "slh-dsa==0.2.5", "cryptography>=47"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

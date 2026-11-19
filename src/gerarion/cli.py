@@ -18,10 +18,11 @@ import secrets
 import sys
 from pathlib import Path
 
-from . import calendar as cal
-from . import format as fmt
-from . import gts, hashots
-from .calendar import GeroError
+from .core import calendar as cal
+from .core import format as fmt
+from .gst import envelope as gts
+from . import hashots
+from .core.calendar import GeroError
 
 
 def cmd_convert(args) -> int:
