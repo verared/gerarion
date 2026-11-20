@@ -213,6 +213,7 @@ production security claims — independent external review.
 - [x] Adversarial test suites for JCS, anti-downgrade, `ReplayGuard`, sub-second rollback, and static analysis (`tests/test_jcs_gstv2.py`, `tests/test_adversarial_security.py`, `tests/test_clock_state.py`, `.github/workflows/codeql.yml`).
 - [x] Published threat model, security policy, and internal audit report (`docs/en/threat-model.md`, `SECURITY.md`, `docs/en/audit/AUDIT-REPORT-v3.0.0.md`).
 - [ ] Independent third-party security review of the full cryptographic and notarial stack.
+- [ ] Execute and publish a comparative A/B adversarial benchmark (conventional gateway vs. `Gerarion Trusted` profile) measuring replay/rollback/spoofing rejection, false positives, latency, and availability (see [`docs/architecture/ZERO-TRUST-TIME.en.md`](docs/architecture/ZERO-TRUST-TIME.en.md)).
 - [ ] Formal vulnerability disclosure / bug-bounty program (if and when external production deployments warrant it).
 
 **Acceptance criterion:** Zero unmitigated memory-safety or conformance failures in CI, plus published third-party audit closure before production cryptographic claims.
@@ -241,6 +242,18 @@ and calendars without ambiguity, **contextualizable** against physical and
 atomic reference scales, **verifiable** offline by any party without trusting a
 single server, and **provable** through post-quantum cryptographic evidence
 audited in the open.
+
+Under Zero Trust architectures, this means treating time as a **verifiable
+operational dimension** — never trusted merely because a date string is present,
+but evaluated by provenance, integrity, freshness, uncertainty, and explicit
+policy while complementing (never replacing) access control, authorization, and
+hardware key custody. Adopters compose the existing nine satellites gradually
+through three conceptual deployment profiles — **`Gerarion Lite`**
+(`gt-core` + `gt-gus` + `gt-tcj`), **`Gerarion Trusted`** (`Lite` + `gt-gts` +
+`gt-gst` with `KeyRegistry` and `ReplayStore`), and **`Gerarion Full`**
+(`Trusted` + Merkle notary, multi-entity policies, `gt-interop`, and external
+`TPM`/`HSM` custody) — documented in
+[`docs/architecture/ZERO-TRUST-TIME.en.md`](docs/architecture/ZERO-TRUST-TIME.en.md).
 
 *Gerarion Time* moves toward that vision one verified artifact at a time: **no
 checkbox in this document is ever marked `[x]` without reproducible evidence in

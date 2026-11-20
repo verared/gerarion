@@ -34,12 +34,14 @@ Release **`v3.3.0`** sobre la especificación congelada **`GUS v3.0.0`**.
 **Es:**
 
 - Una infraestructura temporal modular, determinista y *offline-first*: calendario regular 12×30, escala continua `TCJ = TAI + 8.400 s`, traducción entre 10 calendarios y sobres temporales híbridos (Ed25519 + ML-DSA).
+- Una forma de convertir el tiempo en una dimensión verificable (procedencia, integridad, frescura, incertidumbre) para arquitecturas Zero Trust ([arquitectura temporal Zero Trust](docs/architecture/ZERO-TRUST-TIME.es.md)).
 - Tres implementaciones independientes (C11, Python, JavaScript) ligadas a un único conjunto de vectores normativos CC0.
 - Dividida en nueve repositorios satélite adoptables de forma independiente.
 
 **No es:**
 
 - Un sustituto de UTC, TAI, NTP, PTP ni del reloj del sistema operativo; los complementa.
+- Un sustituto del control de acceso Zero Trust, la autorización por operación, la custodia de claves en hardware (`TPM` / `HSM`) ni la seguridad del controlador; los complementa.
 - Una blockchain ni un certificado de reloj físico: sin una lectura autenticada de `gt-gts`, la hora dentro de un sobre es solo una afirmación del firmante.
 
 ## 4. Probar en línea
@@ -206,6 +208,7 @@ Lee [SECURITY.md](SECURITY.md) (incluyendo divulgación responsable) y el [model
 | Edición normativa consolidada | [docs/spec/gus-3.0.0.md](docs/spec/gus-3.0.0.md) |
 | Guía de integración (CMS / API externo, checklist `GEIACT-1`) | [docs/guides/CMS-INTEGRATION.es.md](docs/guides/CMS-INTEGRATION.es.md) |
 | Arquitectura de satélites | [docs/architecture/SATELLITE-REPOS.es.md](docs/architecture/SATELLITE-REPOS.es.md) |
+| Arquitectura temporal Zero Trust | [docs/architecture/ZERO-TRUST-TIME.es.md](docs/architecture/ZERO-TRUST-TIME.es.md) |
 | Contrato de versiones | [COMPATIBILITY.md](COMPATIBILITY.md) |
 | Hoja de ruta | [ROADMAP.es.md](ROADMAP.es.md) · [ROADMAP.md](ROADMAP.md) |
 | Modelo de amenazas / política de seguridad | [docs/spec/threat-model.md](docs/spec/threat-model.md) · [SECURITY.md](SECURITY.md) |
