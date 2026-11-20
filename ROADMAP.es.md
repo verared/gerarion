@@ -216,6 +216,7 @@ afirmaciones de seguridad en producción— revisión externa independiente.
 - [x] Suites adversariales para JCS, anti-downgrade, `ReplayGuard`, rollback sub-segundo y análisis estático (`tests/test_jcs_gstv2.py`, `tests/test_adversarial_security.py`, `tests/test_clock_state.py`, `.github/workflows/codeql.yml`).
 - [x] Modelo de amenazas, política de seguridad e informe de auditoría interna publicados (`docs/spec/threat-model.md`, `SECURITY.md`, `docs/audit/AUDIT-REPORT-v3.0.0.md`).
 - [ ] Revisión independiente de seguridad de terceros sobre todo el stack criptográfico y notarial.
+- [ ] Ejecutar y publicar un benchmark adversarial comparativo A/B (pasarela convencional vs. perfil `Gerarion Trusted`) midiendo rechazo de replay/rollback/suplantación, falsos positivos, latencia y disponibilidad (ver [`docs/architecture/ZERO-TRUST-TIME.es.md`](docs/architecture/ZERO-TRUST-TIME.es.md)).
 - [ ] Programa formal de divulgación/recompensas de vulnerabilidades (cuando despliegues externos de producción lo justifiquen).
 
 **Criterio de aceptación:** Cero fallos sin mitigar de seguridad de memoria o conformancia en CI, más cierre de auditoría externa antes de afirmar seguridad criptográfica de producción.
@@ -244,6 +245,18 @@ culturas y calendarios sin ambigüedad, **contextualizable** frente a escalas
 físicas y atómicas de referencia, **verificable** sin conexión por cualquier
 parte sin confiar en un servidor único y **demostrable** mediante evidencia
 criptográfica post-cuántica auditada en abierto.
+
+En arquitecturas Zero Trust, esto implica tratar el tiempo como una **dimensión
+operativa verificable** —nunca confiable solo por contener una fecha, sino
+evaluada por procedencia, integridad, frescura, incertidumbre y política
+explícita, complementando (sin sustituir) el control de acceso, la autorización
+y la custodia de claves en hardware. Quienes adoptan el ecosistema componen los
+nueve satélites existentes de forma gradual mediante tres perfiles conceptuales
+de despliegue —**`Gerarion Lite`** (`gt-core` + `gt-gus` + `gt-tcj`),
+**`Gerarion Trusted`** (`Lite` + `gt-gts` + `gt-gst` con `KeyRegistry` y
+`ReplayStore`) y **`Gerarion Full`** (`Trusted` + notaría Merkle, políticas
+multi-entidad, `gt-interop` y custodia externa en `TPM`/`HSM`)— documentados en
+[`docs/architecture/ZERO-TRUST-TIME.es.md`](docs/architecture/ZERO-TRUST-TIME.es.md).
 
 *Gerarion Time* avanza hacia esa visión un artefacto verificado a la vez:
 **ninguna casilla de este documento se marca `[x]` sin evidencia reproducible

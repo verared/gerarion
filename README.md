@@ -34,12 +34,14 @@ Release **`v3.3.0`** on the frozen specification **`GUS v3.0.0`**.
 **It is:**
 
 - A modular, deterministic, offline-first temporal infrastructure: a regular 12×30 calendar, the continuous scale `TCJ = TAI + 8,400 s`, 10-calendar translation and hybrid (Ed25519 + ML-DSA) timestamp envelopes.
+- A way to turn time into a verifiable dimension (provenance, integrity, freshness, uncertainty) for Zero Trust architectures ([Zero Trust time architecture](docs/architecture/ZERO-TRUST-TIME.en.md)).
 - Three independent implementations (C11, Python, JavaScript) bound by one normative CC0 vector set.
 - Split into nine satellite repositories that can be adopted one by one.
 
 **It is not:**
 
 - A replacement for UTC, TAI, NTP, PTP or the operating-system clock; it complements them.
+- A substitute for Zero Trust access control, per-operation authorization, hardware key custody (`TPM` / `HSM`) or controller security; it complements them.
 - A blockchain, nor a physical-clock certificate: without an authenticated `gt-gts` reading, the time inside an envelope is only an assertion by its signer.
 
 ## 4. Try it online
@@ -206,6 +208,7 @@ Read [SECURITY.md](SECURITY.md) (including responsible disclosure) and the [thre
 | Consolidated normative edition | [docs/en/gus-3.0.0.md](docs/en/gus-3.0.0.md) |
 | Integration guide (external CMS / API, `GEIACT-1` checklist) | [docs/guides/CMS-INTEGRATION.en.md](docs/guides/CMS-INTEGRATION.en.md) |
 | Satellite architecture | [docs/architecture/SATELLITE-REPOS.en.md](docs/architecture/SATELLITE-REPOS.en.md) |
+| Zero Trust time architecture | [docs/architecture/ZERO-TRUST-TIME.en.md](docs/architecture/ZERO-TRUST-TIME.en.md) |
 | Version contract | [COMPATIBILITY.md](COMPATIBILITY.md) |
 | Roadmap | [ROADMAP.md](ROADMAP.md) · [ROADMAP.es.md](ROADMAP.es.md) |
 | Threat model / security policy | [docs/en/threat-model.md](docs/en/threat-model.md) · [SECURITY.md](SECURITY.md) |
