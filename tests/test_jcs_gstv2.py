@@ -130,6 +130,10 @@ TS = "2031DY-03-08-T-09:30:00-SC-TCJ+0"
 EVENT_HASH = "sha256:" + "ab" * 32
 
 
+def verify_v2(envelope, **kwargs):
+    return gts.verify_v2(envelope, expected_event_hash=EVENT_HASH, **kwargs)
+
+
 @pytest.fixture()
 def signer():
     return HybridSigner(seed_classical=bytes(range(32)), seed_pqc=bytes(range(32, 64)))
@@ -141,7 +145,7 @@ def test_gst_v2_ciclo_completo_valido(signer):
     assert env["gst_version"] == "2.0"
     assert env["scale"] == "TCJ"
     assert env["alg"] == "HYBRID-ED25519-ML-DSA-65"
-    res = gts.verify_v2(dict(env))
+    res = verify_v2(dict(env))
     assert res["ok"] is True and res["state"] == "VALID"
 
 
@@ -176,7 +180,7 @@ def test_gst_v2_sobre_sin_event_hash_rechazado(signer):
     del roto["event_hash"]
     roto["sigs"] = signer.sign_payload(gts.gst_v2_message(
         {k: v for k, v in roto.items() if k != "sigs"}))
-    assert gts.verify_v2(roto)["state"] == "REJECTED"
+    assert verify_v2(roto)["state"] == "REJECTED"
 
 
 def test_gst_v2_event_hash_alterado_rechazado(signer):
@@ -184,26 +188,26 @@ def test_gst_v2_event_hash_alterado_rechazado(signer):
                         issuer="test", seq=1)
     roto = dict(env)
     roto["event_hash"] = "sha256:" + "cd" * 32
-    assert gts.verify_v2(roto)["state"] == "REJECTED"
+    assert verify_v2(roto)["state"] == "REJECTED"
 
 
 def test_gst_v2_replay_nonce_repetido_rechazado(signer):
     guard = gts.ReplayGuard()
     env = gts.create_v2(TS, signer, event_hash=EVENT_HASH, kid="k1",
                         issuer="test", seq=1)
-    assert gts.verify_v2(dict(env), guard=guard)["state"] == "VALID"
-    assert gts.verify_v2(dict(env), guard=guard)["state"] == "REJECTED"
-    assert "replay" in gts.verify_v2(dict(env), guard=guard)["errors"][0]
+    assert verify_v2(dict(env), guard=guard)["state"] == "VALID"
+    assert verify_v2(dict(env), guard=guard)["state"] == "REJECTED"
+    assert "replay" in verify_v2(dict(env), guard=guard)["errors"][0]
 
 
 def test_gst_v2_guardia_aisla_por_kid(signer):
     guard = gts.ReplayGuard()
     env = gts.create_v2(TS, signer, event_hash=EVENT_HASH, kid="k1",
                         issuer="test", seq=1)
-    rev1 = gts.verify_v2(dict(env), guard=guard)
+    rev1 = verify_v2(dict(env), guard=guard)
     env2 = gts.create_v2(TS, signer, event_hash=EVENT_HASH, kid="k2",
                          issuer="test", seq=1)
-    rev2 = gts.verify_v2(dict(env2), guard=guard)
+    rev2 = verify_v2(dict(env2), guard=guard)
     assert rev1["ok"] and rev2["ok"]
 
 
@@ -213,8 +217,8 @@ def test_gst_v2_rollback_seq_rechazado(signer):
                          issuer="test", seq=5)
     antiguo = gts.create_v2(TS, signer, event_hash=EVENT_HASH, kid="k1",
                             issuer="test", seq=4)
-    assert gts.verify_v2(dict(env1), guard=guard)["state"] == "VALID"
-    rev = gts.verify_v2(dict(antiguo), guard=guard)
+    assert verify_v2(dict(env1), guard=guard)["state"] == "VALID"
+    rev = verify_v2(dict(antiguo), guard=guard)
     assert rev["state"] == "REJECTED" and "rollback" in rev["errors"][0]
 
 
@@ -226,9 +230,9 @@ def test_gst_v2_rollback_reloj_rechazado(signer):
                           event_hash=EVENT_HASH, kid="k1", issuer="test", seq=2)
     temprano = gts.create_v2("2031DY-03-07-T-09:30:00-SC-TCJ+0", signer,
                              event_hash=EVENT_HASH, kid="k1", issuer="test", seq=3)
-    assert gts.verify_v2(dict(env1), guard=guard)["ok"]
-    assert gts.verify_v2(dict(tarde), guard=guard)["ok"]
-    rev = gts.verify_v2(dict(temprano), guard=guard)
+    assert verify_v2(dict(env1), guard=guard)["ok"]
+    assert verify_v2(dict(tarde), guard=guard)["ok"]
+    rev = verify_v2(dict(temprano), guard=guard)
     assert rev["state"] == "REJECTED" and "rollback" in rev["errors"][0]
 
 
@@ -237,10 +241,10 @@ def test_gst_v2_guardia_persistente(tmp_path, signer):
     guard = gts.ReplayGuard(path)
     env = gts.create_v2(TS, signer, event_hash=EVENT_HASH, kid="k1",
                         issuer="test", seq=1)
-    assert gts.verify_v2(dict(env), guard=guard)["ok"]
+    assert verify_v2(dict(env), guard=guard)["ok"]
     # Un guardia nuevo que carga el mismo archivo detecta el replay.
     guard2 = gts.ReplayGuard(path)
-    assert gts.verify_v2(dict(env), guard=guard2)["state"] == "REJECTED"
+    assert verify_v2(dict(env), guard=guard2)["state"] == "REJECTED"
 
 
 def test_gst_v2_tamper_cualquier_campo_rechazado(signer):
@@ -250,7 +254,7 @@ def test_gst_v2_tamper_cualquier_campo_rechazado(signer):
                          ("policy_version", "gus-sec-vX")):
         roto = dict(env)
         roto[campo] = valor
-        assert gts.verify_v2(roto)["state"] == "REJECTED", campo
+        assert verify_v2(roto)["state"] == "REJECTED", campo
 
 
 # ------------------------------------------------- híbrida (anti-downgrade)
@@ -262,7 +266,7 @@ def test_hibrida_eliminar_firma_pqc_rechazado(signer):
     roto = dict(env)
     roto["sigs"] = {"alg": roto["sigs"]["alg"],
                     "sigs": {"ed25519": roto["sigs"]["sigs"]["ed25519"]}}
-    assert gts.verify_v2(roto)["state"] == "REJECTED"
+    assert verify_v2(roto)["state"] == "REJECTED"
 
 
 def test_hibrida_eliminar_firma_clasica_rechazado(signer):
@@ -271,7 +275,7 @@ def test_hibrida_eliminar_firma_clasica_rechazado(signer):
     roto = dict(env)
     roto["sigs"] = {"alg": roto["sigs"]["alg"],
                     "sigs": {"mldsa": roto["sigs"]["sigs"]["mldsa"]}}
-    assert gts.verify_v2(roto)["state"] == "REJECTED"
+    assert verify_v2(roto)["state"] == "REJECTED"
 
 
 def test_hibrida_alterar_firma_clasica_rechazado(signer):
@@ -279,7 +283,7 @@ def test_hibrida_alterar_firma_clasica_rechazado(signer):
                         issuer="test", seq=1)
     roto = dict(env)
     roto["sigs"]["sigs"]["ed25519"] = roto["sigs"]["sigs"]["ed25519"][:-4] + "0000"
-    assert gts.verify_v2(roto)["state"] == "REJECTED"
+    assert verify_v2(roto)["state"] == "REJECTED"
 
 
 def test_hibrida_degradar_alg_rechazado(signer):
@@ -287,7 +291,7 @@ def test_hibrida_degradar_alg_rechazado(signer):
                         issuer="test", seq=1)
     roto = dict(env)
     roto["alg"] = "HYBRID-ED25519-ML-DSA-44"
-    assert gts.verify_v2(roto)["state"] == "REJECTED"
+    assert verify_v2(roto)["state"] == "REJECTED"
 
 
 def test_hibrida_verifier_exige_ambas(signer):
@@ -336,7 +340,7 @@ def test_hibrida_parte_clasica_sola_no_sirve(signer):
 def test_tai_utc_tabla_metadatos():
     info = tai.tai_utc_table_info()
     assert info["table_version"] == "IERS-C-2026.1"
-    assert info["valid_until_unix"] == 1_799_808_000
+    assert info["valid_until_unix"] == 1_809_129_600
     assert info["smear_policy"] == "reject"
 
 

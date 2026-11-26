@@ -111,6 +111,7 @@ envelope = v2.create(
 # 5. Verificación en 3 niveles (fail-closed)
 result = v2.verify(
     envelope,
+    expected_event_hash=event_hash,
     trust_store=registry,
     replay_store=replay_store,
     required_scope="cms.events",
@@ -119,11 +120,11 @@ assert result.crypto.valid is True
 assert result.identity.valid is True and result.identity.key_status == "ACTIVE"
 assert result.identity.replay_status == "OK"
 assert result.temporal.clock_state == "UNKNOWN"
-assert result.overall_trusted is True
+assert result.sealed and not result.overall_trusted
 ```
 
 ### Rotación de Claves, Revocación y Copias de Seguridad
-- **Rotación de claves:** Al rotar hacia `cms-2027-q1`, conserva `cms-2026-q4` en `KeyRegistry` con su ventana cerrada `valid_until`. Los eventos históricos firmados durante `2031DY` siguen verificando con `result.identity.key_status == "HISTORICAL"` (`HISTORICAL_VALID`) y `result.overall_trusted == True`, mientras que cualquier evento nuevo firmado con `cms-2026-q4` tras `valid_until` se rechaza con `KEY_EXPIRED`.
+- **Rotación de claves:** Conserva la clave anterior en `KeyRegistry` con su ventana cerrada `valid_until`. Los eventos históricos dentro de esa ventana pueden resultar `sealed` con estado `HISTORICAL`; los firmados después se rechazan con `KEY_EXPIRED`.
 - **Revocación de emergencia:** Define `revoked_at` (instante TCJ o sello GUS) en el `TrustedKeyRecord` comprometido. Los eventos anteriores a `revoked_at` siguen siendo auditables como `HISTORICAL`, y cualquier evento en o después de `revoked_at` se rechaza con `KEY_REVOKED`.
 - **Copias de seguridad sin rollback silencioso:** `SQLiteReplayStore` opera en modo `WAL` con `synchronous=FULL` y `BEGIN IMMEDIATE`. Nunca restaures una instantánea antigua de la base SQLite de replay para un `kid` activo (restaurar un `last_seq` anterior reabriría una ventana de replay). Si una recuperación ante desastres exige restaurar desde backup, rota inmediatamente a un `kid` nuevo al recuperar el servicio.
 
@@ -136,7 +137,7 @@ Al crear el repositorio externo del CMS, ejecuta los siguientes **8 experimentos
 ### Los 8 Experimentos Funcionales y de Seguridad
 1. **E1 — Ensamblado exclusivo desde satélites:** Instalar únicamente desde `verared/gt-core` + `verared/gt-gst` (`v3.3.0`), verificando `EXPORT-MANIFEST.json` con `--verify-existing` antes de arrancar el CMS.
 2. **E2 — Hash determinista de evento:** Canonicalizar un payload `gerarion-cms-event/1` con `jcs.dumps_bytes` y confirmar `event_hash` idéntico tras reinicios de workers.
-3. **E3 — Verificación en 3 niveles:** Emitir un sobre `GST v2` y comprobar `result.crypto.valid == True`, `result.identity.valid == True`, `result.identity.key_status == "ACTIVE"`, `result.temporal.clock_state == "UNKNOWN"` y `result.overall_trusted == True`.
+3. **E3 — Verificación en 3 niveles:** Con el digest del evento calculado de forma independiente, comprueba que la clave activa produce `sealed=True`; con `clock_state="UNKNOWN"`, `overall_trusted` sigue en `False`.
 4. **E4 — Cadena causal de hashes:** Encadenar 100 eventos consecutivos del CMS (`previous_event_hash -> event_hash`) con `seq = 1..100` estrictamente creciente y verificar toda la cadena offline.
 5. **E5 — Concurrencia multi-worker:** Lanzar 16 hilos/workers simultáneos intentando verificar/ingerir el mismo sobre firmado contra un `SQLiteReplayStore` compartido; confirmar **1 aceptado (`OK`)** y **15 rechazados (`REPLAY`)**.
 6. **E6 — Preservación tras rotación de claves:** Registrar `k2` tras el `valid_until` de `k1`; confirmar que los eventos antiguos de `k1` validan como `HISTORICAL` y los nuevos de `k2` como `ACTIVE`.
@@ -145,5 +146,5 @@ Al crear el repositorio externo del CMS, ejecuta los siguientes **8 experimentos
 
 ### Las 3 Inyecciones Deliberadas de Fallo (Deben Fallar en Modo *Fail-Closed*)
 1. **F1 — Suplantación con clave autofirmada (`KEY_MISMATCH`):** Un atacante firma un sobre `GST v2` matemáticamente válido con su propio `HybridSigner` declarando `issuer="cms.portaless.org"` y `kid="cms-2026-q4"`. El Nivel 1 (`crypto.valid`) es `True`, pero el Nivel 2 (`identity.valid`) **DEBE** ser `False` con `key_status == "MISMATCH"` (`KEY_MISMATCH`) y `overall_trusted == False`.
-2. **F2 — Omisión de almacén anti-replay (`REPLAY_UNCHECKED`):** Llamar a `v2.verify(envelope, trust_store=registry, replay_store=None)` sin `allow_unchecked_replay=True` **DEBE** fijar `identity.replay_checked == False`, `identity.replay_status == "SKIPPED"`, `identity.valid == False` y `overall_trusted == False`.
+2. **F2 — Omisión de almacén anti-replay (`REPLAY_UNCHECKED`):** Sin almacén ni `allow_unchecked_replay=True`, la verificación informa replay `SKIPPED`, identidad inválida y `sealed=False`.
 3. **F3 — Corrupción del archivo SQLite de replay (`CORRUPT_STATE`):** Sobrescribir la cabecera del archivo SQLite con bytes arbitrarios **DEBE** poner a `SQLiteReplayStore` en modo *fail-closed*, rechazando todo sobre posterior en lugar de reiniciar `seq` a cero.

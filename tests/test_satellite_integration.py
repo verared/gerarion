@@ -379,15 +379,16 @@ def test_assembled_python_integration(assembled_workspace: Path) -> None:
                 parsed, signer, event_hash="sha256:" + "ab" * 32,
                 kid="sat-k1", issuer="sat-test", seq=1,
             )
-            res1 = gst_v2.verify(dict(env), trust_store=registry, replay_store=sqlite_store)
-            assert res1.overall_trusted is True
+            res1 = gst_v2.verify(dict(env), expected_event_hash="sha256:" + "ab" * 32, trust_store=registry, replay_store=sqlite_store)
+            assert res1.sealed is True
+            assert res1.overall_trusted is False
             assert res1.identity.key_status == "ACTIVE"
             assert res1.identity.replay_status == "OK"
             assert res1.temporal.clock_state == "UNKNOWN"
 
             # Replay exacto rechazado por SQLiteReplayStore
-            res_replay = gst_v2.verify(dict(env), trust_store=registry, replay_store=sqlite_store)
-            assert res_replay.overall_trusted is False
+            res_replay = gst_v2.verify(dict(env), expected_event_hash="sha256:" + "ab" * 32, trust_store=registry, replay_store=sqlite_store)
+            assert res_replay.sealed is False
             assert res_replay.identity.replay_status == "REPLAY"
 
             # Clave autofirmada suplantando issuer/kid rechazada por KeyRegistry
@@ -395,7 +396,7 @@ def test_assembled_python_integration(assembled_workspace: Path) -> None:
                 parsed, attacker, event_hash="sha256:" + "ab" * 32,
                 kid="sat-k1", issuer="sat-test", seq=2,
             )
-            res_spoof = gst_v2.verify(dict(spoof), trust_store=registry, replay_store=sqlite_store)
+            res_spoof = gst_v2.verify(dict(spoof), expected_event_hash="sha256:" + "ab" * 32, trust_store=registry, replay_store=sqlite_store)
             assert res_spoof.crypto.valid is True
             assert res_spoof.identity.valid is False
             assert res_spoof.identity.key_status == "MISMATCH"

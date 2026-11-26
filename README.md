@@ -78,19 +78,19 @@ envelope = v2.create(
 )
 
 # 3. Verify across 3 independent levels (cryptography, identity/replay, temporal assurance)
-res = v2.verify(envelope, trust_store=registry, replay_store=replay_store)
+res = v2.verify(envelope, expected_event_hash=event_hash, trust_store=registry, replay_store=replay_store)
 assert res.crypto.valid is True
 assert res.identity.valid is True and res.identity.key_status == "ACTIVE"
 assert res.identity.replay_status == "OK"
 assert res.temporal.clock_state == "UNKNOWN"  # "VERIFIED" only with an authenticated gt-gts reading
-assert res.overall_trusted is True            # levels 1 + 2 only; it does not certify physical time
+assert res.sealed and not res.overall_trusted  # no verified temporal anchor
 print("crypto   :", res.crypto.valid, res.crypto.algorithm)
 print("identity :", res.identity.valid, res.identity.key_status, res.identity.replay_status)
 print("temporal :", res.temporal.clock_state)
 print("overall_trusted:", res.overall_trusted)
 
 # 4. The same envelope again is rejected (atomic anti-replay)
-again = v2.verify(envelope, trust_store=registry, replay_store=replay_store)
+again = v2.verify(envelope, expected_event_hash=event_hash, trust_store=registry, replay_store=replay_store)
 print("replay   :", again.identity.replay_status, again.overall_trusted)
 ```
 
@@ -100,7 +100,7 @@ Expected output:
 crypto   : True HYBRID-ED25519-ML-DSA-65
 identity : True ACTIVE OK
 temporal : UNKNOWN
-overall_trusted: True
+overall_trusted: False
 replay   : REPLAY False
 ```
 
@@ -194,7 +194,7 @@ python3 -m reuse lint
 ## 9. Security
 
 - Normative profile `GST v2`: hybrid **Ed25519 + ML-DSA** over **RFC 8785 (JCS)**, domain `GUS3-GST-V2`, anti-downgrade descriptor inside the signed bytes. `WOTS+` and the `GST v1` API are legacy (`src/gerarion/deprecated/hashots.py`).
-- `gerarion.gst.v2.verify` returns three independent levels: **`crypto`** (mathematics, JCS, dual signatures), **`identity`** (`KeyRegistry` key authorization, validity/revocation, atomic anti-replay) and **`temporal`** (clock provenance from `gt-gts`, `UNKNOWN` by default). `overall_trusted` covers levels 1 + 2 only and does **not** certify physical time.
+- `gerarion.gst.v2.verify` requires the externally computed `expected_event_hash`. `sealed` means valid signatures, event binding and issuer policy; `anchored` and `overall_trusted` additionally require a `VERIFIED` clock and a host policy callback validating independent temporal evidence bound to the exact GST envelope. A clock reading alone is not an anchor.
 - Integrators must supply a `KeyRegistry` and a transactional `ReplayStore` (both fail-closed).
 - Known limits: independent external cryptographic audit and `TPM` / `HSM` key custody are still pending; an attacker with `root` on the signing host is not mitigated.
 

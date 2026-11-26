@@ -81,7 +81,7 @@ def test_self_signed_spoofed_issuer_rejected_at_level_2(
         kid="cms-k1",
         seq=1,
     )
-    res = v2.verify(spoofed_env, trust_store=registry, replay_store=replay)
+    res = v2.verify(spoofed_env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
     assert res.crypto.valid is True
     assert res.identity.valid is False
     assert res.identity.trusted_issuer is False
@@ -98,8 +98,9 @@ def test_self_signed_spoofed_issuer_rejected_at_level_2(
         kid="cms-k1",
         seq=1,
     )
-    res_legit = v2.verify(legit_env, trust_store=registry, replay_store=replay)
-    assert res_legit.overall_trusted is True
+    res_legit = v2.verify(legit_env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
+    assert res_legit.sealed is True
+    assert res_legit.overall_trusted is False
     assert res_legit.identity.key_status == "ACTIVE"
     assert res_legit.identity.replay_status == "OK"
 
@@ -115,7 +116,7 @@ def test_unknown_key_rejected_at_level_2(signer_a: HybridSigner) -> None:
         kid="missing-kid",
         seq=1,
     )
-    res = v2.verify(env, trust_store=registry, replay_store=replay)
+    res = v2.verify(env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
     assert res.crypto.valid is True
     assert res.identity.valid is False
     assert res.identity.key_status == "UNKNOWN"
@@ -160,12 +161,12 @@ def test_key_rotation_historical_valid_and_expired_or_revoked_rejected(
         kid="k1-2026",
         seq=1,
     )
-    res_old = v2.verify(old_env, trust_store=registry, replay_store=replay)
+    res_old = v2.verify(old_env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
     assert res_old.crypto.valid is True
     assert res_old.identity.valid is True
     assert res_old.identity.key_status == "HISTORICAL"
     assert "HISTORICAL_VALID" in res_old.identity.reason
-    assert res_old.overall_trusted is True
+    assert res_old.sealed is True
 
     # 2. Evento nuevo firmado por k1 fuera de su ventana (mes 8) -> KEY_EXPIRED
     expired_env = v2.create(
@@ -176,7 +177,7 @@ def test_key_rotation_historical_valid_and_expired_or_revoked_rejected(
         kid="k1-2026",
         seq=2,
     )
-    res_exp = v2.verify(expired_env, trust_store=registry, replay_store=replay)
+    res_exp = v2.verify(expired_env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
     assert res_exp.crypto.valid is True
     assert res_exp.identity.valid is False
     assert res_exp.identity.key_status == "EXPIRED"
@@ -192,8 +193,8 @@ def test_key_rotation_historical_valid_and_expired_or_revoked_rejected(
         kid="k2-2026",
         seq=1,
     )
-    res_act = v2.verify(active_env, trust_store=registry, replay_store=replay)
-    assert res_act.overall_trusted is True
+    res_act = v2.verify(active_env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
+    assert res_act.sealed is True
     assert res_act.identity.key_status == "ACTIVE"
 
     # 4. Revocación de clave en un instante exacto
@@ -213,8 +214,8 @@ def test_key_rotation_historical_valid_and_expired_or_revoked_rejected(
         kid="k-revoked",
         seq=1,
     )
-    res_pre = v2.verify(pre_rev, trust_store=registry, replay_store=replay)
-    assert res_pre.overall_trusted is True
+    res_pre = v2.verify(pre_rev, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
+    assert res_pre.sealed is True
     assert res_pre.identity.key_status == "HISTORICAL"
 
     post_rev = v2.create(
@@ -225,7 +226,7 @@ def test_key_rotation_historical_valid_and_expired_or_revoked_rejected(
         kid="k-revoked",
         seq=2,
     )
-    res_post = v2.verify(post_rev, trust_store=registry, replay_store=replay)
+    res_post = v2.verify(post_rev, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
     assert res_post.crypto.valid is True
     assert res_post.identity.valid is False
     assert res_post.identity.key_status == "REVOKED"
@@ -267,17 +268,17 @@ def test_sqlite_replay_store_16_threads_concurrency(
 
     def _worker() -> v2.VerificationResult:
         barrier.wait(timeout=5.0)
-        return v2.verify(dict(env), trust_store=registry, replay_store=store)
+        return v2.verify(dict(env), expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=store)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=16) as pool:
         results = list(pool.map(lambda _: _worker(), range(16)))
 
     store.close()
 
-    accepted = [r for r in results if r.overall_trusted and r.identity.replay_status == "OK"]
+    accepted = [r for r in results if r.sealed and r.identity.replay_status == "OK"]
     rejected = [
         r for r in results
-        if not r.overall_trusted
+        if not r.sealed
         and r.crypto.valid
         and r.identity.replay_status == "REPLAY"
     ]
@@ -327,7 +328,7 @@ def test_fail_closed_when_replay_store_or_trust_store_is_none(
     )
 
     # replay_store=None -> replay_checked=False, replay_status="SKIPPED", identity.valid=False
-    res_no_replay = v2.verify(env, trust_store=registry, replay_store=None)
+    res_no_replay = v2.verify(env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=None)
     assert res_no_replay.crypto.valid is True
     assert res_no_replay.identity.trusted_issuer is True
     assert res_no_replay.identity.replay_checked is False
@@ -335,9 +336,10 @@ def test_fail_closed_when_replay_store_or_trust_store_is_none(
     assert res_no_replay.identity.valid is False
     assert res_no_replay.overall_trusted is False
 
-    # Opt-in explícito allow_unchecked_replay=True -> overall_trusted=True pero deja rastro replay_checked=False
+    # El análisis de archivo puede omitir replay de forma explícita, sin anclar el sello.
     res_opt_in = v2.verify(
         env,
+        expected_event_hash=EVENT_HASH,
         trust_store=registry,
         replay_store=None,
         allow_unchecked_replay=True,
@@ -345,11 +347,12 @@ def test_fail_closed_when_replay_store_or_trust_store_is_none(
     assert res_opt_in.identity.replay_checked is False
     assert res_opt_in.identity.replay_status == "SKIPPED"
     assert res_opt_in.identity.valid is True
-    assert res_opt_in.overall_trusted is True
+    assert res_opt_in.sealed is True
+    assert res_opt_in.overall_trusted is False
 
     # trust_store=None -> key_status="UNCHECKED", overall_trusted=False
     replay = v2.SQLiteReplayStore(":memory:")
-    res_no_trust = v2.verify(env, trust_store=None, replay_store=replay)
+    res_no_trust = v2.verify(env, expected_event_hash=EVENT_HASH, trust_store=None, replay_store=replay)
     assert res_no_trust.crypto.valid is True
     assert res_no_trust.identity.trusted_issuer is False
     assert res_no_trust.identity.key_status == "UNCHECKED"
@@ -372,7 +375,7 @@ def test_level_3_temporal_unknown_by_default_and_propagates_gts_reading(
         kid="k1",
         seq=1,
     )
-    res_default = v2.verify(env, trust_store=registry, replay_store=replay)
+    res_default = v2.verify(env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
     assert res_default.temporal.clock_state == "UNKNOWN"
     assert res_default.temporal.clock_source is None
     assert res_default.temporal.signed_at == "2031DY-03-08-T-09:30:00-SC-TCJ+0"
@@ -400,6 +403,7 @@ def test_level_3_temporal_unknown_by_default_and_propagates_gts_reading(
     )
     res_verified = v2.verify(
         env2,
+        expected_event_hash=EVENT_HASH,
         trust_store=registry,
         replay_store=replay,
         clock_reading=reading,
@@ -407,6 +411,7 @@ def test_level_3_temporal_unknown_by_default_and_propagates_gts_reading(
     assert res_verified.temporal.clock_state == "VERIFIED"
     assert res_verified.temporal.clock_source == "gnss-ptp-01"
     assert res_verified.temporal.clock_uncertainty_ns == 250_000
+    assert res_verified.sealed and not res_verified.anchored
 
 
 # ---------------------------------------------------------------------------
@@ -440,8 +445,8 @@ def test_legacy_v1_emits_deprecation_warning_while_v2_is_clean(
             kid="k1",
             seq=1,
         )
-        res = v2.verify(env, trust_store=registry, replay_store=replay)
-        assert res.overall_trusted is True
+        res = v2.verify(env, expected_event_hash=EVENT_HASH, trust_store=registry, replay_store=replay)
+        assert res.sealed is True
     dep_warnings = [w for w in caught if issubclass(w.category, DeprecationWarning)]
     assert dep_warnings == []
 
@@ -460,4 +465,35 @@ def test_readme_cms_1_minute_quickstart_executes_verbatim() -> None:
     code = m.group(1)
     ns: dict = {}
     exec(compile(code, "<README-1-minute-quickstart>", "exec"), ns, ns)
-    assert ns["res"].overall_trusted is True
+    assert ns["res"].sealed is True
+    assert ns["res"].overall_trusted is False
+
+
+def test_event_binding_offsets_and_independent_anchor(signer_a):
+    from gerarion.gst.jcs import dumps_bytes
+
+    stamp = "2031DY-03-08-T-09:30:00-SC-TCJ"
+    fields = dict(event_hash=EVENT_HASH, issuer="cms.example.org", kid="k1", seq=1)
+    zero = v2.create(stamp + "+0", signer_a, **fields)
+    shifted = v2.create(stamp + "+2", signer_a, **fields)
+    assert zero["ins"] - shifted["ins"] == 7200
+    registry = v2.KeyRegistry()
+    registry.register_signer(issuer=fields["issuer"], kid=fields["kid"], signer=signer_a)
+    replay = v2.ReplayGuard()
+    options = dict(trust_store=registry, replay_store=replay)
+    other = "sha256:" + hashlib.sha256(b"another artifact").hexdigest()
+    assert not v2.verify(shifted, expected_event_hash=other, **options).crypto.event_hash_valid
+    assert not gst_env.verify_v2(shifted, expected_event_hash=other)["ok"]
+    result = v2.verify(shifted, expected_event_hash=EVENT_HASH, **options)
+    assert result.sealed and not result.overall_trusted
+    trust = dict(trust_store=registry, allow_unchecked_replay=True, expected_event_hash=EVENT_HASH,
+                 clock_reading={"state": "VERIFIED"})
+    assert not v2.verify(shifted, **trust).anchored
+    assert not v2.verify(zero, **trust, verify_temporal_anchor=lambda raw, _: raw == dumps_bytes(shifted)).anchored
+    assert v2.verify(shifted, **trust, verify_temporal_anchor=lambda raw, _: raw == dumps_bytes(shifted)).overall_trusted
+
+    for malformed in ("sha256:" + "a" * 128, "sha512:" + "a" * 64, EVENT_HASH + "\n"):
+        with pytest.raises(ValueError, match="event_hash"):
+            v2.create(stamp + "+0", signer_a, **{**fields, "event_hash": malformed})
+    with pytest.raises(ValueError, match="escala TCJ"):
+        v2.create(stamp + "+0", signer_a, scale="TAI", **fields)

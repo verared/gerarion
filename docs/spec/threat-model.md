@@ -43,8 +43,8 @@ independientes:
 3. **`temporal`** — procedencia/calidad del reloj de `gt-gts`; `UNKNOWN`
    cuando no se aporta una lectura autenticada.
 
-`overall_trusted` cubre solo los niveles 1 y 2; no certifica la exactitud
-física de la hora declarada (comprueba `temporal.clock_state`).
+`sealed` cubre los niveles 1 y 2. `overall_trusted` exige además evidencia
+temporal vinculada y aceptada por el host y una lectura `VERIFIED`.
 
 ## 4. Garantías y sus premisas
 
@@ -125,10 +125,9 @@ firma solo clásica o solo post-cuántica se rechaza.
    eventos arbitrarios con el `(issuer, kid)` autorizado; el robo de claves
    solo se detecta a posteriori mediante revocación. No uses `gt-gst` en
    decisiones críticas de producción hasta cerrar este punto y el anterior.
-3. **`overall_trusted` no es un certificado de hora física.** Cubre los
-   niveles 1 y 2. Un firmante con clave autorizada aún puede firmar una hora
-   falsa; comprueba `temporal.clock_state` y ancla en un notario independiente
-   para evidencia frente a terceros.
+3. **Un sello no certifica la hora física.** Un firmante con clave autorizada
+   aún puede firmar una hora falsa. Comprueba la incertidumbre y el alcance
+   del ancla independiente antes de usar un sobre anclado como evidencia temporal.
 4. **No garantiza la exactitud del reloj de pared de un dispositivo.** NTP, PTP
    y GNSS son capas externas; `gt-gts` clasifica lecturas, no disciplina el
    reloj.

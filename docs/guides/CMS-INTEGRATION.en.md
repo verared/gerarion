@@ -111,6 +111,7 @@ envelope = v2.create(
 # 5. Three-level verification (fail-closed)
 result = v2.verify(
     envelope,
+    expected_event_hash=event_hash,
     trust_store=registry,
     replay_store=replay_store,
     required_scope="cms.events",
@@ -119,11 +120,11 @@ assert result.crypto.valid is True
 assert result.identity.valid is True and result.identity.key_status == "ACTIVE"
 assert result.identity.replay_status == "OK"
 assert result.temporal.clock_state == "UNKNOWN"
-assert result.overall_trusted is True
+assert result.sealed and not result.overall_trusted
 ```
 
 ### Key Rotation, Revocation, and Backup Safety
-- **Key rotation:** When rotating to `cms-2027-q1`, keep `cms-2026-q4` in `KeyRegistry` with its closed `valid_until` window. Historical events signed within `2031DY` continue to verify with `result.identity.key_status == "HISTORICAL"` (`HISTORICAL_VALID`) and `result.overall_trusted == True`, while any new event signed with `cms-2026-q4` after `valid_until` is rejected with `KEY_EXPIRED`.
+- **Key rotation:** Keep the former key in `KeyRegistry` with its closed `valid_until` window. Historical events within that window can still be `sealed` with key status `HISTORICAL`; events signed after it fail with `KEY_EXPIRED`.
 - **Emergency revocation:** Set `revoked_at` (TCJ instant or GUS stamp) on the compromised `TrustedKeyRecord`. Events prior to `revoked_at` remain auditable as `HISTORICAL`, while any event at or after `revoked_at` is rejected with `KEY_REVOKED`.
 - **Backups without silent rollback:** `SQLiteReplayStore` runs in `WAL` mode with `synchronous=FULL` and `BEGIN IMMEDIATE`. Never restore an older snapshot of the replay SQLite database for an active `kid` (restoring an older `last_seq` would reopen a replay window). If disaster recovery requires restoring from backup, rotate to a fresh `kid` upon recovery.
 
@@ -136,7 +137,7 @@ When creating the external CMS repository, execute the following **8 experiments
 ### The 8 Functional & Security Experiments
 1. **E1 — Satellite-only assembly:** Install solely from `verared/gt-core` + `verared/gt-gst` (`v3.3.0`), verifying `EXPORT-MANIFEST.json` with `--verify-existing` before starting the CMS.
 2. **E2 — Deterministic event hashing:** Canonicalize a `gerarion-cms-event/1` payload with `jcs.dumps_bytes` and confirm identical `event_hash` across worker restarts.
-3. **E3 — Three-level verification:** Issue a `GST v2` envelope and verify `result.crypto.valid == True`, `result.identity.valid == True`, `result.identity.key_status == "ACTIVE"`, `result.temporal.clock_state == "UNKNOWN"`, and `result.overall_trusted == True`.
+3. **E3 — Three-level verification:** With the independently computed event digest, verify that the active key produces `sealed=True`; with `clock_state="UNKNOWN"`, `overall_trusted` remains `False`.
 4. **E4 — Causal hash chain:** Chain 100 consecutive CMS events (`previous_event_hash -> event_hash`) with monotonically increasing `seq = 1..100` and verify the full chain offline.
 5. **E5 — Multi-worker concurrency:** Submit 16 concurrent threads/workers attempting to verify/ingest the same signed envelope against a shared `SQLiteReplayStore`; confirm **1 accepted (`OK`)** and **15 rejected (`REPLAY`)**.
 6. **E6 — Key rotation preservation:** Register `k2` after `k1`'s `valid_until`; confirm old events signed by `k1` validate as `HISTORICAL` while new events signed by `k2` validate as `ACTIVE`.
@@ -145,5 +146,5 @@ When creating the external CMS repository, execute the following **8 experiments
 
 ### The 3 Deliberate Failure Injections (Must Fail Closed)
 1. **F1 — Self-signed key spoofing (`KEY_MISMATCH`):** An attacker signs a valid `GST v2` envelope with their own `HybridSigner` claiming `issuer="cms.portaless.org"` and `kid="cms-2026-q4"`. Level 1 (`crypto.valid`) is `True`, but Level 2 (`identity.valid`) **MUST** be `False` with `key_status == "MISMATCH"` (`KEY_MISMATCH`) and `overall_trusted == False`.
-2. **F2 — Omitted replay store (`REPLAY_UNCHECKED`):** Calling `v2.verify(envelope, trust_store=registry, replay_store=None)` without `allow_unchecked_replay=True` **MUST** set `identity.replay_checked == False`, `identity.replay_status == "SKIPPED"`, `identity.valid == False`, and `overall_trusted == False`.
+2. **F2 — Omitted replay store (`REPLAY_UNCHECKED`):** Without a replay store or `allow_unchecked_replay=True`, verification reports replay `SKIPPED`, identity invalid, and `sealed=False`.
 3. **F3 — Corrupted SQLite replay file (`CORRUPT_STATE`):** Overwriting the SQLite file header with random bytes **MUST** put `SQLiteReplayStore` into fail-closed mode, rejecting all subsequent envelopes rather than resetting `seq` to zero.

@@ -40,9 +40,9 @@ into a single boolean "valid timestamp", the reference verifier
 | **Level 2 — Identity & freshness** | `result.identity` | Key authorization, validity window, and revocation status in `KeyRegistry`, plus atomic anti-replay and monotonic sequence checking in a transactional `ReplayStore` (`SQLiteReplayStore`), both fail-closed. | Whether the physical clock of the signing host was synchronized or accurate. |
 | **Level 3 — Temporal provenance** | `result.temporal` | Clock trust state (`VERIFIED`, `HOLDOVER`, `UNVERIFIED`, `REJECTED`) and explicit uncertainty bounds supplied by an authenticated `gt-gts` reading (`UNKNOWN` by default when omitted). | Physical resistance against GNSS/PTP/NTP jamming or a `root` attacker on the host. |
 
-By design, `result.overall_trusted` covers **Level 1 + Level 2 only** and **never**
-certifies physical clock accuracy; policies that require bounded physical time
-must additionally inspect `result.temporal.clock_state` and uncertainty bounds.
+`result.sealed` covers levels 1 and 2. `result.anchored` and `result.overall_trusted`
+also require `VERIFIED` and independent temporal evidence bound to the exact
+sealed envelope by the host's anchor verifier. Bounds still depend on that policy.
 
 ---
 
