@@ -39,7 +39,7 @@ export const TAI_MINUS_UTC_TABLE = [
 // ---------------------------------------------------------------------------
 
 export const TAI_UTC_TABLE_VERSION = "IERS-C-2026.1";
-export const TAI_UTC_VALID_UNTIL_UNIX = 1799808000;
+export const TAI_UTC_VALID_UNTIL_UNIX = 1809129600;
 export const TAI_UTC_SMEAR_POLICY = "reject";
 
 export function taiUtcTableInfo() {
@@ -85,7 +85,7 @@ export function unixFromInstant(instant) {
     const utc = tai - BigInt(offs[i]);
     if (utc >= low && utc < high) return utc;
   }
-  return tai;
+  throw new GeroError("GERO_E3339: instante sin etiqueta Unix en la tabla TAI−UTC");
 }
 
 // ---------------------------------------------------------------------------

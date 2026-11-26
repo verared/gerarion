@@ -309,14 +309,14 @@ export function parse(raw, { strictWeekday = false } = {}) {
         const [h, mi] = d.length <= 2 ? [parseInt(d, 10), 0]
           : d.length === 3 ? [parseInt(d[0], 10), parseInt(d.slice(1), 10)]
           : [parseInt(d.slice(0, 2), 10), parseInt(d.slice(2), 10)];
-        if (h > 23 || mi > 59) throw new GeroError(`GERO_EINVAL: offset TCJ fuera de rango: TCJ${sgn}${d}`);
+        if (h > 24 || mi > 59 || (h === 24 && mi !== 0)) throw new GeroError(`GERO_EINVAL: offset TCJ fuera de rango: TCJ${sgn}${d}`);
         offsetSeconds = (sgn === "-" ? -1 : 1) * (h * 3600 + mi * 60);
       }
     } else {
       if (m[10] === undefined || m[10] === "0") offsetSeconds = 0;   // sin offset / TCJ0 / TCJ+0
       else {
         const h = gi(11), mi = m[12] !== undefined ? parseInt(m[12], 10) : 0;
-        if (h > 23 || mi > 59) throw new GeroError(`GERO_EINVAL: offset TCJ fuera de rango: TCJ${m[10]}${h}:${String(mi).padStart(2, "0")}`);
+        if (h > 24 || mi > 59 || (h === 24 && mi !== 0)) throw new GeroError(`GERO_EINVAL: offset TCJ fuera de rango: TCJ${m[10]}${h}:${String(mi).padStart(2, "0")}`);
         offsetSeconds = (m[10] === "-" ? -1 : 1) * (h * 3600 + mi * 60);
       }
     }
@@ -410,15 +410,20 @@ export function instantFromParts(dayIndex, hour = 0, minute = 0, second = 0, off
       offsetSeconds < -86400 || offsetSeconds > 86400) {
     throw new GeroError("GERO_EINVAL: TCJ±O fuera de rango o con segundos (mul. de 60, ±24 h)");
   }
-  return BigInt(dayIndex) * BigInt(SECS_PER_DAY) + BigInt(hour * 3600 + minute * 60 + second - offsetSeconds);
+  if (typeof dayIndex !== "bigint" && !Number.isSafeInteger(dayIndex)) {
+    throw new GeroError("GERO_EINVAL: dayIndex debe ser un entero seguro o BigInt");
+  }
+  const instant = BigInt(dayIndex) * BigInt(SECS_PER_DAY) + BigInt(hour * 3600 + minute * 60 + second - offsetSeconds);
+  if (BigInt.asIntN(64, instant) !== instant) throw new GeroError("GERO_ERANGE: instante fuera de int64");
+  return instant;
 }
 
 /** Vista TCJ+0 de un instante: fecha Gerarion + hora civil (espejo de calendar.instant_parts). */
 export function instantParts(instant) {
   const t = BigInt(instant);
-  const day = t < 0n ? -((-t) / BigInt(SECS_PER_DAY)) : t / BigInt(SECS_PER_DAY);
+  let day = t / BigInt(SECS_PER_DAY);
   let rem = t % BigInt(SECS_PER_DAY);
-  if (rem < 0n) rem += BigInt(SECS_PER_DAY);
+  if (rem < 0n) { day -= 1n; rem += BigInt(SECS_PER_DAY); }
   const hour = Number(rem / 3600n);
   const minute = Number((rem % 3600n) / 60n);
   const second = Number(rem % 60n);

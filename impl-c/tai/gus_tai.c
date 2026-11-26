@@ -72,7 +72,7 @@ GusTaiTableInfo gus_tai_table_info(void)
     /* Vigencia verificada de la tabla: 2027-05-01T00:00:00Z. La CGPM aprobó
      * la transición a UTC continuo (sin intercalares) a partir de mayo de
      * 2027: después de esa fecha la tabla exige revisión. */
-    info.valid_until_unix = 1799808000LL;
+    info.valid_until_unix = 1809129600LL;
     info.smear_policy = "reject"; /* el leap smear no es una escala física TAI */
     return info;
 }

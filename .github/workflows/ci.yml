@@ -32,6 +32,7 @@ jobs:
           node web/test/conformance.mjs
           node web/test/profiles-conformance.mjs
           node web/test/regression-conformance.mjs
+          node --test web/test/p0-time-boundaries.mjs
           node web/test/calendars.test.mjs
       - name: Conformance C (independent implementation)
         run: make -C impl-c conformance
