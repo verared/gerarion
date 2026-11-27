@@ -72,8 +72,7 @@ interface MlDsaModule {
 
 let mlDsaCache: Promise<MlDsaModule | null> | undefined;
 
-/** Carga perezosa de @noble/post-quantum; null = backend no disponible. */
-async function loadMlDsa(): Promise<MlDsaModule | null> {
+async function defaultLoadMlDsa(): Promise<MlDsaModule | null> {
   if (mlDsaCache === undefined) {
     mlDsaCache = import("@noble/post-quantum/ml-dsa.js").then(
       (m) => m as unknown as MlDsaModule,
@@ -81,6 +80,28 @@ async function loadMlDsa(): Promise<MlDsaModule | null> {
     );
   }
   return mlDsaCache;
+}
+
+/**
+ * Punto de inyección para pruebas: permite simular la ausencia del backend
+ * PQC (loader nulo) o sustituirlo por un doble de verificación. `null`
+ * restaura el loader real (@noble/post-quantum con caché).
+ */
+let mlDsaLoader: () => Promise<MlDsaModule | null> = defaultLoadMlDsa;
+
+export function setMlDsaLoaderForTests(
+  loader: (() => Promise<MlDsaModule | null>) | null,
+): void {
+  if (loader === null) {
+    mlDsaLoader = defaultLoadMlDsa;
+    mlDsaCache = undefined; // resetea la caché también
+  } else {
+    mlDsaLoader = loader;
+  }
+}
+
+async function loadMlDsa(): Promise<MlDsaModule | null> {
+  return mlDsaLoader();
 }
 
 /**

@@ -23,12 +23,14 @@
     "@noble/post-quantum": "^0.7.1"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
+    "miniflare": "^4.20260730.0",
     "typescript": "^5.9.3"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
     "check:pure": "node scripts/check-no-node-imports.mjs",
-    "test": "node --test test/parity.test.mjs test/verify.test.mjs test/pack.test.mjs"
+    "test": "node --test test/*.test.mjs"
   },
   "engines": {
     "node": ">=18"

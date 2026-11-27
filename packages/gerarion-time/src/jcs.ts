@@ -22,6 +22,32 @@ export function jcsSerialize(value: unknown): string {
   return out;
 }
 
+/**
+ * Rechaza cadenas con sustitutos huérfanos (U+D800..U+DFFF sin pareja),
+ * igual que jcs.py: JCS exige cadenas Unicode bien formadas; nunca se
+ * "arreglan" en silencio (fail-closed).
+ */
+function assertWellFormed(s: string, where: string): void {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c >= 0xd800 && c <= 0xdfff) {
+      // Par alternado emparejado (alto seguido de bajo) = astral válido.
+      const isHigh = c <= 0xdbff;
+      const paired =
+        isHigh &&
+        i + 1 < s.length &&
+        s.charCodeAt(i + 1) >= 0xdc00 &&
+        s.charCodeAt(i + 1) <= 0xdfff;
+      if (!paired) {
+        throw new JcsError(
+          `JCS_INVALID: ${where}: sustituto huérfano no es Unicode bien formado`,
+        );
+      }
+      i++; // consume la mitad baja del par emparejado
+    }
+  }
+}
+
 /** Devuelve null cuando el valor no es canonizable (señal interna). */
 function jcsValue(value: unknown, where: string): string | null {
   if (value === null) return "null";
@@ -31,6 +57,7 @@ function jcsValue(value: unknown, where: string): string | null {
     case "number":
       return jcsNumber(value, where);
     case "string":
+      assertWellFormed(value, where);
       return JSON.stringify(value);
     case "bigint": {
       if (value > BigInt(Number.MAX_SAFE_INTEGER) || value < -BigInt(Number.MAX_SAFE_INTEGER)) {

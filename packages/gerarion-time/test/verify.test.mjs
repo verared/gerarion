@@ -11,6 +11,7 @@ import {
   GST_V2_MAX_BYTES_DEFAULT,
   verifyGstV2Offline,
 } from "../dist/index.js";
+import { setMlDsaLoaderForTests } from "../dist/gst-v2.js";
 import { jcsSerialize, JcsError } from "../dist/jcs.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -41,7 +42,21 @@ test("verificador: firma ausente o sobre no-objeto → invalid/unsupported fail-
   assert.equal(noSigs.verdict, "invalid");
 
   // Sin backend ML-DSA (bloqueo del import) → unsupported, nunca sealed.
-  // (El verificador debe ser fail-closed ante ausencia del backend PQC.)
   assert.equal(GST_V2_DOMAIN.length, 12);
   assert.ok(GST_V2_MAX_BYTES_DEFAULT >= 64 * 1024);
+
+  // Simulación de backend PQC ausente → unsupported (fail-closed).
+  setMlDsaLoaderForTests(async () => null);
+  try {
+    const r = await verifyGstV2Offline(fx.variants["ML-DSA-65"].envelope, fx.event_hash);
+    assert.equal(r.verdict, "unsupported");
+    assert.equal(r.reason, "ml_dsa_unavailable");
+    assert.equal(r.sealed, false);
+  } finally {
+    setMlDsaLoaderForTests(null); // restaura el loader real
+  }
+
+  // Tras restaurar el loader real, el mismo sobre vuelve a verificar sealed.
+  const ok = await verifyGstV2Offline(fx.variants["ML-DSA-65"].envelope, fx.event_hash);
+  assert.equal(ok.verdict, "sealed");
 });
