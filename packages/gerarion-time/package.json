@@ -4,6 +4,11 @@
   "description": "Núcleo temporal determinista de Gerarion (GUS/TCJ) y verificador offline de recibos GST v2, 100% Web-API puro (0 imports node:*).",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/verared/gerarion.git",
+    "directory": "packages/gerarion-time"
+  },
   "publishConfig": {
     "access": "public"
   },
