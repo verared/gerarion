@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /** Build de @verared/gerarion-time: tsc + embebido verbatim del núcleo. */
 import { execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, rmSync, existsSync, writeFileSync } from "node:fs";

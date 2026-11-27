@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // Driver de smoke para Cloudflare Workers vía miniflare, SIN nodejs_compat.
 // 1) empaqueta el worker con esbuild (resuelve node_modules en build time,
 //    igual que wrangler); 2) lo ejecuta en workerd vía miniflare sin

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * Declaración tipada del núcleo determinista GUS/TCJ.
  *

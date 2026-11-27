@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // Smoke multi-runtime del paquete: verifica un recibo GST v2 real con el
 // núcleo embebido + verificador híbrido. 100% Web-API puro (sin node:*),
 // así que corre igual en Node, Deno y Cloudflare Workers (workerd).

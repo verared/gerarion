@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // Entrada de smoke para Cloudflare Workers (workerd) SIN nodejs_compat:
 // el handler verifica el recibo GST v2 real con el paquete empaquetado.
 import { runSmoke } from "./smoke-runtime.mjs";

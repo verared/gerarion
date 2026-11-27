@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // Fixture estático generado por gerarion (Python) — no editar a mano.
 export const eventHash = "sha256:abababababababababababababababababababababababababababababababab";
 export const envelope = {

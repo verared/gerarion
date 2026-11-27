@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * @verared/gerarion-time — núcleo temporal determinista de Gerarion
  * y verificador offline de recibos GST v2.

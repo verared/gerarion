@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // Paridad Python ↔ JS: bytes firmables GST v2 + verificación híbrida.
 import { test } from "node:test";
 import assert from "node:assert/strict";

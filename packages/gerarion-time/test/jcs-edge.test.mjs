@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // Paridad Python ↔ JS de la canonicalización JCS (RFC 8785 / Appendix B).
 // El generador Python (jcs-edge-cases.py) canonicaliza cada caso con
 // gerarion.gst.jcs; aquí se recomputa con src/jcs.ts y se compara byte a byte.

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * Contrato `AnchorProvider` para v0.2 (honestidad temporal).
  *

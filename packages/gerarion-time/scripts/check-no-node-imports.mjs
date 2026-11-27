@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /** Chequeo estático: 0 imports `node:*` en src/ y dist/ (Web-API puro). */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";

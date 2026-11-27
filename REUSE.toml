@@ -91,3 +91,12 @@ precedence = "override"
 path = [".gitignore", "REUSE.toml"]
 SPDX-License-Identifier = "CC0-1.0"
 SPDX-FileCopyrightText = "2026 verared contributors"
+
+# -----------------------------------------------------------
+# paquete npm @verared/gerarion-time (packages/) — Apache-2.0
+# -----------------------------------------------------------
+[[annotations]]
+precedence = "override"
+path = ["packages/gerarion-time/**"]
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "2026 verared contributors"

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // Matriz de tests negativos del verificador offline GST v2.
 // Cada caso confirma el veredicto esperado sobre un recibo real firmado
 // por Python (gerarion.gst.v2.create) con mutaciones dirigidas.

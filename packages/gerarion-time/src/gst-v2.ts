@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 /**
  * Verificador offline de recibos GST v2 (híbrido Ed25519 + ML-DSA).
  *

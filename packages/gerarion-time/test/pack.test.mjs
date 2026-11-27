@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 verared contributors
 // Smoke del tarball: npm pack + instalación limpia + consumo real.
 import { test } from "node:test";
 import assert from "node:assert/strict";
