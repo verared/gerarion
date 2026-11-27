@@ -50,7 +50,10 @@ jobs:
         run: python -m pip install -e ".[dev,pqc]"
 
       - name: npm ci (build reproducible desde package-lock.json)
-        run: npm ci
+        run: |
+          node --version
+          npm --version
+          npm ci
       - name: Build (tsc NodeNext estricto + núcleo embebido verbatim)
         run: npm run build
       - name: Chequeo estático 0 imports node:*
