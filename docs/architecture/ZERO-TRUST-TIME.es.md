@@ -42,10 +42,9 @@ verificación en **tres niveles independientes** (`VerificationResult`):
 | **Nivel 2 — Identidad y frescura** | `result.identity` | Autorización de la clave, ventana de vigencia y revocación en `KeyRegistry`, más verificación atómica anti-replay y secuencia monotónica en un `ReplayStore` transaccional (`SQLiteReplayStore`), ambos *fail-closed*. | Si el reloj físico del host firmante estaba sincronizado o era veraz. |
 | **Nivel 3 — Procedencia temporal** | `result.temporal` | Estado de confianza del reloj (`VERIFIED`, `HOLDOVER`, `UNVERIFIED`, `REJECTED`) y cotas explícitas de incertidumbre aportadas por una lectura autenticada de `gt-gts` (`UNKNOWN` por defecto cuando se omite). | Resistencia física frente a interferencias GNSS/PTP/NTP o a un atacante con `root` en el host. |
 
-Por diseño, `result.overall_trusted` cubre **solo Nivel 1 + Nivel 2** y **nunca**
-certifica la precisión física del reloj; las políticas que exijan tiempo físico
-acotado deben inspeccionar adicionalmente `result.temporal.clock_state` y sus
-cotas de incertidumbre.
+`result.sealed` cubre los niveles 1 y 2. `result.anchored` y `result.overall_trusted`
+exigen además `VERIFIED` y evidencia temporal independiente vinculada al sobre
+exacto por el verificador del host. Las cotas dependen de esa política.
 
 ---
 

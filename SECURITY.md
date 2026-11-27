@@ -56,10 +56,9 @@ report). A corrupted replay store rejects everything instead of resetting
 | 2 | `identity` | Key authorization for `(issuer, kid)` at the signed instant (active / historical / expired / revoked / mismatch) and transactional anti-replay / anti-rollback. |
 | 3 | `temporal` | Provenance and quality of the clock (`gt-gts`): `VERIFIED`, `HOLDOVER`, `UNVERIFIED`, `REJECTED`, or `UNKNOWN` when no authenticated reading is supplied. |
 
-> **`overall_trusted` evaluates Level 1 + Level 2 only.** It does **not**
-> certify the physical accuracy of the declared time. Integrators that need
-> a temporal guarantee must additionally check
-> `result.temporal.clock_state == "VERIFIED"`.
+> **`sealed` covers levels 1 and 2.** `anchored` and `overall_trusted` additionally
+> require a `VERIFIED` reading and independent temporal evidence bound to the
+> exact envelope and accepted by the host's verification policy.
 
 ### Known limits (honest status)
 
@@ -140,9 +139,9 @@ reporte). Un almacén de replay corrupto rechaza todo en lugar de reiniciar
 | 2 | `identity` | Autorización de la clave para `(issuer, kid)` en el instante firmado (activa / histórica / expirada / revocada / discordante) y anti-replay / anti-rollback transaccional. |
 | 3 | `temporal` | Procedencia y calidad del reloj (`gt-gts`): `VERIFIED`, `HOLDOVER`, `UNVERIFIED`, `REJECTED` o `UNKNOWN` cuando no se aporta una lectura autenticada. |
 
-> **`overall_trusted` evalúa únicamente Nivel 1 + Nivel 2.** **No** certifica
-> la exactitud física de la hora declarada. Quien necesite garantía
-> temporal debe comprobar además `result.temporal.clock_state == "VERIFIED"`.
+> **`sealed` cubre los niveles 1 y 2.** `anchored` y `overall_trusted` exigen
+> además una lectura `VERIFIED` y evidencia temporal independiente vinculada
+> al sobre exacto y aceptada por la política de verificación del host.
 
 ### Límites conocidos (estado honesto)
 

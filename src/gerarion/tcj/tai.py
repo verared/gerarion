@@ -71,7 +71,7 @@ TABLE_OFFSETS = [o for _, o in TAI_MINUS_UTC_TABLE]
 TAI_UTC_TABLE_VERSION = "IERS-C-2026.1"
 #: 2027-05-01T00:00:00Z en segundos Unix: fin de la vigencia verificada
 #: (transición a UTC continuo aprobada por la CGPM para mayo de 2027).
-TAI_UTC_VALID_UNTIL_UNIX = 1_799_808_000
+TAI_UTC_VALID_UNTIL_UNIX = 1_809_129_600
 #: El leap smear NO es una escala física TAI: las escalas smearing (UTC-SLS
 #: y similares) se RECHAZAN en el puente; nunca se interpretan como TAI.
 TAI_UTC_SMEAR_POLICY = "reject"
@@ -137,7 +137,7 @@ def unix_from_instant(instant: int) -> int:
         utc = tai - offs[i]
         if low <= utc < high:
             return utc
-    return tai  # inalcanzable con segmentación completa; nunca ambiguo
+    raise ValueError("GERO_E3339: instante sin etiqueta Unix en la tabla TAI−UTC")
 
 
 # ---------------------------------------------------------------------------

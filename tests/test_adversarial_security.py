@@ -91,14 +91,14 @@ def test_a_eliminar_mldsa_rechazado(signer, envelope):
     roto = dict(envelope)
     roto["sigs"] = {"alg": roto["sigs"]["alg"],
                     "sigs": {"ed25519": roto["sigs"]["sigs"]["ed25519"]}}
-    assert gts.verify_v2(roto)["state"] == "REJECTED"
+    assert gts.verify_v2(roto, expected_event_hash=EVENT_HASH)["state"] == "REJECTED"
 
 
 def test_b_alg_solo_ed25519_rechazado(signer, envelope):
     for alg in ("Ed25519", "ED25519", "HYBRID-ED25519", "HYBRID-ED25519-RSA"):
         roto = dict(envelope)
         roto["alg"] = alg
-        res = gts.verify_v2(roto)
+        res = gts.verify_v2(roto, expected_event_hash=EVENT_HASH)
         assert res["state"] == "REJECTED", alg
 
 
@@ -110,7 +110,7 @@ def test_c_kid_cruzado_con_clave_ajena_rechazado(signer):
     env = gts.create_v2(TS, atacante, event_hash=EVENT_HASH, kid="k1",
                         issuer="audit", seq=1)
     # Criptográficamente el sobre es válido (firmó el atacante)…
-    assert gts.verify_v2(dict(env))["state"] == "VALID"
+    assert gts.verify_v2(dict(env), expected_event_hash=EVENT_HASH)["state"] == "VALID"
     # …pero el binding kid→pubkey del verificador lo detecta.
     pub_emisor = {"k1": (signer.public_key_hex, signer.public_key_pqc_hex)}
     kid = env["kid"]
@@ -122,7 +122,7 @@ def test_c2_byte_alterado_en_event_hash_y_nanos_rechazado(signer, envelope):
     for campo, nuevo in (("event_hash", "sha256:" + "ac" * 32), ("nanos", 1)):
         roto = dict(envelope)
         roto[campo] = nuevo
-        assert gts.verify_v2(roto)["state"] == "REJECTED", campo
+        assert gts.verify_v2(roto, expected_event_hash=EVENT_HASH)["state"] == "REJECTED", campo
 
 
 def test_e_firma_valida_en_otro_dominio_rechazada(signer, envelope):
@@ -143,9 +143,9 @@ def test_e_firma_valida_en_otro_dominio_rechazada(signer, envelope):
 
 def test_rafaga_concurrente_mismo_nonce_rechazada(signer, envelope):
     guard = gts.ReplayGuard()
-    assert gts.verify_v2(dict(envelope), guard=guard)["ok"]
+    assert gts.verify_v2(dict(envelope), guard=guard, expected_event_hash=EVENT_HASH)["ok"]
     for _ in range(5):
-        res = gts.verify_v2(dict(envelope), guard=guard)
+        res = gts.verify_v2(dict(envelope), guard=guard, expected_event_hash=EVENT_HASH)
         assert res["state"] == "REJECTED" and "replay" in res["errors"][0]
 
 
@@ -154,11 +154,11 @@ def test_rollback_tras_reinicio_con_estado_persistente(signer, tmp_path):
     g1 = gts.ReplayGuard(path)
     env1 = gts.create_v2(TS, signer, event_hash=EVENT_HASH, kid="k1",
                          issuer="audit", seq=10)
-    assert gts.verify_v2(dict(env1), guard=g1)["ok"]
+    assert gts.verify_v2(dict(env1), guard=g1, expected_event_hash=EVENT_HASH)["ok"]
     g2 = gts.ReplayGuard(path)  # "reinicio" con estado cargado
     env2 = gts.create_v2(TS, signer, event_hash=EVENT_HASH, kid="k1",
                          issuer="audit", seq=9)
-    res = gts.verify_v2(dict(env2), guard=g2)
+    res = gts.verify_v2(dict(env2), guard=g2, expected_event_hash=EVENT_HASH)
     assert res["state"] == "REJECTED" and "rollback" in res["errors"][0]
 
 

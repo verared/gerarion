@@ -162,7 +162,7 @@ def test_lectura_del_so_nunca_verified_por_defecto():
 def test_tai_utc_tabla_metadatos():
     info = tai.tai_utc_table_info()
     assert info["table_version"] == "IERS-C-2026.1"
-    assert info["valid_until_unix"] == 1_799_808_000
+    assert info["valid_until_unix"] == 1_809_129_600
     assert info["smear_policy"] == "reject"
 
 

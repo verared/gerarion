@@ -737,12 +737,12 @@ envelope = v2.create(
 )
 
 # 3. Verificar en 3 niveles independientes (Criptografía, Identidad/Replay, Aseguramiento Temporal)
-res = v2.verify(envelope, trust_store=registry, replay_store=replay_store)
+res = v2.verify(envelope, expected_event_hash=event_hash, trust_store=registry, replay_store=replay_store)
 assert res.crypto.valid is True
 assert res.identity.valid is True and res.identity.key_status == "ACTIVE"
 assert res.identity.replay_status == "OK"
 assert res.temporal.clock_state == "UNKNOWN"  # O "VERIFIED" al pasar una lectura de gt-gts
-assert res.overall_trusted is True
+assert res.sealed and not res.overall_trusted
 ```
 """
 
@@ -773,12 +773,12 @@ envelope = v2.create(
 )
 
 # 3. Verify across 3 independent levels (Cryptography, Identity/Replay, Temporal Assurance)
-res = v2.verify(envelope, trust_store=registry, replay_store=replay_store)
+res = v2.verify(envelope, expected_event_hash=event_hash, trust_store=registry, replay_store=replay_store)
 assert res.crypto.valid is True
 assert res.identity.valid is True and res.identity.key_status == "ACTIVE"
 assert res.identity.replay_status == "OK"
 assert res.temporal.clock_state == "UNKNOWN"  # Or "VERIFIED" when passing a gt-gts ClockReading
-assert res.overall_trusted is True
+assert res.sealed and not res.overall_trusted
 ```
 """
 

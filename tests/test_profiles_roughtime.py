@@ -72,12 +72,14 @@ def test_receipt_untrusted_testigo_fails(witness):
 
 
 def test_anchor_boundary_coherence(witness):
-    r = rt.make_receipt(b"A" * 32, MIDP, 3, witness)
+    nonce = b"A" * 32
+    r = rt.make_receipt(nonce, MIDP, 3, witness)
     res = rt.verify_receipt(r, [r["pubkey_b64"]])
     a = rt.bind_anchor(r)
     hi = res["window"][1]
-    assert rt.verify_anchor(a, [r["pubkey_b64"]], hi)["ok"]
-    assert not rt.verify_anchor(a, [r["pubkey_b64"]], hi + 1)["ok"]
+    assert rt.verify_anchor(a, [r["pubkey_b64"]], hi, expected_nonce=nonce)["ok"]
+    assert not rt.verify_anchor(a, [r["pubkey_b64"]], hi + 1, expected_nonce=nonce)["ok"]
+    assert not rt.verify_anchor(a, [r["pubkey_b64"]], hi, expected_nonce=b"\0" * 32)["ok"]
 
 
 def test_anchor_nonce_binds_to_bundle(witness):

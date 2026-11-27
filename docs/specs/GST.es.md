@@ -34,10 +34,13 @@ No cubre la calidad previa del reloj (dominio GTS) ni el formato de la marca
    `b"GUS3-GST-V2\x00" + canonical_bytes`.
 3. **Campos obligatorios del sobre v2:** `gst_version: "2.0"`, `ts`
    (marca GUS canónica), `ins` (int64 segundos), `nanos` (0..999.999.999),
-   `scale: "TCJ"` (o `"TAI"` explícito), `event_hash` (obligatorio,
+   `scale: "TCJ"`, `event_hash` (obligatorio,
    `sha256:<hex>` o `sha512:<hex>`), `kid` e `issuer`, `nonce`
    (aleatorio criptográfico) y `seq` (contador monotónico),
-   `policy_version`. Un sobre `v2` sin `event_hash` válido se rechaza.
+   `policy_version`. El verificador exige que el digest calculado de forma
+   independiente coincida exactamente con `event_hash` (`sha256`: 64 dígitos
+   hexadecimales en minúscula; `sha512`: 128). `ins` incorpora el offset de
+   observador de `ts`; no se admite reetiquetar como TAI una coordenada TCJ.
 4. **Firma híbrida:** los descriptores completos de algoritmo
    (`alg`, `kid_classical`, `kid_pqc`) viven **dentro del payload
    canonicalizado antes de firmar**; eliminar o degradar la firma

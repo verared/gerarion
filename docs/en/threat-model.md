@@ -42,8 +42,8 @@ inside the signed payload. Verification (`gerarion.gst.v2.verify`) returns a
 3. **`temporal`** — clock provenance/quality from `gt-gts`; `UNKNOWN` when no
    authenticated reading is supplied.
 
-`overall_trusted` covers levels 1 and 2 only; it does not certify the physical
-accuracy of the declared time (check `temporal.clock_state`).
+`sealed` covers levels 1 and 2. `overall_trusted` additionally requires bound
+temporal evidence accepted by the host and a `VERIFIED` clock reading.
 
 ## 4. Guarantees and their premises
 
@@ -124,10 +124,9 @@ PQ-only signature is rejected.
    the authorized `(issuer, kid)`; key theft is detected only after the fact
    through revocation. Do not use `gt-gst` for critical production decisions
    until both this point and the previous one are closed.
-3. **`overall_trusted` is not a physical-time certificate.** It covers
-   levels 1 and 2. A signer holding an authorized key can still sign a false
-   time; check `temporal.clock_state` and anchor in an independent notary for
-   third-party evidence.
+3. **A seal is not a physical-time certificate.** A signer holding an authorized
+   key can still sign a false time. Check the uncertainty and the independent
+   anchor's scope before treating an anchored envelope as evidence of time.
 4. **It does not guarantee the wall-clock accuracy of a device.** NTP, PTP and
    GNSS are external layers; `gt-gts` classifies readings, it does not
    discipline the clock.
