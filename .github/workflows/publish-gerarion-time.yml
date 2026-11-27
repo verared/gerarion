@@ -1,0 +1,103 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
+# Publicación npm de @verared/gerarion-time, DISPARADA SOLO por tags
+# `gerarion-time-v<version>` (separada del release general v3.x del monorepo).
+# Publica con provenance (OIDC) y --tag next en prerelease / latest en estable.
+name: publish-gerarion-time
+
+on:
+  push:
+    tags:
+      - "gerarion-time-v*"
+
+permissions:
+  contents: read
+  id-token: write # necesario para --provenance (npm OIDC)
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: packages/gerarion-time
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # necesario para leer el tag
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+
+      - name: Validar que el tag coincida exactamente con package.json
+        working-directory: .
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#gerarion-time-v}"
+          PKG_VERSION="$(node -p "require('./packages/gerarion-time/package.json').version")"
+          echo "tag=$TAG → version=$VERSION | package.json=$PKG_VERSION"
+          if [ "$VERSION" != "$PKG_VERSION" ]; then
+            echo "::error::El tag $TAG no coincide con packages/gerarion-time/package.json ($PKG_VERSION)"
+            exit 1
+          fi
+
+      - name: Instalar gerarion (Python) con extras pqc (paridad)
+        working-directory: .
+        run: python -m pip install -e ".[dev,pqc]"
+
+      - name: npm ci (build reproducible desde package-lock.json)
+        run: npm ci
+      - name: Build (tsc NodeNext estricto + núcleo embebido verbatim)
+        run: npm run build
+      - name: Chequeo estático 0 imports node:*
+        run: npm run check:pure
+      - name: Suite completa (paridad Python↔JS, negativos, JCS borde, tarball)
+        run: npm test
+      - name: Smoke Node del paquete
+        run: node test/smoke-entry.mjs
+      - name: Smoke Deno (verificación GST v2 real)
+        run: deno run --allow-read test/smoke-entry.mjs
+      - name: Smoke Workers (workerd sin nodejs_compat)
+        run: node test/smoke-workers-driver.mjs
+
+      - name: Empaquetar tarball verificado
+        run: npm pack --pack-destination /tmp
+
+      - name: Publicar en npmjs.com con provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          case "$VERSION" in
+            *-alpha*|*-beta*|*-rc*) NPM_TAG="next" ;;
+            *) NPM_TAG="latest" ;;
+          esac
+          echo "Publicando @verared/gerarion-time@$VERSION con --tag $NPM_TAG --provenance"
+          npm publish /tmp/verared-gerarion-time-"$VERSION".tgz \
+            --access public --provenance --tag "$NPM_TAG"
+
+      - name: Smoke post-publicación desde registry.npmjs.org (con reintentos)
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          SMOKE_DIR="$(mktemp -d)"
+          cd "$SMOKE_DIR"
+          npm init -y >/dev/null
+          # Polling/reintentos: el staging/CDN de npm puede tardar en propagar.
+          for i in $(seq 1 12); do
+            if npm install "@verared/gerarion-time@$VERSION" --no-audit --no-fund; then
+              break
+            fi
+            echo "intento $i/12: el paquete aún no propaga en npm; reintento en 10s…"
+            sleep 10
+            if [ "$i" = "12" ]; then echo "::error::no se pudo instalar desde npm tras 12 intentos"; exit 1; fi
+          done
+          node --input-type=module -e "
+            import { quickVerify, verifyGstV2Offline } from '@verared/gerarion-time';
+            if (typeof verifyGstV2Offline !== 'function') throw new Error('superficie incompleta');
+            if (!quickVerify('2031DY-03-08-T-09:30:00-SC-TCJ+0')) throw new Error('quickVerify falló');
+            console.log('post-publish smoke OK: @verared/gerarion-time@$VERSION instalado desde npmjs');
+          "

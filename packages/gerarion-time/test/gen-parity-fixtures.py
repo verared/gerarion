@@ -39,6 +39,8 @@ def main() -> None:
             "message_hex": (GST_V2_DOMAIN + dumps_bytes(payload)).hex(),
             "pqc_alg": signer.alg,
             "ed_pub_hex": signer.public_key_hex,
+            "pqc_pub_hex": signer.public_key_pqc_hex,
+            "issuer": "gerarion-parity-test",
         }
     print(json.dumps({"stamp": STAMP, "event_hash": EVENT_HASH, "variants": variants}))
 

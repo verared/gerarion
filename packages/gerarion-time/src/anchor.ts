@@ -4,8 +4,13 @@
  * Contrato `AnchorProvider` para v0.2 (honestidad temporal).
  *
  * Estados explícitamente separados — un recibo offline NUNCA es `anchored`:
- * - `sealed`:    firmas híbridas válidas, emisor autorizado y `event_hash`
- *                exacto; el tiempo NO está corroborado externamente.
+ * - `sealed`:    política EXPLÍCITA de emisores autorizados (`trustedIssuers`)
+ *                con llaves Ed25519 + ML-DSA que coinciden exactamente con
+ *                las del sobre, coherencia temporal interna ts/ins/nanos,
+ *                `event_hash` exacto y doble firma híbrida válida sobre los
+ *                bytes canónicos JCS. El tiempo NO está corroborado
+ *                externamente. (Ver `verifyGstV2Offline` en `gst-v2.ts`: mismo
+ *                contrato, fail-closed si falta la política de emisores.)
  * - `anchored`:  `sealed` + cota superior de existencia verificada bajo
  *                raíz de testigo y tabla TCJ fijadas (requiere ancla
  *                externa verificada; fuera del alcance de 0.1.0-alpha.1).

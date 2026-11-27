@@ -2,8 +2,9 @@
 
 Núcleo temporal determinista de Gerarion (GUS/TCJ) y verificador offline de
 recibos GST v2, empaquetado para npm. **100% Web-API puro**: cero imports
-`node:*` en `src/` y `dist/` — ejecuta en Node 18+, Deno, Bun y Cloudflare
-Workers.
+`node:*` en `src/` y `dist/` — ejecuta en Node >= 20.19 (verificado en CI con
+Node 24; `@noble/post-quantum@0.7.1` requiere Node >= 20.19), Deno y
+Cloudflare Workers (workerd sin `nodejs_compat`).
 
 **Estado: `0.1.0-alpha.1` (experimental).** No auditar de forma independiente;
 no usar en producción sin revisar los Honest Limits.
@@ -30,19 +31,33 @@ const d = parse("2031DY-03-08-T-09:30:00-SC-TCJ+0");
 canonicalOf(d); // forma canónica
 ```
 
-### Verificador offline de recibos GST v2
+### Verificador offline de recibos GST v2 (fail-closed)
 
 ```js
 import { verifyGstV2Offline } from "@verared/gerarion-time";
 
-const result = await verifyGstV2Offline(envelope, "sha256:<digest-del-artefacto>");
-// { verdict: "sealed" | "invalid" | "unsupported", sealed: boolean, reason: string }
+const result = await verifyGstV2Offline(envelope, "sha256:<digest-del-artefacto>", {
+  trustedIssuers: {
+    "emisor-autorizado": {
+      ed25519: "<hex pub Ed25519 autorizada>",
+      mldsa: "<hex pub ML-DSA autorizada>",
+    },
+  },
+});
+// { verdict: "sealed" | "invalid" | "unsupported", sealed, code, reason }
 ```
 
-- `sealed`: firmas híbridas Ed25519 + ML-DSA válidas sobre los mismos bytes
-  canónicos (RFC 8785 JCS), `event_hash` exacto y descriptor híbrido
-  completo sin downgrades.
-- `invalid`: firma, digest, JCS, llave, escala o versión inválidos.
+- `sealed`: **política explícita de emisores autorizados** con llaves que
+  coinciden exactamente con las del sobre (las llaves embebidas solas NO
+  bastan; sin `trustedIssuers` → `invalid`/`MISSING_ISSUER_POLICY`),
+  coherencia temporal interna ts/ins/nanos verificada con el núcleo GUS,
+  `event_hash` exacto, tamaño dentro del límite (bytes UTF-8 reales,
+  64 KiB por defecto) y doble firma híbrida Ed25519 + ML-DSA válida sobre
+  `GUS3-GST-V2\x00 + JCS(payload)`.
+- `invalid`: firma, digest, JCS, llave, escala, versión, emisor no
+  autorizado (`UNAUTHORIZED_ISSUER` / `KEY_NOT_AUTHORIZED`), incoherencia
+  temporal (`TEMPORAL_FIELD_MISMATCH`) o tamaño excedido
+  (`ENVELOPE_TOO_LARGE`) inválidos.
 - `unsupported`: backend ML-DSA ausente (`ml_dsa_unavailable`) o
   algoritmo/perfil no soportado.
 

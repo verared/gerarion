@@ -4,15 +4,15 @@
 // núcleo embebido + verificador híbrido. 100% Web-API puro (sin node:*),
 // así que corre igual en Node, Deno y Cloudflare Workers (workerd).
 import { verifyGstV2Offline, quickVerify } from "../dist/index.js";
-import { envelope, eventHash } from "./fixtures/gst-v2-receipt.mjs";
+import { envelope, eventHash, trustedIssuers } from "./fixtures/gst-v2-receipt.mjs";
 
 export async function runSmoke() {
   if (!quickVerify("2031DY-03-08-T-09:30:00-SC-TCJ+0")) {
     throw new Error("núcleo embebido: quickVerify falló");
   }
-  const result = await verifyGstV2Offline(envelope, eventHash);
+  const result = await verifyGstV2Offline(envelope, eventHash, { trustedIssuers });
   if (result.verdict !== "sealed" || !result.sealed) {
-    throw new Error(`verificación GST v2 inesperada: ${result.reason}`);
+    throw new Error(`verificación GST v2 inesperada: ${result.code} ${result.reason}`);
   }
   return result;
 }
