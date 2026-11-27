@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 verared contributors
 # Publicación npm de @verared/gerarion-time, DISPARADA SOLO por tags
 # `gerarion-time-v<version>` (separada del release general v3.x del monorepo).
-# Publica con provenance (OIDC) y --tag next en prerelease / latest en estable.
+# Publica con Trusted Publishing (OIDC sin token), provenance y --tag next en prerelease.
 name: publish-gerarion-time
 
 on:
@@ -12,11 +12,13 @@ on:
 
 permissions:
   contents: read
-  id-token: write # necesario para --provenance (npm OIDC)
 
 jobs:
   publish:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write # Trusted Publishing y provenance de npm mediante OIDC
     defaults:
       run:
         working-directory: packages/gerarion-time
@@ -27,7 +29,17 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org/
+          # Sin registry-url: evita generar un .npmrc que exija NODE_AUTH_TOKEN.
+      - name: Garantizar npm >= 11.5.1 para Trusted Publishing
+        run: |
+          npm --version
+          if ! node -e '
+            const [major, minor, patch] = process.argv[1].split(".").map(Number);
+            process.exit(major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1))) ? 0 : 1);
+          ' "$(npm --version)"; then
+            npm install --global npm@11 --registry=https://registry.npmjs.org/
+          fi
+          npm --version
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
@@ -71,17 +83,15 @@ jobs:
         run: npm pack --pack-destination /tmp
 
       - name: Publicar en npmjs.com con provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           VERSION="$(node -p "require('./package.json').version")"
           case "$VERSION" in
-            *-alpha*|*-beta*|*-rc*) NPM_TAG="next" ;;
+            *-*) NPM_TAG="next" ;;
             *) NPM_TAG="latest" ;;
           esac
           echo "Publicando @verared/gerarion-time@$VERSION con --tag $NPM_TAG --provenance"
           npm publish /tmp/verared-gerarion-time-"$VERSION".tgz \
-            --access public --provenance --tag "$NPM_TAG"
+            --registry=https://registry.npmjs.org/ --access public --provenance --tag "$NPM_TAG"
 
       - name: Smoke post-publicación desde registry.npmjs.org (con reintentos)
         run: |
