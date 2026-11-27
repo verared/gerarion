@@ -3,9 +3,6 @@
 // Suite de verificación offline GST v2 (veredictos, límites y firmas).
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import {
   GST_V2_DOMAIN,
@@ -14,17 +11,7 @@ import {
 } from "../dist/index.js";
 import { setMlDsaLoaderForTests } from "../dist/gst-v2.js";
 import { jcsSerialize, JcsError } from "../dist/jcs.js";
-
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-
-function loadFixture() {
-  const stdout = execFileSync(
-    process.env.GERARION_PYTHON || "python3",
-    [path.join(HERE, "gen-parity-fixtures.py")],
-    { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] },
-  );
-  return JSON.parse(stdout.slice(stdout.indexOf("{")));
-}
+import { loadFixture, trustedIssuersFor } from "./helpers.mjs";
 
 test("dominio GST v2 exacto", () => {
   assert.deepEqual([...GST_V2_DOMAIN], [...new TextEncoder().encode("GUS3-GST-V2\x00")]);
@@ -35,29 +22,34 @@ test("JCS: claves ordenadas por unidades de código UTF-16 y escape mínimo", ()
   assert.equal(jcsSerialize(obj), '{"A":[2,null,true],"a":"x\\u0001y","b":1}');
 });
 
-test("verificador: firma ausente o sobre no-objeto → invalid/unsupported fail-closed", async () => {
+test("verificador: firma ausente o sobre no-objeto → invalid; backend PQC ausente → unsupported fail-closed", async () => {
   const fx = loadFixture();
   // Sin bloque de firmas → invalid.
   const { sigs, ...payload } = fx.variants["ML-DSA-65"].envelope;
-  const noSigs = await verifyGstV2Offline(payload, fx.event_hash);
+  const noSigs = await verifyGstV2Offline(payload, fx.event_hash, {
+    trustedIssuers: trustedIssuersFor(fx, "ML-DSA-65"),
+  });
   assert.equal(noSigs.verdict, "invalid");
 
-  // Sin backend ML-DSA (bloqueo del import) → unsupported, nunca sealed.
   assert.equal(GST_V2_DOMAIN.length, 12);
   assert.ok(GST_V2_MAX_BYTES_DEFAULT >= 64 * 1024);
 
   // Simulación de backend PQC ausente → unsupported (fail-closed).
   setMlDsaLoaderForTests(async () => null);
   try {
-    const r = await verifyGstV2Offline(fx.variants["ML-DSA-65"].envelope, fx.event_hash);
+    const r = await verifyGstV2Offline(fx.variants["ML-DSA-65"].envelope, fx.event_hash, {
+      trustedIssuers: trustedIssuersFor(fx, "ML-DSA-65"),
+    });
     assert.equal(r.verdict, "unsupported");
     assert.equal(r.reason, "ml_dsa_unavailable");
     assert.equal(r.sealed, false);
   } finally {
-    setMlDsaLoaderForTests(null); // restaura el loader real
+    setMlDsaLoaderForTests(null);
   }
 
   // Tras restaurar el loader real, el mismo sobre vuelve a verificar sealed.
-  const ok = await verifyGstV2Offline(fx.variants["ML-DSA-65"].envelope, fx.event_hash);
+  const ok = await verifyGstV2Offline(fx.variants["ML-DSA-65"].envelope, fx.event_hash, {
+    trustedIssuers: trustedIssuersFor(fx, "ML-DSA-65"),
+  });
   assert.equal(ok.verdict, "sealed");
 });

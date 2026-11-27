@@ -7,17 +7,31 @@
  * carga perezosa de `@noble/post-quantum`. Fail-closed: si el backend
  * ML-DSA no está disponible, el veredicto es `unsupported`, jamás `sealed`.
  *
- * Los bytes firmables son EXACTAMENTE `GUS3-GST-V2\x00 + JCS(payload)`,
- * igual que `gst/v2.py` (`gst_v2_message`).
+ * Contrato `sealed` (alineado con `gst/v2.py`, nivel crypto + identidad):
+ * - política EXPLÍCITA de emisores autorizados (`trustedIssuers`); sin ella
+ *   o sin coincidencia exacta de llaves → `invalid` (fail-closed);
+ * - coherencia temporal interna ts/ins/nanos/scale verificada con el núcleo
+ *   determinista (`core.mjs`, misma regla que Python);
+ * - doble firma híbrida válida sobre los MISMOS bytes canónicos
+ *   `GUS3-GST-V2\x00 + JCS(payload)`;
+ * - `event_hash` exactamente igual al digest esperado;
+ * - tamaño del sobre medido en BYTES UTF-8 reales (límite 64 KiB por defecto).
  */
 import { jcsSerialize } from "./jcs.js";
+import {
+  parse as gusParse,
+  canonicalOf,
+  fromGerarion,
+  instantFromParts,
+  NANOS_MAX,
+} from "./core.mjs";
 
 export const GST_V2_DOMAIN: Uint8Array = new Uint8Array(
   /* "GUS3-GST-V2\x00" */
   [0x47, 0x55, 0x53, 0x33, 0x2d, 0x47, 0x53, 0x54, 0x2d, 0x56, 0x32, 0x00],
 );
 
-/** Límite explícito de tamaño del sobre (bytes); configurable por llamada. */
+/** Límite explícito de tamaño del sobre (bytes UTF-8); configurable. */
 export const GST_V2_MAX_BYTES_DEFAULT = 64 * 1024;
 
 /** Forma exigida del digest del artefacto: sha256:<hex64> o sha512:<hex128>. */
@@ -27,9 +41,32 @@ export type GstV2Verdict = "sealed" | "invalid" | "unsupported";
 
 export interface GstV2Result {
   verdict: GstV2Verdict;
-  /** true SOLO con ambas firmas híbridas válidas y esquema conforme. */
+  /** true SOLO con política de emisor autorizada + firmas híbridas válidas. */
   sealed: boolean;
+  /** Código de error estructurado (p. ej. UNAUTHORIZED_ISSUER). */
+  code: string;
   reason: string;
+}
+
+/** Claves autorizadas de un emisor (hex crudo, como viajan en el sobre). */
+export interface TrustedIssuerKeys {
+  /** Clave pública Ed25519 autorizada (hex, 32 bytes). */
+  ed25519: string;
+  /** Clave pública ML-DSA autorizada (hex). */
+  mldsa: string;
+  /** Niveles ML-DSA permitidos para este emisor (si se fijan). */
+  allowedMlDsaLevels?: Array<"ML-DSA-44" | "ML-DSA-65" | "ML-DSA-87">;
+}
+
+export interface GstV2VerifyOptions {
+  /**
+   * Registro EXPLÍCITO de emisores autorizados: issuer_id → claves públicas.
+   * Obligatorio (fail-closed): el verificador NUNCA confía en las llaves
+   * embebidas en el sobre por sí solas.
+   */
+  trustedIssuers?: Record<string, TrustedIssuerKeys>;
+  /** Límite de tamaño del sobre en bytes UTF-8 (por defecto 64 KiB). */
+  maxBytes?: number;
 }
 
 function str(v: unknown): string {
@@ -105,87 +142,174 @@ async function loadMlDsa(): Promise<MlDsaModule | null> {
   return mlDsaLoader();
 }
 
+function invalid(code: string, reason: string): GstV2Result {
+  return { verdict: "invalid", sealed: false, code, reason };
+}
+
 /**
- * Verificación offline de un sobre GST v2.
+ * Coherencia temporal interna del sello GUS (misma regla que `gst/v2.py`):
+ * `ts` canónico ⇔ `ins` (segundos) y `nanos` en [0, 999_999_999].
+ */
+function checkTemporalCoherence(envelope: Record<string, unknown>): string | null {
+  const ts = str(envelope["ts"]);
+  let parsed;
+  try {
+    parsed = gusParse(ts);
+  } catch {
+    return "TEMPORAL_FIELD_MISMATCH: ts no parsea como marca GUS canónica";
+  }
+  if (canonicalOf(parsed) !== ts) {
+    return "TEMPORAL_FIELD_MISMATCH: ts no está en forma canónica";
+  }
+  const nanos = envelope["nanos"];
+  if (
+    typeof nanos !== "number" ||
+    !Number.isInteger(nanos) ||
+    nanos < 0 ||
+    nanos > NANOS_MAX
+  ) {
+    return `TEMPORAL_FIELD_MISMATCH: nanos fuera de rango 0..${NANOS_MAX}`;
+  }
+  const date = fromGerarion(parsed.year, parsed.month, parsed.day);
+  const instant = instantFromParts(
+    date.dayIndex,
+    parsed.hour,
+    parsed.minute,
+    parsed.second,
+    parsed.offsetSeconds ?? 0,
+  );
+  const ins = envelope["ins"];
+  if (instant !== BigInt(ins as number | string | bigint)) {
+    return "TEMPORAL_FIELD_MISMATCH: ins no corresponde a ts (segundos TCJ)";
+  }
+  return null;
+}
+
+/**
+ * Verificación offline de un sobre GST v2 (fail-closed).
  *
- * Exige igualdad EXACTA del `event_hash` del sobre contra
- * `expectedEventHash` (digest del artefacto esperado, no solo formato),
- * descriptor híbrido completo sin downgrades y doble firma válida sobre
- * los MISMOS bytes canónicos: `GUS3-GST-V2\x00 + JCS(payload)`.
+ * Parámetros:
+ * - `envelope`: sobre GST v2 (objeto JSON con `sigs`).
+ * - `expectedEventHash`: digest EXACTO del artefacto esperado.
+ * - `options`: `{ trustedIssuers, maxBytes? }`. Por compatibilidad, un
+ *   `number` como tercer argumento se interpreta como `maxBytes` (pero la
+ *   política de emisores sigue siendo OBLIGATORIA: sin ella → invalid).
  *
- * La rama ML-DSA (44/65/87) se selecciona por el campo `alg_pqc` del
- * descriptor; el backend `@noble/post-quantum` se carga perezosamente y su
- * ausencia produce `unsupported` (fail-closed, nunca acepta sin PQC).
+ * Veredicto `sealed` exige: política de emisor presente y coincidente,
+ * coherencia temporal interna, event_hash exacto, esquema conforme,
+ * tamaño dentro del límite (bytes UTF-8) y doble firma híbrida válida.
  */
 export async function verifyGstV2Offline(
   envelope: unknown,
   expectedEventHash: string,
-  maxBytes: number = GST_V2_MAX_BYTES_DEFAULT,
+  options: GstV2VerifyOptions | number = {},
 ): Promise<GstV2Result> {
+  const opts: GstV2VerifyOptions =
+    typeof options === "number" ? { maxBytes: options } : options;
+  const maxBytes = opts.maxBytes ?? GST_V2_MAX_BYTES_DEFAULT;
+
   if (!isPlainObject(envelope)) {
-    return { verdict: "invalid", sealed: false, reason: "INVALID_ENVELOPE: no es un objeto JSON" };
+    return invalid("INVALID_ENVELOPE", "no es un objeto JSON");
   }
-  const raw = JSON.stringify(envelope);
-  if (raw.length > maxBytes) {
-    return { verdict: "invalid", sealed: false, reason: `ENVELOPE_TOO_LARGE: supera ${maxBytes} bytes` };
+  // Tamaño real en BYTES UTF-8 (no en caracteres JS).
+  const rawBytes = new TextEncoder().encode(JSON.stringify(envelope)).byteLength;
+  if (rawBytes > maxBytes) {
+    return invalid(
+      "ENVELOPE_TOO_LARGE",
+      `supera ${maxBytes} bytes UTF-8 (medido: ${rawBytes})`,
+    );
   }
 
   const alg = str(envelope["alg"]);
   if (!alg.startsWith("HYBRID-ED25519-ML-DSA-")) {
-    return { verdict: "invalid", sealed: false, reason: "INVALID_ALG: alg debe ser un híbrido HYBRID-ED25519-ML-DSA-*" };
+    return invalid("INVALID_ALG", "alg debe ser un híbrido HYBRID-ED25519-ML-DSA-*");
   }
 
   for (const field of ["gst_version", "ts", "scale", "kid", "issuer", "policy_version"]) {
     if (typeof envelope[field] !== "string" || !(envelope[field] as string).length) {
-      return { verdict: "invalid", sealed: false, reason: `SCHEMA_INVALID: campo obligatorio ausente: ${field}` };
+      return invalid("SCHEMA_INVALID", `campo obligatorio ausente: ${field}`);
     }
   }
-  // El instante entero (segundos TCJ) puede viajar como number o como
-  // cadena decimal; nunca como bool (trampa typeof de JSON).
   const ins = envelope["ins"];
   const insOk =
     (typeof ins === "number" && Number.isInteger(ins)) ||
     (typeof ins === "string" && /^-?\d+$/.test(ins)) ||
     typeof ins === "bigint";
   if (!insOk) {
-    return { verdict: "invalid", sealed: false, reason: "SCHEMA_INVALID: ins debe ser un entero" };
+    return invalid("SCHEMA_INVALID", "ins debe ser un entero");
   }
   if (envelope["gst_version"] !== "2.0") {
-    return { verdict: "invalid", sealed: false, reason: "VERSION_DOWNGRADE: gst_version distinto de 2.0" };
+    return invalid("VERSION_DOWNGRADE", "gst_version distinto de 2.0");
   }
   if (envelope["scale"] !== "TCJ") {
-    return { verdict: "invalid", sealed: false, reason: "INVALID_SCALE: GST v2 solo admite la escala TCJ" };
+    return invalid("INVALID_SCALE", "GST v2 solo admite la escala TCJ");
   }
-  const level = mlLevelOf(str(envelope["alg_pqc"]));
+  const algPqc = str(envelope["alg_pqc"]);
+  const level = mlLevelOf(algPqc);
   if (level === null) {
-    return { verdict: "invalid", sealed: false, reason: "INVALID_ALG: alg_pqc debe ser ML-DSA-44/65/87" };
+    return invalid("INVALID_ALG", "alg_pqc debe ser ML-DSA-44/65/87");
   }
 
-  // Igualdad EXACTA del event_hash contra el digest esperado (no solo
-  // formato): un digest válido de OTRO artefacto se rechaza.
+  // Coherencia temporal interna (ts ⇔ ins ⇔ nanos), con el núcleo GUS/TCJ.
+  const temporalError = checkTemporalCoherence(envelope);
+  if (temporalError !== null) {
+    return invalid("TEMPORAL_FIELD_MISMATCH", temporalError);
+  }
+
+  // Política EXPLÍCITA de emisores autorizados (fail-closed).
+  const trusted = opts.trustedIssuers;
+  if (!trusted || typeof trusted !== "object") {
+    return invalid(
+      "MISSING_ISSUER_POLICY",
+      "se exige trustedIssuers explícito; las llaves del sobre no bastan",
+    );
+  }
+  const issuer = str(envelope["issuer"]);
+  const policy = trusted[issuer];
+  if (!policy) {
+    return invalid("UNAUTHORIZED_ISSUER", `emisor no autorizado: ${issuer}`);
+  }
+  const pubClassicalHex = str(envelope["pub_classical"]).toLowerCase();
+  const pubPqcHex = str(envelope["pub_pqc"]).toLowerCase();
+  if (
+    pubClassicalHex !== str(policy.ed25519).toLowerCase() ||
+    pubPqcHex !== str(policy.mldsa).toLowerCase()
+  ) {
+    return invalid(
+      "KEY_NOT_AUTHORIZED",
+      "las claves del sobre no coinciden exactamente con las autorizadas del emisor",
+    );
+  }
+  if (
+    policy.allowedMlDsaLevels &&
+    !policy.allowedMlDsaLevels.includes(algPqc as "ML-DSA-44" | "ML-DSA-65" | "ML-DSA-87")
+  ) {
+    return invalid("KEY_NOT_AUTHORIZED", `nivel ML-DSA no permitido para ${issuer}: ${algPqc}`);
+  }
+
+  // Igualdad EXACTA del event_hash contra el digest esperado (no solo formato).
   const eventHash = str(envelope["event_hash"]);
   if (!EVENT_HASH_RE.test(eventHash) || eventHash !== expectedEventHash) {
-    return {
-      verdict: "invalid",
-      sealed: false,
-      reason: "EVENT_HASH_MISMATCH: event_hash divergente del artefacto esperado",
-    };
+    return invalid(
+      "EVENT_HASH_MISMATCH",
+      "event_hash divergente del artefacto esperado",
+    );
   }
 
   const sigs = envelope["sigs"];
   if (!isPlainObject(sigs)) {
-    return { verdict: "invalid", sealed: false, reason: "MISSING_SIGS: falta el bloque de firmas 'sigs'" };
+    return invalid("MISSING_SIGS", "falta el bloque de firmas 'sigs'");
   }
   // El blob de firmas viaja como {alg, sigs: {ed25519, mldsa}}.
-  const sigPair = isPlainObject(sigs) && isPlainObject(sigs["sigs"]) ? sigs["sigs"] : undefined;
+  const sigPair = isPlainObject(sigs["sigs"]) ? sigs["sigs"] : undefined;
   const sigEd = str(sigPair?.["ed25519"]);
   const sigMl = str(sigPair?.["mldsa"]);
   if (!sigEd || !sigMl) {
-    return { verdict: "invalid", sealed: false, reason: "MISSING_SIGS: el modo híbrido exige el par ed25519+mldsa" };
+    return invalid("MISSING_SIGS", "el modo híbrido exige el par ed25519+mldsa");
   }
 
-  const pubClassical = hexToBytes(str(envelope["pub_classical"]));
-  const pubPqc = hexToBytes(str(envelope["pub_pqc"]));
+  const pubClassical = hexToBytes(pubClassicalHex);
+  const pubPqc = hexToBytes(pubPqcHex);
   const sigEdBytes = hexToBytes(sigEd);
   const sigMlBytes = hexToBytes(sigMl);
 
@@ -217,20 +341,25 @@ export async function verifyGstV2Offline(
     }
   })();
   if (!edOk) {
-    return { verdict: "invalid", sealed: false, reason: "SIGNATURE_INVALID: rama Ed25519 inválida" };
+    return invalid("SIGNATURE_INVALID", "rama Ed25519 inválida");
   }
 
   // 2. Rama PQC: ML-DSA-44/65/87 (carga perezosa, fail-closed).
   const pqc = await loadMlDsa();
   if (!pqc) {
-    return { verdict: "unsupported", sealed: false, reason: "ml_dsa_unavailable" };
+    return { verdict: "unsupported", sealed: false, code: "ML_DSA_UNAVAILABLE", reason: "ml_dsa_unavailable" };
   }
   const mlOk = pqc[level].verify(sigMlBytes, message, pubPqc, {
     context: ML_DSA_CTX,
   });
   if (!mlOk) {
-    return { verdict: "invalid", sealed: false, reason: "SIGNATURE_INVALID: rama ML-DSA inválida" };
+    return invalid("SIGNATURE_INVALID", "rama ML-DSA inválida");
   }
 
-  return { verdict: "sealed", sealed: true, reason: "CRYPTO_OK: firma híbrida Ed25519 + ML-DSA verificada" };
+  return {
+    verdict: "sealed",
+    sealed: true,
+    code: "CRYPTO_OK",
+    reason: "firma híbrida Ed25519 + ML-DSA verificada, emisor autorizado, coherencia temporal OK",
+  };
 }

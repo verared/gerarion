@@ -20,6 +20,9 @@ export interface GerarionDate {
   year: number;
   month: number;
   day: number;
+  dayIndex: number;
+  weekdayIndex?: number;
+  weekday?: string;
   abbr: string;
   cycle?: string;
   hour?: number;
@@ -57,7 +60,7 @@ export declare function fromGerarion(
   year: number,
   month: number,
   day: number,
-): number;
+): GerarionDate;
 export declare function normalize(raw: string): string;
 export declare function parse(
   raw: string,
