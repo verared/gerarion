@@ -1,4 +1,4 @@
-# Threat model — Gerarion Time `v3.3.0` (GUS v3.0.0)
+# Threat model — Gerarion Time `v3.4.0` (GUS v3.0.0)
 
 This document defines **what the system protects, against whom, and what it
 does NOT protect**. Without an explicit threat model, any claim of

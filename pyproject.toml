@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gerarion"
-version = "3.3.0"
+version = "3.4.0"
 description = "Gerarion Universal Standard (GUS 3.0.0): calendario computacional y proyecto de interoperabilidad temporal y evidencias verificables; funciones de seguridad en revisión"
 readme = "README.md"
 requires-python = ">=3.9"

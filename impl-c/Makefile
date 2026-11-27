@@ -1,6 +1,6 @@
 NAME = gerarion
 MAJOR = 3
-MINOR = 1
+MINOR = 4
 PATCH = 0
 SONAME = lib$(NAME).so.$(MAJOR)
 

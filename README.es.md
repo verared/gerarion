@@ -5,7 +5,7 @@
 [![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/verared/gerarion/actions/workflows/codeql.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/codeql.yml)
 ![Licencia: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)
-![Versión v3.3.0](https://img.shields.io/badge/version-v3.3.0-green)
+![Versión v3.4.0](https://img.shields.io/badge/version-v3.4.0-green)
 ![REUSE 3.3](https://img.shields.io/badge/REUSE-3.3%20compliant-brightgreen)
 
 [English](README.md) · **Español** — en caso de divergencia, prevalece el texto en inglés (EN > ES).
@@ -14,12 +14,12 @@
 
 ## 2. Estado del proyecto
 
-Release **`v3.3.0`** sobre la especificación congelada **`GUS v3.0.0`**.
+Release objetivo **`v3.4.0`** sobre la especificación congelada **`GUS v3.0.0`**.
 
 | Eje | Estado | Alcance |
 |---|---|---|
 | **1. Especificación y aritmética** (`GUS v3.0.0` + 10 calendarios) | **Congelada y verificada** | Aritmética entera (`TCJ = TAI + 8.400 s`), verificada bit a bit entre Python, JavaScript y C11 contra `vectors/*.json`. |
-| **2. Implementaciones de referencia** (`v3.3.0`) | **Estables y probadas en CI** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts` (núcleo), `gt-gst` (referencia), `gt-interop` (RFC 3339 / ISO 8601 / Unix). |
+| **2. Implementaciones de referencia** (`v3.4.0`) | **Estables y probadas en CI** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts` (núcleo), `gt-gst` (referencia), `gt-interop` (RFC 3339 / ISO 8601 / Unix). |
 | **3. Aseguramiento criptográfico de producción** | **Pendiente** | `gt-gst` aún no cuenta con auditoría criptográfica externa independiente ni custodia de claves en `TPM` / `HSM`. |
 
 > **Qué NO usar todavía en decisiones críticas de producción:**
@@ -110,7 +110,7 @@ replay   : REPLAY False
 
 ```bash
 # Python >= 3.9 (núcleo solo stdlib; el extra `gst` añade cryptography>=47)
-pip install "gerarion[gst] @ git+https://github.com/verared/gerarion.git@v3.3.0"
+pip install "gerarion[gst] @ git+https://github.com/verared/gerarion.git@v3.4.0"
 
 # C11 (sin dependencias, núcleo sin malloc) — construye las bibliotecas, CLI y suite de conformancia
 make -C impl-c            # archivos pkg-config: gerarion.pc, gerarion-core.pc, gerarion-clock.pc, gerarion-calendars.pc
@@ -121,8 +121,9 @@ make -C impl-c            # archivos pkg-config: gerarion.pc, gerarion-core.pc, 
 **Solo los satélites que necesites** — cada repositorio satélite conserva las rutas relativas del monorepo, por lo que se combinan copiando sus árboles:
 
 ```bash
-git clone --branch v3.3.0 --depth 1 https://github.com/verared/gt-core.git
-git clone --branch v3.3.0 --depth 1 https://github.com/verared/gt-gst.git
+# Ejecutar tras la sincronización v3.4.0 de satélites (Fase B).
+git clone --branch v3.4.0 --depth 1 https://github.com/verared/gt-core.git
+git clone --branch v3.4.0 --depth 1 https://github.com/verared/gt-gst.git
 ```
 
 **Verificar un satélite** (desde un checkout de este repositorio):
@@ -149,7 +150,7 @@ Cada GitHub Release adjunta wheel, sdist, tarball JS, bibliotecas C y `SHA256SUM
 
 Matriz de versiones y contrato de dependencias: [COMPATIBILITY.md](COMPATIBILITY.md). Brújula técnica (sin fechas ni promesas): [ROADMAP.es.md](ROADMAP.es.md) · [ROADMAP.md](ROADMAP.md).
 
-| Satélite | Responsabilidad | Madurez (`v3.3.0`) |
+| Satélite | Responsabilidad | Madurez (`v3.4.0`) |
 |---|---|---|
 | [`gt-core`](https://github.com/verared/gt-core) | Núcleo TCJ + GUS: C11 sin `malloc`, Python, JS | Estable |
 | [`gt-gus`](https://github.com/verared/gt-gus) | Sintaxis canónica de 29/32 caracteres, `quick_verify` | Estable |
@@ -239,7 +240,7 @@ Gerarion complementa —y no compite con— los estándares temporales existente
   author  = {{verared} and Loyola, Gerardo},
   title   = {Gerarion Time: Gerarion Universal Standard (GUS 3.0.0) reference suite},
   year    = {2026},
-  version = {3.3.0},
+  version = {3.4.0},
   url     = {https://github.com/verared/gerarion},
   license = {MIT OR Apache-2.0}
 }

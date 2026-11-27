@@ -48,9 +48,9 @@ production security claims — independent external review.
 | `VERIFIED` | Cross-verified against shared normative vectors and automated CI suites (`reuse`, unit, conformance, fuzz/sanitizers). |
 | `STABLE` | Frozen normative contract (`>=3.2.0,<4.0.0`), verified across platforms, and reproducible via `EXPORT-MANIFEST.json`. *(Cryptographic production readiness additionally requires external audit + hardware key custody.)* |
 
-### Ecosystem Matrix (`v3.3.0`, aligned with [`COMPATIBILITY.md`](COMPATIBILITY.md))
+### Ecosystem Matrix (`v3.4.0`, aligned with [`COMPATIBILITY.md`](COMPATIBILITY.md))
 
-| Satellite | Specification | Maturity (`v3.3.0`) | Honest Scope & Limits |
+| Satellite | Specification | Maturity (`v3.4.0`) | Honest Scope & Limits |
 |---|---|---|---|
 | `verared/gt-core` | [`TCJ.en.md`](docs/specs/TCJ.en.md), [`GUS.en.md`](docs/specs/GUS.en.md) | **STABLE / VERIFIED** | Frozen `GUS v3.0.0` kernel; zero-malloc C11, Python, and JS; 100 % standalone. |
 | `verared/gt-gus` | [`GUS.en.md`](docs/specs/GUS.en.md) | **STABLE / VERIFIED** | Canonical 29/32-char syntax, normalization rules 1–7, `quick_verify`, `int64` + `nanos`. |
