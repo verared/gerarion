@@ -5,7 +5,7 @@
 [![CI](https://github.com/verared/gerarion/actions/workflows/ci.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/verared/gerarion/actions/workflows/codeql.yml/badge.svg)](https://github.com/verared/gerarion/actions/workflows/codeql.yml)
 ![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)
-![Version v3.3.0](https://img.shields.io/badge/version-v3.3.0-green)
+![Version v3.4.0](https://img.shields.io/badge/version-v3.4.0-green)
 ![REUSE 3.3](https://img.shields.io/badge/REUSE-3.3%20compliant-brightgreen)
 
 **English** · [Español](README.es.md) — in case of divergence, the English text prevails (EN > ES).
@@ -14,12 +14,12 @@
 
 ## 2. Project status
 
-Release **`v3.3.0`** on the frozen specification **`GUS v3.0.0`**.
+Release target **`v3.4.0`** on the frozen specification **`GUS v3.0.0`**.
 
 | Axis | Status | Scope |
 |---|---|---|
 | **1. Specification & arithmetic** (`GUS v3.0.0` + 10 calendars) | **Frozen & verified** | Integer arithmetic (`TCJ = TAI + 8,400 s`), checked bit for bit across Python, JavaScript and C11 against `vectors/*.json`. |
-| **2. Reference implementations** (`v3.3.0`) | **Stable & CI-tested** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts` (core), `gt-gst` (reference), `gt-interop` (RFC 3339 / ISO 8601 / Unix). |
+| **2. Reference implementations** (`v3.4.0`) | **Stable & CI-tested** | `gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts` (core), `gt-gst` (reference), `gt-interop` (RFC 3339 / ISO 8601 / Unix). |
 | **3. Production cryptographic assurance** | **Pending** | `gt-gst` has no independent external cryptographic audit and no `TPM` / `HSM` key custody yet. |
 
 > **Do not use yet in critical production security decisions:**
@@ -110,7 +110,7 @@ replay   : REPLAY False
 
 ```bash
 # Python >= 3.9 (kernel is stdlib-only; the `gst` extra adds cryptography>=47)
-pip install "gerarion[gst] @ git+https://github.com/verared/gerarion.git@v3.3.0"
+pip install "gerarion[gst] @ git+https://github.com/verared/gerarion.git@v3.4.0"
 
 # C11 (no dependencies, zero-malloc core) — builds the libraries, CLI and conformance suite
 make -C impl-c            # pkg-config files: gerarion.pc, gerarion-core.pc, gerarion-clock.pc, gerarion-calendars.pc
@@ -121,8 +121,9 @@ make -C impl-c            # pkg-config files: gerarion.pc, gerarion-core.pc, ger
 **Only the satellites you need** — each satellite repository keeps the monorepo's relative paths, so they combine by copying their trees:
 
 ```bash
-git clone --branch v3.3.0 --depth 1 https://github.com/verared/gt-core.git
-git clone --branch v3.3.0 --depth 1 https://github.com/verared/gt-gst.git
+# Run after the v3.4.0 satellite synchronization (Phase B).
+git clone --branch v3.4.0 --depth 1 https://github.com/verared/gt-core.git
+git clone --branch v3.4.0 --depth 1 https://github.com/verared/gt-gst.git
 ```
 
 **Verify a satellite** (from a checkout of this repository):
@@ -149,7 +150,7 @@ GitHub Releases attach the wheel, sdist, JS tarball, C libraries and `SHA256SUMS
 
 Version matrix and dependency contract: [COMPATIBILITY.md](COMPATIBILITY.md). Direction of travel (no dates, no promises): [ROADMAP.md](ROADMAP.md) · [ROADMAP.es.md](ROADMAP.es.md).
 
-| Satellite | Responsibility | Maturity (`v3.3.0`) |
+| Satellite | Responsibility | Maturity (`v3.4.0`) |
 |---|---|---|
 | [`gt-core`](https://github.com/verared/gt-core) | TCJ + GUS core: zero-malloc C11, Python, JS | Stable |
 | [`gt-gus`](https://github.com/verared/gt-gus) | Canonical 29/32-character syntax, `quick_verify` | Stable |
@@ -239,7 +240,7 @@ Gerarion complements, and does not compete with, existing time standards:
   author  = {{verared} and Loyola, Gerardo},
   title   = {Gerarion Time: Gerarion Universal Standard (GUS 3.0.0) reference suite},
   year    = {2026},
-  version = {3.3.0},
+  version = {3.4.0},
   url     = {https://github.com/verared/gerarion},
   license = {MIT OR Apache-2.0}
 }

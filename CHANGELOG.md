@@ -1,5 +1,48 @@
 # Changelog — GUS
 
+## 3.4.0 — Bordes temporales P0, contrato sealed/anchored y paquete npm experimental (2026-11-27)
+
+Cambios desde `v3.3.0` (`7d4bf95`). El incremento minor identifica un
+**cambio del contrato público de verificación GST v2**: los consumidores
+deben aportar el digest esperado del evento y distinguir un sello válido
+de un sello corroborado temporalmente. La especificación congelada
+`GUS v3.0.0` y los vectores normativos no cambian.
+
+- **Bordes temporales P0**: `web/engine/core.mjs` usa división euclídea
+  para instantes negativos, valida `dayIndex` seguro/BigInt e int64 y
+  admite exactamente offsets TCJ de ±24 h. Los puentes TAI−UTC en Python,
+  JS y C corrigen el horizonte al 2027-05-01; Python y JS rechazan
+  instantes sin etiqueta Unix en lugar de devolver TAI como si fuera UTC.
+- **GTS**: `verify_anchor` de Roughtime exige `expected_nonce` externo de
+  32 bytes y valida el tipo de anclaje. HOLDOVER conserva el último ancla
+  VERIFIED, no renueva su horizonte y compara el límite en nanosegundos;
+  endurecimiento equivalente del horizonte en el reloj C.
+- **GST v2** (`gst/v2.py`, `gst/envelope.py`): `expected_event_hash` es
+  obligatorio y debe coincidir exactamente con el digest del artefacto
+  esperado (SHA-256 de 64 hex o SHA-512 de 128 hex). Solo se admite TCJ;
+  la conversión de `ts` a `ins` incluye el offset firmado. `sealed`
+  expresa validez criptográfica e identidad/replay; `anchored` exige
+  además reloj VERIFIED y un callback de política confiable que vincule
+  evidencia a los bytes exactos del sobre. `overall_trusted` equivale a
+  `anchored`: nunca es true con reloj UNKNOWN, ni por una lectura externa
+  aislada. Guías CMS y quickstarts del exportador reflejan el contrato.
+- **Nuevo paquete experimental** `@verared/gerarion-time@0.1.0-alpha.1`:
+  Web-API puro, sin imports `node:*` en src/dist; núcleo JS embebido
+  verbatim, verificador offline Ed25519 + ML-DSA, JCS y paridad byte a byte
+  Python ↔ JS. Suite negativa, prueba del tarball y CI Node/Deno/Workers.
+  Workflow independiente `gerarion-time-v*` con npm Trusted Publishing
+  OIDC sin `NPM_TOKEN`, npm ≥11.5.1, provenance y canal next en prerelease;
+  lockfile reproducible y metadata repository para provenance. Su versión
+  no sigue la versión 3.4.0 del monorepo.
+- **Seguridad, CI y documentación**: alineación de acciones CodeQL,
+  cobertura REUSE del paquete y del diagnóstico de publicación, gate de
+  regresiones P0 y documentación bilingüe de arquitectura temporal Zero
+  Trust, modelo de amenazas y límites de confianza.
+- **Distribución**: versión 3.4.0 coherente en Python, kernel web, C,
+  pkg-config, matriz de compatibilidad, citas y SBOM. El release `v*`
+  genera artefactos y verifica exports, pero no empuja repositorios gt-*;
+  su sincronización es una fase posterior desde un tag del monorepo.
+
 ## 3.3.0 — Endurecimiento GST v2 (KeyRegistry, SQLiteReplayStore, VerificationResult en 3 niveles) y firma separada de manifiestos (2026-11-19)
 
 Cierre de los cuatro hallazgos de auditoría (`A`–`D`) sobre `gt-gst` y el

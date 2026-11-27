@@ -1,6 +1,6 @@
 # Infraestructura Temporal Verificable para Arquitecturas Zero Trust
 
-Versión: 1.0.0 · Línea base: `v3.3.0` (`GUS v3.0.0`) · Licencia: CC-BY-4.0 ·
+Versión: 1.0.0 · Línea base: `v3.4.0` (`GUS v3.0.0`) · Licencia: CC-BY-4.0 ·
 Mantenido por: verared contributors
 
 [English](ZERO-TRUST-TIME.en.md) · **Español** — en caso de divergencia, prevalece el texto en inglés (EN > ES).
@@ -33,10 +33,10 @@ suposición constituye una brecha estructural.
 *Gerarion Time* replantea el tiempo como una **dimensión operativa verificable**
 junto a la identidad, la integridad del mensaje y la frescura. En lugar de
 colapsar todo en un único booleano de «timestamp válido», el verificador de
-referencia (`gerarion.gst.v2.verify`, línea base `v3.3.0`) separa la
+referencia (`gerarion.gst.v2.verify`, línea base `v3.4.0`) separa la
 verificación en **tres niveles independientes** (`VerificationResult`):
 
-| Nivel | Campo (`v3.3.0`) | Qué verifica | Qué **no** demuestra por sí solo |
+| Nivel | Campo (`v3.4.0`) | Qué verifica | Qué **no** demuestra por sí solo |
 |---|---|---|---|
 | **Nivel 1 — Criptografía** | `result.crypto` | Canonicalización determinista RFC 8785 (JCS), separación de dominio `GUS3-GST-V2`, descriptor anti-downgrade y validez matemática de la firma híbrida **Ed25519 + ML-DSA**. | Si la clave firmante está autorizada o si el sobre fue reenviado (*replay*). |
 | **Nivel 2 — Identidad y frescura** | `result.identity` | Autorización de la clave, ventana de vigencia y revocación en `KeyRegistry`, más verificación atómica anti-replay y secuencia monotónica en un `ReplayStore` transaccional (`SQLiteReplayStore`), ambos *fail-closed*. | Si el reloj físico del host firmante estaba sincronizado o era veraz. |
@@ -74,7 +74,7 @@ responsabilidades diferenciadas dentro de una pila temporal Zero Trust. Ver
 [`SATELLITE-REPOS.es.md`](SATELLITE-REPOS.es.md) y
 [`COMPATIBILITY.md`](../../COMPATIBILITY.md) para el contrato de dependencias.
 
-| Satélite | Rol en una arquitectura temporal Zero Trust | Madurez (`v3.3.0`) |
+| Satélite | Rol en una arquitectura temporal Zero Trust | Madurez (`v3.4.0`) |
 |---|---|---|
 | [`verared/gt-core`](https://github.com/verared/gt-core) | Núcleo entero determinista TCJ + GUS sin `malloc` (C11, Python, JS) para coordenadas homogéneas desde MCUs hasta servidores. | Estable / Verificado |
 | [`verared/gt-gus`](https://github.com/verared/gt-gus) | Sintaxis canónica de 29/32 caracteres, reglas de normalización 1–7 y `quick_verify` para rechazar marcas malformadas en el borde. | Estable / Verificado |
@@ -184,7 +184,7 @@ repositorio externo**:
 ## 6. Referencias Relacionadas
 
 - [`SECURITY.md`](../../SECURITY.md) — Política de seguridad vigente, perfil normativo `GST v2` y divulgación responsable.
-- [`docs/spec/threat-model.md`](../spec/threat-model.md) — Modelo de amenazas detallado (`v3.3.0`).
+- [`docs/spec/threat-model.md`](../spec/threat-model.md) — Modelo de amenazas detallado (`v3.4.0`).
 - [`docs/architecture/SATELLITE-REPOS.es.md`](SATELLITE-REPOS.es.md) — Modelo de exportación de satélites y grafo de dependencias.
 - [`docs/guides/CMS-INTEGRATION.es.md`](../guides/CMS-INTEGRATION.es.md) — Patrón concreto de integración (`KeyRegistry` + `SQLiteReplayStore` + checklist `GEIACT-1`).
 - [`ROADMAP.es.md`](../../ROADMAP.es.md) — Visión verificable y ejes abiertos de ingeniería.

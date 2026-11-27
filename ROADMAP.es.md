@@ -51,9 +51,9 @@ afirmaciones de seguridad en producción— revisión externa independiente.
 | `VERIFIED` | Verificado de forma cruzada contra vectores normativos compartidos y suites automatizadas en CI (`reuse`, unitarias, conformancia, fuzz/sanitizers). |
 | `STABLE` | Contrato normativo congelado (`>=3.2.0,<4.0.0`), verificado entre plataformas y reproducible mediante `EXPORT-MANIFEST.json`. *(El uso criptográfico crítico en producción exige además auditoría externa + custodia en hardware.)* |
 
-### Matriz del Ecosistema (`v3.3.0`, alineada con [`COMPATIBILITY.md`](COMPATIBILITY.md))
+### Matriz del Ecosistema (`v3.4.0`, alineada con [`COMPATIBILITY.md`](COMPATIBILITY.md))
 
-| Satélite | Especificación | Madurez (`v3.3.0`) | Alcance y límites honestos |
+| Satélite | Especificación | Madurez (`v3.4.0`) | Alcance y límites honestos |
 |---|---|---|---|
 | `verared/gt-core` | [`TCJ.es.md`](docs/specs/TCJ.es.md), [`GUS.es.md`](docs/specs/GUS.es.md) | **STABLE / VERIFIED** | Núcleo `GUS v3.0.0` congelado; C11 sin `malloc`, Python y JS; 100 % autónomo. |
 | `verared/gt-gus` | [`GUS.es.md`](docs/specs/GUS.es.md) | **STABLE / VERIFIED** | Sintaxis canónica 29/32 caracteres, reglas de normalización 1–7, `quick_verify`, `int64` + `nanos`. |

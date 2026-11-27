@@ -1,8 +1,8 @@
 {
   "schema": "gerarion-compatibility/1",
   "source_repo": "verared/gerarion",
-  "release": "3.3.0",
-  "tag": "v3.3.0",
+  "release": "3.4.0",
+  "tag": "v3.4.0",
   "spec_version": "3.0.0",
   "semver_range": ">=3.2.0,<4.0.0",
   "guarantees": [
@@ -15,7 +15,7 @@
   "satellites": {
     "gt-core": {
       "repository": "verared/gt-core",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "stable",
       "experimental": false,
@@ -23,7 +23,7 @@
     },
     "gt-gus": {
       "repository": "verared/gt-gus",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "stable",
       "experimental": false,
@@ -31,7 +31,7 @@
     },
     "gt-tcj": {
       "repository": "verared/gt-tcj",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "stable",
       "experimental": false,
@@ -41,7 +41,7 @@
     },
     "gt-calendar": {
       "repository": "verared/gt-calendar",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "stable",
       "experimental": false,
@@ -51,7 +51,7 @@
     },
     "gt-gts": {
       "repository": "verared/gt-gts",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "stable-core/experimental-roughtime",
       "experimental": false,
@@ -61,7 +61,7 @@
     },
     "gt-gst": {
       "repository": "verared/gt-gst",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "stable",
       "experimental": false,
@@ -72,7 +72,7 @@
     },
     "gt-interop": {
       "repository": "verared/gt-interop",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "stable",
       "experimental": false,
@@ -83,7 +83,7 @@
     },
     "gt-tslr": {
       "repository": "verared/gt-tslr",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "experimental",
       "experimental": true,
@@ -93,7 +93,7 @@
     },
     "gt-gcerts": {
       "repository": "verared/gt-gcerts",
-      "version": "3.3.0",
+      "version": "3.4.0",
       "compatible_range": ">=3.2.0,<4.0.0",
       "maturity": "experimental",
       "experimental": true,

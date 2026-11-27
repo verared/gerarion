@@ -1,11 +1,11 @@
-# Gerarion Time — Compatibility & Version Matrix (`v3.3.0`)
+# Gerarion Time — Compatibility & Version Matrix (`v3.4.0`)
 
 This document defines the official version contract between the monorepo
 source of truth (`verared/gerarion`) and the nine standalone satellite
 repositories (`verared/gt-*`). Machine-readable equivalent:
 [`compatibility.json`](compatibility.json).
 
-- **Suite release:** `3.3.0` (tag `v3.3.0`)
+- **Suite release:** `3.4.0` (target tag `v3.4.0`; satellite synchronization follows the monorepo release)
 - **Frozen normative specification:** `GUS v3.0.0` (arithmetic and `vectors/*.json` frozen)
 - **Semantic compatibility range:** `>=3.2.0,<4.0.0`
 
@@ -13,21 +13,21 @@ repositories (`verared/gt-*`). Machine-readable equivalent:
 
 | Satellite | Repository | Release | Compatible range | Maturity | Dependencies |
 |---|---|---|---|---|---|
-| `gt-core` | `verared/gt-core` | `3.3.0` | `>=3.2.0,<4.0.0` | `stable` | *(none — 100 % standalone)* |
-| `gt-gus` | `verared/gt-gus` | `3.3.0` | `>=3.2.0,<4.0.0` | `stable` | *(none — 100 % standalone)* |
-| `gt-tcj` | `verared/gt-tcj` | `3.3.0` | `>=3.2.0,<4.0.0` | `stable` | `gt-core` (`>=3.2.0,<4.0.0`) |
-| `gt-calendar` | `verared/gt-calendar` | `3.3.0` | `>=3.2.0,<4.0.0` | `stable` | `gt-core` (`>=3.2.0,<4.0.0`) |
-| `gt-gts` | `verared/gt-gts` | `3.3.0` | `>=3.2.0,<4.0.0` | `stable-core/experimental-roughtime` | `gt-core` (`>=3.2.0,<4.0.0`) |
-| `gt-gst` | `verared/gt-gst` | `3.3.0` | `>=3.2.0,<4.0.0` | `stable` *(external crypto audit + TPM/HSM required for production)* | `gt-core` (`>=3.2.0,<4.0.0`) |
-| `gt-interop` | `verared/gt-interop` | `3.3.0` | `>=3.2.0,<4.0.0` | `stable` *(RFC 3339 stable; RFC 3161 experimental)* | `gt-core` (`>=3.2.0,<4.0.0`), `gt-tcj` (`>=3.2.0,<4.0.0`) |
-| `gt-tslr` | `verared/gt-tslr` | `3.3.0` | `>=3.2.0,<4.0.0` | `experimental` *(spec + scaffold only)* | `gt-core` (`>=3.2.0,<4.0.0`) |
-| `gt-gcerts` | `verared/gt-gcerts` | `3.3.0` | `>=3.2.0,<4.0.0` | `experimental` *(spec + scaffold only)* | `gt-core` (`>=3.2.0,<4.0.0`), `gt-gst` (`>=3.2.0,<4.0.0`) |
+| `gt-core` | `verared/gt-core` | `3.4.0` | `>=3.2.0,<4.0.0` | `stable` | *(none — 100 % standalone)* |
+| `gt-gus` | `verared/gt-gus` | `3.4.0` | `>=3.2.0,<4.0.0` | `stable` | *(none — 100 % standalone)* |
+| `gt-tcj` | `verared/gt-tcj` | `3.4.0` | `>=3.2.0,<4.0.0` | `stable` | `gt-core` (`>=3.2.0,<4.0.0`) |
+| `gt-calendar` | `verared/gt-calendar` | `3.4.0` | `>=3.2.0,<4.0.0` | `stable` | `gt-core` (`>=3.2.0,<4.0.0`) |
+| `gt-gts` | `verared/gt-gts` | `3.4.0` | `>=3.2.0,<4.0.0` | `stable-core/experimental-roughtime` | `gt-core` (`>=3.2.0,<4.0.0`) |
+| `gt-gst` | `verared/gt-gst` | `3.4.0` | `>=3.2.0,<4.0.0` | `stable` *(external crypto audit + TPM/HSM required for production)* | `gt-core` (`>=3.2.0,<4.0.0`) |
+| `gt-interop` | `verared/gt-interop` | `3.4.0` | `>=3.2.0,<4.0.0` | `stable` *(RFC 3339 stable; RFC 3161 experimental)* | `gt-core` (`>=3.2.0,<4.0.0`), `gt-tcj` (`>=3.2.0,<4.0.0`) |
+| `gt-tslr` | `verared/gt-tslr` | `3.4.0` | `>=3.2.0,<4.0.0` | `experimental` *(spec + scaffold only)* | `gt-core` (`>=3.2.0,<4.0.0`) |
+| `gt-gcerts` | `verared/gt-gcerts` | `3.4.0` | `>=3.2.0,<4.0.0` | `experimental` *(spec + scaffold only)* | `gt-core` (`>=3.2.0,<4.0.0`), `gt-gst` (`>=3.2.0,<4.0.0`) |
 
 ## Three-Axis Maturity Contract
 
 1. **Specification & arithmetic (`GUS v3.0.0` + 10 calendars):** Frozen and
    verified bit-for-bit across Python, JavaScript, and C11.
-2. **Reference implementations (`v3.3.0`):** Stable and continuously verified
+2. **Reference implementations (`v3.4.0`):** Stable and continuously verified
    in CI (`gt-core`, `gt-gus`, `gt-tcj`, `gt-calendar`, `gt-gts`, `gt-gst`,
    `gt-interop`). `gt-tslr` and `gt-gcerts` remain **EXPERIMENTAL**
    (specification + scaffold, no reference implementation).
@@ -44,7 +44,7 @@ repositories (`verared/gt-*`). Machine-readable equivalent:
 | # | Guarantee | What it proves | How it is verified |
 |---|---|---|---|
 | 1 | **SHA-256 Integrity** | Every exported file matches the exact SHA-256 recorded in `EXPORT-MANIFEST.json`, with zero missing or extraneous files. | `python3 tools/export_module.py --verify-existing <dir>` |
-| 2 | **Declared Provenance** | The satellite declares its exact `source_repo` (`verared/gerarion`), `source_tag` (`v3.3.0`), and 40-char `source_commit`. | Inspecting `EXPORT-MANIFEST.json` against `git rev-parse v3.3.0^{commit}` |
+| 2 | **Declared Provenance** | The satellite declares its exact `source_repo` (`verared/gerarion`), `source_tag` (`v3.4.0`), and 40-char `source_commit`. | Inspecting `EXPORT-MANIFEST.json` against `git rev-parse v3.4.0^{commit}` after the release is tagged |
 | 3 | **Publication Authenticity** | Detached Ed25519 signature `EXPORT-MANIFEST.json.sig` (or release attestation) proves the manifest was signed by the release key without self-reference. | `python3 tools/export_module.py --verify-existing <dir> --trusted-pub-key <pub.pem>` |
 | 4 | **Reproducibility** | Re-running `export_module.py` from the same `--source-commit` produces a bit-for-bit identical tree and manifest. | `pytest tests/test_satellite_integration.py` |
 | 5 | **Functional Conformance** | Assembled satellites compile and pass normative and cross-domain integration tests in C11, Python, and JavaScript. | `pytest tests/test_satellite_integration.py` & CI `satellites` job |

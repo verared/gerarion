@@ -11,8 +11,8 @@ In case of divergence, the English text prevails (EN > ES).
 
 | Version | Status |
 |---|---|
-| Suite `v3.3.0` on frozen specification `GUS v3.0.0` (`main`) | **Supported** (security fixes) |
-| `v3.2.x` | Critical fixes only; upgrade to `v3.3.0` recommended |
+| Suite `v3.4.0` on frozen specification `GUS v3.0.0` (release target) | **Supported** (security fixes) |
+| `v3.2.x` / `v3.3.x` | Critical fixes only; upgrade to `v3.4.0` when released |
 | `<= v3.1.x` | Unsupported |
 
 The nine satellite repositories (`verared/gt-*`) are generated from a tagged
@@ -93,8 +93,8 @@ Threat analysis: [docs/en/threat-model.md](docs/en/threat-model.md).
 
 | Versión | Estado |
 |---|---|
-| Suite `v3.3.0` sobre la especificación congelada `GUS v3.0.0` (`main`) | **Con soporte** (correcciones de seguridad) |
-| `v3.2.x` | Solo correcciones críticas; se recomienda actualizar a `v3.3.0` |
+| Suite `v3.4.0` sobre la especificación congelada `GUS v3.0.0` (release objetivo) | **Con soporte** (correcciones de seguridad) |
+| `v3.2.x` / `v3.3.x` | Solo correcciones críticas; actualizar a `v3.4.0` cuando se publique |
 | `<= v3.1.x` | Sin soporte |
 
 Los nueve repositorios satélite (`verared/gt-*`) se generan desde un commit

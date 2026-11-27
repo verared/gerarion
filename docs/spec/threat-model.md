@@ -1,4 +1,4 @@
-# Modelo de amenazas — Gerarion Time `v3.3.0` (GUS v3.0.0)
+# Modelo de amenazas — Gerarion Time `v3.4.0` (GUS v3.0.0)
 
 Este documento define **qué protege el sistema, contra quién, y qué NO
 protege**. Sin un modelo de amenazas explícito, cualquier afirmación de "no

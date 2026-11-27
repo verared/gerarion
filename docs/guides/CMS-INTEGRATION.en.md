@@ -1,6 +1,6 @@
-# CMS & API Integration Guide (`gt-core` + `gt-gst` @ `v3.3.0`)
+# CMS & API Integration Guide (`gt-core` + `gt-gst` @ `v3.4.0`)
 
-- **Normative baseline:** `GUS v3.0.0` / suite `v3.3.0`
+- **Normative baseline:** `GUS v3.0.0` / suite `v3.4.0` (release target; satellite tags require Phase B synchronization)
 - **Target audience:** Developers integrating *Gerarion Time* into external CMS platforms (e.g., Portaless, WordPress, headless content APIs) or audit-log pipelines without cloning the `verared/gerarion` monorepo.
 - **Spanish mirror:** [`CMS-INTEGRATION.es.md`](CMS-INTEGRATION.es.md) (EN > ES)
 
@@ -10,13 +10,13 @@
 
 An external CMS or API service never needs to clone `verared/gerarion`. Combine
 the `src/` trees of **`verared/gt-core`** and **`verared/gt-gst`** (both pinned
-to tag `v3.3.0` and verified against their `EXPORT-MANIFEST.json`), plus
+to tag `v3.4.0` and verified against their `EXPORT-MANIFEST.json`), plus
 `cryptography>=47` for ML-DSA (FIPS 204) + Ed25519 (RFC 8032):
 
 ```bash
 mkdir -p vendor/gerarion-satellites
-git clone --branch v3.3.0 --depth 1 https://github.com/verared/gt-core.git /tmp/gt-core
-git clone --branch v3.3.0 --depth 1 https://github.com/verared/gt-gst.git /tmp/gt-gst
+git clone --branch v3.4.0 --depth 1 https://github.com/verared/gt-core.git /tmp/gt-core
+git clone --branch v3.4.0 --depth 1 https://github.com/verared/gt-gst.git /tmp/gt-gst
 cp -R /tmp/gt-core/src/* /tmp/gt-gst/src/* vendor/gerarion-satellites/
 python3 -m pip install "cryptography>=47"
 export PYTHONPATH="$PWD/vendor/gerarion-satellites"
@@ -135,7 +135,7 @@ assert result.sealed and not result.overall_trusted
 When creating the external CMS repository, execute the following **8 experiments + 3 deliberate failure injections** to certify the integration:
 
 ### The 8 Functional & Security Experiments
-1. **E1 — Satellite-only assembly:** Install solely from `verared/gt-core` + `verared/gt-gst` (`v3.3.0`), verifying `EXPORT-MANIFEST.json` with `--verify-existing` before starting the CMS.
+1. **E1 — Satellite-only assembly:** Install solely from `verared/gt-core` + `verared/gt-gst` (`v3.4.0`), verifying `EXPORT-MANIFEST.json` with `--verify-existing` before starting the CMS.
 2. **E2 — Deterministic event hashing:** Canonicalize a `gerarion-cms-event/1` payload with `jcs.dumps_bytes` and confirm identical `event_hash` across worker restarts.
 3. **E3 — Three-level verification:** With the independently computed event digest, verify that the active key produces `sealed=True`; with `clock_state="UNKNOWN"`, `overall_trusted` remains `False`.
 4. **E4 — Causal hash chain:** Chain 100 consecutive CMS events (`previous_event_hash -> event_hash`) with monotonically increasing `seq = 1..100` and verify the full chain offline.
