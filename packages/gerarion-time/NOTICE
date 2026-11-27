@@ -1,0 +1,12 @@
+@verared/gerarion-time
+Copyright 2026 verared contributors
+
+This product includes software developed by the verared contributors
+(https://github.com/verared).
+
+The vendored deterministic core (`dist/core.mjs`) is embedded verbatim from
+`web/engine/core.mjs` in the verared/gerarion repository — the single source
+of truth. Do not edit it by hand.
+
+Third-party runtime dependency:
+- @noble/post-quantum (MIT) — ML-DSA verification, loaded lazily.

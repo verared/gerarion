@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 verared contributors
+name: gerarion-time (npm package)
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "packages/gerarion-time/**"
+      - ".github/workflows/gerarion-time.yml"
+  pull_request:
+    paths:
+      - "packages/gerarion-time/**"
+      - ".github/workflows/gerarion-time.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  node-python-parity:
+    # Build + pureza (0 node:*) + paridad Python 3.12 ↔ Node 24 + tarball
+    # con consumidor NodeNext estricto.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: packages/gerarion-time
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      # gerarion (Python) con extras PQC para los fixtures de paridad.
+      # Ojo: debe correr en la RAÍZ del repo (pyproject.toml está ahí),
+      # no en packages/gerarion-time.
+      - name: Instalar gerarion (Python) con extras pqc
+        working-directory: .
+        run: python -m pip install -e ".[dev,pqc]"
+      - name: npm install + build (tsc NodeNext estricto + núcleo embebido)
+        run: |
+          npm install
+          npm run build
+      - name: Chequeo estático 0 imports node:* en src/ y dist/
+        run: npm run check:pure
+      - name: Suite del paquete (paridad Python↔JS, negativos, JCS borde, tarball)
+        run: npm test
+      - name: Smoke Node del paquete empaquetado
+        run: node test/smoke-entry.mjs
+
+  deno:
+    # Smoke de verificación real en Deno (Web-API puro, sin nodejs_compat).
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: packages/gerarion-time
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+      - name: npm install + build
+        run: |
+          npm install
+          npm run build
+      - name: Smoke Deno (verificación GST v2 real)
+        run: deno run --allow-read test/smoke-entry.mjs
+
+  workers:
+    # Smoke de verificación real en Cloudflare Workers (workerd) SIN
+    # nodejs_compat: bundle con esbuild + miniflare.
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: packages/gerarion-time
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: npm install + build
+        run: |
+          npm install
+          npm run build
+      - name: Smoke Workers (miniflare/workerd sin nodejs_compat)
+        run: node test/smoke-workers-driver.mjs
