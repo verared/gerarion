@@ -1,0 +1,36 @@
+{
+  "name": "@verared/gerarion-time",
+  "version": "0.1.0-alpha.1",
+  "description": "Núcleo temporal determinista de Gerarion (GUS/TCJ) y verificador offline de recibos GST v2, 100% Web-API puro (0 imports node:*).",
+  "type": "module",
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "dependencies": {
+    "@noble/post-quantum": "^0.7.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check:pure": "node scripts/check-no-node-imports.mjs",
+    "test": "node --test test/parity.test.mjs test/verify.test.mjs test/pack.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
