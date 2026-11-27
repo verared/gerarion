@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-4.0 -->
+<!-- SPDX-FileCopyrightText: 2026 verared contributors -->
+
 # Diagnosis: first Gerarion Time npm tag
 
 The tag `gerarion-time-v0.1.0-alpha.1` resolves to
