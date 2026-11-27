@@ -33,7 +33,10 @@ jobs:
         with:
           python-version: "3.12"
       # gerarion (Python) con extras PQC para los fixtures de paridad.
+      # Ojo: debe correr en la RAÍZ del repo (pyproject.toml está ahí),
+      # no en packages/gerarion-time.
       - name: Instalar gerarion (Python) con extras pqc
+        working-directory: .
         run: python -m pip install -e ".[dev,pqc]"
       - name: npm install + build (tsc NodeNext estricto + núcleo embebido)
         run: |
